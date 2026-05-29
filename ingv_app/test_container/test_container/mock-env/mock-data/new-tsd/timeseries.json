@@ -1,0 +1,489 @@
+{
+  "params": {
+    "sort_by": "name",
+    "exact_match": false,
+    "listCol": false,
+    "showColDefs": false,
+    "showFirstMapping": false,
+    "showMapping": false
+  },
+  "data": [
+    {
+      "id": "83c5683b-a6d8-4110-b781-12cc8525de62",
+      "schema": "clinometric",
+      "name": "ecbd_wh_tilt_x_avg",
+      "sampling": 60,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2023-09-14T23:24:00.000+00:00",
+      "last_time": "2026-03-20T18:20:00.000+00:00",
+      "last_value": {
+        "time": "2026-03-20T18:20:00",
+        "value": 17.32619
+      },
+      "n_samples": 1092925,
+      "metadata": {
+        "columns": [
+          {
+            "name": "value",
+            "type": "double precision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "00cb74f9-7a43-4c9f-ada6-c32d6d28373c",
+      "schema": "clinometric",
+      "name": "ecbd_wh_tilt_y_avg",
+      "sampling": 60,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2023-09-14T23:24:00.000+00:00",
+      "last_time": "2026-03-20T18:20:00.000+00:00",
+      "last_value": {
+        "time": "2026-03-20T18:20:00",
+        "value": 0.02380952
+      },
+      "n_samples": 1092860,
+      "metadata": {
+        "columns": [
+          {
+            "name": "value",
+            "type": "double precision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "e7cc2d61-f5fe-4106-b51f-1fd840b8d518",
+      "schema": "gnss_baseline",
+      "name": "emeg_emal_gnss_baseline_spider_lf",
+      "sampling": 86400,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2018-10-12T00:00:00.000+00:00",
+      "last_time": "2026-03-10T00:00:00.000+00:00",
+      "last_value": {
+        "time": "2026-03-10T00:00:00",
+        "value": 3037.7503339061
+      },
+      "n_samples": 2449,
+      "metadata": {
+        "columns": [
+          {
+            "name": "value",
+            "type": "double precision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "4851efd1-26e2-454c-9ffd-84f3a2a7109e",
+      "schema": "gnss_baseline",
+      "name": "emgl_emal_gnss_baseline_spider_lf",
+      "sampling": 86400,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2018-10-12T00:00:00.000+00:00",
+      "last_time": "2026-03-10T00:00:00.000+00:00",
+      "last_value": {
+        "time": "2026-03-10T00:00:00",
+        "value": 7335.3425926997
+      },
+      "n_samples": 2387,
+      "metadata": {
+        "columns": [
+          {
+            "name": "value",
+            "type": "double precision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "8b49b0d6-5804-4630-93a3-858dc61e8d49",
+      "schema": "gnss_baseline",
+      "name": "emgl_emeg_gnss_baseline_spider_lf",
+      "sampling": 86400,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2018-09-27T00:00:00.000+00:00",
+      "last_time": "2026-03-19T00:00:00.000+00:00",
+      "last_value": {
+        "time": "2026-03-19T00:00:00",
+        "value": 4297.573606641
+      },
+      "n_samples": 2398,
+      "metadata": {
+        "columns": [
+          {
+            "name": "value",
+            "type": "double precision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a5e9db1f-d844-4601-9d1a-e5d277c533c6",
+      "schema": "public",
+      "name": "esln_rms_1min",
+      "sampling": 60,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2023-10-18T00:00:00.000+00:00",
+      "last_time": "2026-03-20T18:23:00.000+00:00",
+      "last_value": null,
+      "n_samples": null,
+      "metadata": {
+        "columns": [
+          {
+            "name": "b1",
+            "type": "double precision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "88902237-421f-4142-a1f7-78e3a892d83a",
+      "schema": "public",
+      "name": "esln_rms_infra_5min",
+      "sampling": 300,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2012-01-03T09:15:00.000+00:00",
+      "last_time": "2026-03-20T17:15:00.000+00:00",
+      "last_value": null,
+      "n_samples": null,
+      "metadata": {
+        "columns": [
+          {
+            "name": "b1",
+            "type": "double precision",
+            "unit": "Pressure (mV)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "092aa665-393c-4a34-88e6-8ed2eb76c63c",
+      "schema": "rms_infrasonic",
+      "name": "esln_rms_infrasonic",
+      "sampling": 20,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2012-01-03T09:17:47.000+00:00",
+      "last_time": "2026-03-20T18:23:26.000+00:00",
+      "last_value": {
+        "b0_5": 0.261772,
+        "b1_5": 0.646302,
+        "b2_5": 0.385479,
+        "b3_5": 0.186731,
+        "b4_5": 0.129312,
+        "b5_5": 0.07577,
+        "b6_5": 0.042902,
+        "b7_5": 0.031807,
+        "b8_5": 0.019813,
+        "b9_5": 0.01368,
+        "time": "2026-03-20T18:23:26",
+        "b10_5": 0.010267,
+        "b11_5": 0.007117,
+        "b12_5": 0.006187,
+        "b13_5": 0.006802,
+        "b14_5": 0.005291,
+        "b15_5": 0.070693
+      },
+      "n_samples": 45576576,
+      "metadata": {
+        "columns": [
+          {
+            "name": "b0_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b1_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b2_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b3_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b4_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b5_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b6_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b7_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b8_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b9_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b10_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b11_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b12_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b13_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b14_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b15_5",
+            "type": "double precision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "0c4eb506-b2e1-43e9-ba2e-ce3040c6ad94",
+      "schema": "rms_seismic",
+      "name": "esln_rms_seismic",
+      "sampling": 20,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2023-10-18T00:00:15.000+00:00",
+      "last_time": "2026-03-20T18:23:26.000+00:00",
+      "last_value": {
+        "b0_5": 0.261772,
+        "b1_5": 0.646302,
+        "b2_5": 0.385479,
+        "b3_5": 0.186731,
+        "b4_5": 0.129312,
+        "b5_5": 0.07577,
+        "b6_5": 0.042902,
+        "b7_5": 0.031807,
+        "b8_5": 0.019813,
+        "b9_5": 0.01368,
+        "time": "2026-03-20T18:23:26",
+        "b10_5": 0.010267,
+        "b11_5": 0.007117,
+        "b12_5": 0.006187,
+        "b13_5": 0.006802,
+        "b14_5": 0.005291,
+        "b15_5": 0.070693
+      },
+      "n_samples": 3447052,
+      "metadata": {
+        "columns": [
+          {
+            "name": "b0_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b1_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b2_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b3_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b4_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b5_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b6_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b7_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b8_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b9_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b10_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b11_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b12_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b13_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b14_5",
+            "type": "double precision"
+          },
+          {
+            "name": "b15_5",
+            "type": "double precision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ea4f9fd5-af17-4f41-9b85-2a750e9360da",
+      "schema": "seismo_volcanic_processing",
+      "name": "etna_volcanic_tremor_loc",
+      "sampling": 900,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2018-01-01T00:15:00.000+00:00",
+      "last_time": "2026-03-20T17:53:00.000+00:00",
+      "last_value": {
+        "time": "2026-03-20T17:53:00",
+        "lat_utm": 4179.1316,
+        "lat_wgs": 37.7595,
+        "lon_utm": 499.3602,
+        "lon_wgs": 14.9927,
+        "n_stations": 11,
+        "altitude_km": 2.6582,
+        "y_intercept": 0.00000627,
+        "tremor_loc_r2": 0.9497,
+        "tremor_loc_alfa": 0,
+        "n_summit_stations": 1
+      },
+      "n_samples": 188814,
+      "metadata": {
+        "columns": [
+          {
+            "name": "lon_utm",
+            "type": "double precision"
+          },
+          {
+            "name": "lat_utm",
+            "type": "double precision"
+          },
+          {
+            "name": "altitude_km",
+            "type": "double precision"
+          },
+          {
+            "name": "lon_wgs",
+            "type": "double precision"
+          },
+          {
+            "name": "lat_wgs",
+            "type": "double precision"
+          },
+          {
+            "name": "tremor_loc_alfa",
+            "type": "double precision"
+          },
+          {
+            "name": "tremor_loc_r2",
+            "type": "double precision"
+          },
+          {
+            "name": "n_stations",
+            "type": "smallint"
+          },
+          {
+            "name": "n_summit_stations",
+            "type": "smallint"
+          },
+          {
+            "name": "y_intercept",
+            "type": "double precision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "29714093-9942-42ca-b19f-d9d867b9a350",
+      "schema": "geochemical",
+      "name": "so2_flame_etna",
+      "sampling": 600,
+      "public": true,
+      "with_tz": false,
+      "first_time": "2012-06-28T06:08:42.000+00:00",
+      "last_time": "2026-03-20T13:17:54.000+00:00",
+      "last_value": {
+        "time": "2026-03-20T13:17:54",
+        "value": 3088.305376
+      },
+      "n_samples": 206882,
+      "metadata": {
+        "columns": [
+          {
+            "name": "value",
+            "type": "double precision",
+            "unit": "t/d",
+            "thresholds": [
+              {
+                "to_t": 5000,
+                "color": "#ffffff",
+                "label": "Low level",
+                "from_t": null,
+                "status": 0
+              },
+              {
+                "to_t": 8000,
+                "color": "#ffff00",
+                "label": "Medium level",
+                "from_t": 5000,
+                "status": 1
+              },
+              {
+                "to_t": 10000,
+                "color": "#ff8100",
+                "label": "High level",
+                "from_t": 8000,
+                "status": 2
+              },
+              {
+                "to_t": null,
+                "color": "#ff0000",
+                "label": "Very high level",
+                "from_t": 10000,
+                "status": 3
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "error": null,
+  "statusCode": 200,
+  "records": 11
+}

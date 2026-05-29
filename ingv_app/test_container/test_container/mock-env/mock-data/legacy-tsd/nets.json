@@ -1,0 +1,110 @@
+{
+    "otherParams": [],
+    "params": {
+        "requestContentType": "application\/json",
+        "filtered": true,
+        "netname": ""
+    },
+    "data": [
+        {
+            "IDNet": "7",
+            "NetName": "Cam"
+        },
+        {
+            "IDNet": "5",
+            "NetName": "Clinometric"
+        },
+        {
+            "IDNet": "17",
+            "NetName": "Extensometers"
+        },
+        {
+            "IDNet": "6",
+            "NetName": "Geochemical"
+        },
+        {
+            "IDNet": "4",
+            "NetName": "GPS"
+        },
+        {
+            "IDNet": "15",
+            "NetName": "GPS Survey"
+        },
+        {
+            "IDNet": "10",
+            "NetName": "Gravimetric"
+        },
+        {
+            "IDNet": "2",
+            "NetName": "Infrasonic"
+        },
+        {
+            "IDNet": "11",
+            "NetName": "Magnetic"
+        },
+        {
+            "IDNet": "18",
+            "NetName": "Satellite"
+        },
+        {
+            "IDNet": "1",
+            "NetName": "Seismic"
+        },
+        {
+            "IDNet": "14",
+            "NetName": "Strainmeters"
+        }
+    ],
+    "error": [],
+    "statusCode": 200,
+    "FDSN_Network_level": [
+        {
+            "IDNet": "7",
+            "NetName": "Cam"
+        },
+        {
+            "IDNet": "5",
+            "NetName": "Clinometric"
+        },
+        {
+            "IDNet": "17",
+            "NetName": "Extensometers"
+        },
+        {
+            "IDNet": "6",
+            "NetName": "Geochemical"
+        },
+        {
+            "IDNet": "4",
+            "NetName": "GPS"
+        },
+        {
+            "IDNet": "15",
+            "NetName": "GPS Survey"
+        },
+        {
+            "IDNet": "10",
+            "NetName": "Gravimetric"
+        },
+        {
+            "IDNet": "2",
+            "NetName": "Infrasonic"
+        },
+        {
+            "IDNet": "11",
+            "NetName": "Magnetic"
+        },
+        {
+            "IDNet": "18",
+            "NetName": "Satellite"
+        },
+        {
+            "IDNet": "1",
+            "NetName": "Seismic"
+        },
+        {
+            "IDNet": "14",
+            "NetName": "Strainmeters"
+        }
+    ]
+}

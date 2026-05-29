@@ -1,0 +1,33 @@
+/mock-data/
+├── legacy-tsd/
+│   ├── nets.json
+│   └── nets/
+│       └── 7/nodes/ffcaaa00/channels/2187/signaltypes/16/
+│           └── query_MAX_600.json
+├── system-monitor/
+│   ├── list_seismic.json
+│   ├── uptime_ECZM.json
+│   └── uptime_default.json
+├── seismic/
+│   ├── dataselect_EI_ECNE.mseed               # Binary miniSEED test
+│   ├── dataselect_default.mseed
+│   ├── station_EI_ECNE.xml                    # FDSN StationXML
+│   └── suds_2026_02.dmx                       # SUDS binary test
+├── multimedia/
+│   ├── video_list_EBVH.json
+│   ├── video_EBVH.avi
+│   ├── image_index_SCT.json
+│   └── image_index_default.json
+├── pics/
+│   └── EBVH/20260210/2300/EBVH_20260210-232450.jpg
+├── geoserver/
+│   ├── wms_GetCapabilities.xml
+│   └── wms_default.xml
+└── new-tsd/
+    ├── token.json
+    └── stations.json
+
+http://localhost:8080/tsdws/filtered/1/nets/1/nodes/89bb4035-8160-102c-b324-5f14482d08a2/channels/112/signaltypes/127/query?groupbyseconds=1800&aggregatefunctioncriteria=MAX
+http://localhost:8080/tsdws/filtered/1/nets/1/nodes/89bb4035-8160-102c-b324-5f14482d08a2/channels/112/signaltypes/127/query?groupbyseconds=1800&aggregatefunctioncriteria=AVG
+http://localhost:8080/tsdws/filtered/1/nets/7/nodes/ffcaaa00-f1df-1031-8ac0-80956c5d8eb1/channels/2187/signaltypes/16/query?starttime=2026-03-24%2014:11:00&endtime=2026-03-27%2014:11:09&groupbyseconds=600&aggregatefunctioncriteria=AVG&band=null&minthreshold=-999999&maxthreshold=999999&gainvalue=1&offsetvalue=0&charttype=line&title=ENIC_Saraterm%20-%20temp_diff%20-%20TEMPERATURE&mergewith=4&returndatetype=&format=json&rawdata=false&allowThreshold=false
+http://localhost:8080/tsdws/filtered/1/nets/7/nodes/ffcaaa00-f1df-1031-8ac0-80956c5d8eb1/channels/2187/signaltypes/16/query?starttime=2026-03-24%2014:11:00&endtime=2026-03-27%2014:11:09&groupbyseconds=600&aggregatefunctioncriteria=MAX&band=null&minthreshold=-999999&maxthreshold=999999&gainvalue=1&offsetvalue=0&charttype=line&title=ENIC_Saraterm%20-%20temp_diff%20-%20TEMPERATURE&mergewith=4&returndatetype=&format=json&rawdata=false&allowThreshold=false

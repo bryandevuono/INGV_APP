@@ -1,0 +1,15 @@
+{
+  "statusCode": 200,
+  "status": "success",
+  "message": "INGV-OE Mock Data Gateway. The specific resource was not found, falling back to default index.",
+  "mode": "mock-air-gapped",
+  "available_services": {
+    "legacy_tsd": "/tsdws/filtered/1/",
+    "new_tsd": "/tsdws/",
+    "system_monitor": "/dmx_ws/",
+    "seismic_fdsn": "/fdsnws/",
+    "multimedia_video": "/video/",
+    "multimedia_image": "/tsdws/imageArchive/"
+  },
+  "note": "If you expected specific timeseries data here, ensure your requested URL parameters exactly match the filenames in your /mock-data directory."
+}

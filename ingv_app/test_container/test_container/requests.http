@@ -1,0 +1,133 @@
+@baseUrl = http://localhost:8080
+
+### =======================================================================
+### 1. LEGACY TSD SYSTEM (Filtered API)
+### =======================================================================
+
+### Get Networks
+# Serves: /legacy-tsd/nets.json
+GET {{baseUrl}}/tsdws/filtered/1/nets
+
+### Get Nodes
+# Serves: /legacy-tsd/nodes.json
+GET {{baseUrl}}/tsdws/filtered/1/nodes
+
+### Get Channels
+# Serves: /legacy-tsd/channels.json
+GET {{baseUrl}}/tsdws/filtered/1/channels
+
+### Time Series Query (Network 7, Node ffcaaa00..., AVG, 600s)
+# Serves: /legacy-tsd/nets/7/nodes/ffcaaa00-f1df-1031-8ac0-80956c5d8eb1/channels/2187/signaltypes/16/query_AVG_600.json
+GET {{baseUrl}}/tsdws/filtered/1/nets/7/nodes/ffcaaa00-f1df-1031-8ac0-80956c5d8eb1/channels/2187/signaltypes/16/query
+    ?aggregatefunctioncriteria=AVG
+    &groupbyseconds=600
+
+### Time Series Query (Network 1, Node 89bb..., MAX, 1800s)
+# Serves: /legacy-tsd/nets/1/nodes/89bb4035-8160-102c-b324-5f14482d08a2/channels/112/signaltypes/127/query_MAX_1800.json
+GET {{baseUrl}}/tsdws/filtered/1/nets/1/nodes/89bb4035-8160-102c-b324-5f14482d08a2/channels/112/signaltypes/127/query
+    ?aggregatefunctioncriteria=MAX
+    &groupbyseconds=1800
+
+
+### =======================================================================
+### 2. NEW TSD SYSTEM (REST API)
+### =======================================================================
+
+### Get Token
+# Serves: /new-tsd/token.json
+GET {{baseUrl}}/tsdws/token
+
+### Get Timeseries List (Discovery)
+# Serves: /new-tsd/timeseries.json
+GET {{baseUrl}}/tsdws/timeseries
+
+### Timeseries Values (GNSS Baseline - avg, 5 days)
+# Serves: /new-tsd/4851efd1-26e2-454c-9ffd-84f3a2a7109e/values_avg_5_days.json
+GET {{baseUrl}}/tsdws/timeseries/4851efd1-26e2-454c-9ffd-84f3a2a7109e/values
+    ?aggregate=AVG
+    &time_bucket=5_days
+    &id=4851efd1-26e2-454c-9ffd-84f3a2a7109e
+
+### Timeseries Values (Seismic RMS - avg, 1 day)
+# Serves: /new-tsd/0c4eb506-b2e1-43e9-ba2e-ce3040c6ad94/values_avg_1_day.json
+GET {{baseUrl}}/tsdws/timeseries/0c4eb506-b2e1-43e9-ba2e-ce3040c6ad94/values
+    ?aggregate=AVG
+    &time_bucket=1_day
+    &id=0c4eb506-b2e1-43e9-ba2e-ce3040c6ad94
+
+
+### =======================================================================
+### 3. SEISMOLOGICAL (FDSNWS & SUDS)
+### =======================================================================
+
+### FDSNWS Station Metadata (XML)
+# Serves: /seismic/station_IV_EVRN.xml
+GET {{baseUrl}}/fdsnws/station/1/query
+    ?network=IV
+    &station=EVRN
+
+### FDSNWS Dataselect (Binary miniSEED stream)
+# Serves: /seismic/dataselect_IV_EVRN.mseed
+GET {{baseUrl}}/fdsnws/dataselect/1/query
+    ?network=IV
+    &station=EVRN
+
+### FDSNWS Event Catalog (XML)
+# Serves: /seismic/EtnaRCSC.xml
+GET {{baseUrl}}/fdsnws/event/1/query
+    ?catalog=EtnaRCSC
+
+### SUDS Archive (Binary DMX stream)
+# Serves: /seismic/suds_2026_03_30_010000.dmx
+GET {{baseUrl}}/suds/repoFile/query
+    ?year=2026
+    &month=03
+    &day=30
+    &time=010000
+
+
+### =======================================================================
+### 4. MULTIMEDIA ARCHIVES (Image & Video)
+### =======================================================================
+
+### Image Cameras List
+# Serves: /multimedia/image_cameras_list.json
+GET {{baseUrl}}/tsdws/imageArchive/php/getCameras.php
+
+### Raw Image Download (JPG)
+# Serves: /pics/EMOV/20260322/1500/EMOV_20260322-150000.jpg
+GET {{baseUrl}}/pics/EMOV/20260322/1500/EMOV_20260322-150000.jpg
+
+### Video Station List
+# Serves: /multimedia/station_list.json
+GET {{baseUrl}}/video/StationList/query
+
+### Video File List
+# Serves: /multimedia/video_list.json
+GET {{baseUrl}}/video/FileList/query
+
+### Video File Download (Binary AVI stream)
+# Serves: /multimedia/avi/EMOV_20260322-150000.avi
+# Note: NGINX uses stName, year, month, day, and time to build this exact file name
+GET {{baseUrl}}/video/VideoFile/query
+    ?stName=EMOV
+    &year=2026
+    &month=03
+    &day=22
+    &time=150000
+
+
+### =======================================================================
+### 5. SYSTEM MONITORING (DMX Webserver)
+### =======================================================================
+
+### System Monitor List
+# Serves: /system-monitor/list_seismic.json
+GET {{baseUrl}}/dmx_ws/php/getList.php
+    ?dmxType=seismic
+
+### System Monitor Uptime
+# Serves: /system-monitor/uptime_ECHR (Z).json
+# Note: URL encoding %20 handles the space in "ECHR (Z)"
+GET {{baseUrl}}/dmx_ws/php/getTimeseries.php
+    ?title=ECHR_(Z)
