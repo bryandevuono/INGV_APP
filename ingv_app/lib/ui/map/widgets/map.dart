@@ -4,9 +4,12 @@ import 'package:latlong2/latlong.dart' as latlong2;
 import 'package:ingv_app/ui/map/view_models/map_view_model.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:ingv_app/ui/map/widgets/map_marker.dart';
+import 'package:ingv_app/data/repositories/event_repository.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final EventRepository eventRepository;
+
+  const MapScreen({super.key, required this.eventRepository});
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -14,12 +17,23 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   late final MapScreenViewModel _viewModel;
+
   @override
   void initState() {
     super.initState();
-    {
-      _viewModel = MapScreenViewModel();
+    _viewModel = MapScreenViewModel(widget.eventRepository);
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    await _viewModel.fetchEvents();
+    if (!mounted) {
+      return;
     }
+
+    setState(() {
+      // Refresh map markers after view model updates.
+    });
   }
 
   @override
@@ -39,40 +53,17 @@ class _MapScreenState extends State<MapScreen> {
             size: const Size(40, 40),
             maxZoom: 15,
             markers: [
-              // TODO: dit moet naar een lijst van de backend die widgets aan maakt
-              Marker(
-                point: latlong2.LatLng(41.9028, 12.4863),
-                width: 20,
-                height: 20,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.red,
-                  ),
+              for (var event in _viewModel.events)
+                MapMarker(
+                  point: latlong2.LatLng(event.lat, event.long),
+                  author: 'Author ${event.author}',
+                  category: event.category,
+                  title: event.title,
+                  tag: event.tag,
+                  progress: 0.5,
+                  onAction: () {
+                  }
                 ),
-              ),
-              Marker(
-                point: latlong2.LatLng(41.9028, 12.4863),
-                width: 20,
-                height: 20,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.red,
-                  ),
-                ),
-              ),
-              MapMarker(
-                point: latlong2.LatLng(41.9028, 12.4863),
-                title: "Sample Marker",
-                author: "John Doe",
-                category: "Sample Category",
-                tag: "Sample Tag",
-                progress: 0.5,
-                onAction: () {
-                  // TODO: dit in de class zelf zetten
-                },
-              ),
             ],
             builder: (context, combinedMarkers) {
               return Container(

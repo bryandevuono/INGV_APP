@@ -33,12 +33,15 @@ class DatabaseService {
         await db.execute('''
           CREATE TABLE IF NOT EXISTS events (
             event_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            datetime TEXT NOT NULL,
+            start_datetime TEXT NOT NULL,
+            end_datetime TEXT NOT NULL,
             lat REAL NOT NULL,
             lon REAL NOT NULL,
+            title TEXT,
             tag TEXT,
+            description TEXT,
             category TEXT,
-            author_id INTEGER
+            author TEXT
           )
         ''');
       },
@@ -47,7 +50,7 @@ class DatabaseService {
 
   Future<List<EventModel>> getAllEvents() async {
     final db = await database;
-    final rows = await db.query('events', orderBy: 'datetime DESC');
+    final rows = await db.query('events', orderBy: 'start_datetime DESC');
 
     return rows.map(EventModel.fromMap).toList();
   }
