@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <FDSNStationXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.fdsn.org/xml/station/1" schemaVersion="1.2" xsi:schemaLocation="http://www.fdsn.org/xml/station/1 http://www.fdsn.org/xml/station/fdsn-station-1.2.xsd">
+    <Source>INGV-OE UFSO-IT StnDB</Source>
+    <Sender>INGV-OE</Sender>
+    <Module>INGV-OE WEB SERVICE: fdsnws-station | version: 1.0.0</Module>
+    <ModuleURI>/fdsnws/station/1/query?network=IV&amp;station=EVRN&amp;channel=HHE&amp;level=station&amp;includerestricted=true&amp;format=xml</ModuleURI>
+    <Created>2026-03-30T13:57:16</Created>
+    <Network code="IV" startDate="1988-01-01T00:00:00" restrictedStatus="open">
+      <Description>Italian Seismic Network</Description>
+      <Identifier type="DOI">10.13127/SD/X0FXnH7QfY</Identifier>
+      <TotalNumberStations>98</TotalNumberStations>
+      <SelectedNumberStations>1</SelectedNumberStations>
+      <Station code="EVRN" startDate="2007-06-28T00:00:00Z" restrictedStatus="open">
+        <Latitude>37.6892</Latitude>
+        <Longitude>15.1356</Longitude>
+        <Elevation>421</Elevation>
+        <Site>
+          <Name>EVRN - Santa Venerina</Name>
+        </Site>
+        <CreationDate>2007-06-28T00:00:00Z</CreationDate>
+      </Station>
+    </Network>
+  </FDSNStationXML>
