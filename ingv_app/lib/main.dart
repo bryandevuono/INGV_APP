@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ingv_app/ui/map/widgets/map.dart';
 import 'data/repositories/event_repository.dart';
 import 'data/services/event_service_json.dart';
+import 'ui/navbar.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +22,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 58, 143, 183)),
         useMaterial3: true,
       ),
-      home: MapScreen(eventRepository: eventRepository),
+      home: TopNavigationBar(
+        mapScreen: MapScreen(eventRepository: eventRepository),
+      ),
     );
   }
 }
