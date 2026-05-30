@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
-
+import 'package:ingv_app/data/repositories/event_repository.dart';
+import 'package:ingv_app/ui/timeline/timeline.dart';
 
 class TopNavigationBar extends StatelessWidget {
   final Widget mapScreen;
-  const TopNavigationBar({super.key, required this.mapScreen});
+  final EventRepository eventRepository;
+
+  const TopNavigationBar({
+    super.key,
+    required this.mapScreen,
+    required this.eventRepository,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +38,8 @@ class TopNavigationBar extends StatelessWidget {
         body: TabBarView(
           children: [
             const Center(
-                child: Text('Car Screen', style: TextStyle(fontSize: 24))),
-            const Center(
-                child: Text('Transit Screen', style: TextStyle(fontSize: 24))),
+                child: Text('Home Screen', style: TextStyle(fontSize: 24))),
+            TimelineScreen(eventRepository: eventRepository),
             mapScreen,
           ],
         ),
@@ -41,3 +47,4 @@ class TopNavigationBar extends StatelessWidget {
     );
   }
 }
+
