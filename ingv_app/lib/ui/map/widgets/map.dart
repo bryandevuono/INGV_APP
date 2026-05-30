@@ -27,73 +27,71 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _loadEvents() async {
     await _viewModel.fetchEvents();
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      // Refresh map markers after view model updates.
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return FlutterMap(
-      options: MapOptions(
-        initialCenter: latlong2.LatLng(41.9028, 12.4963),
-        initialZoom: 6,
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.ingv_app',
-        ),
-        MarkerClusterLayerWidget(
-          options: MarkerClusterLayerOptions(
-            size: const Size(40, 40),
-            maxZoom: 15,
-            markers: [
-              for (var event in _viewModel.events)
-                MapMarker(
-                  point: latlong2.LatLng(event.lat, event.long),
-                  author: 'Author ${event.author}',
-                  category: event.category,
-                  title: event.title,
-                  tag: event.tag,
-                  progress: 0.5,
-                  onAction: () {
-                  }
-                ),
-            ],
-            builder: (context, combinedMarkers) {
-              return Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color.fromARGB(255, 58, 133, 183), 
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    combinedMarkers.length.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              );
-            },
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder: (context, _) {
+        return FlutterMap(
+          options: MapOptions(
+            initialCenter: latlong2.LatLng(41.9028, 12.4963),
+            initialZoom: 6,
           ),
-        ),
-      ],
+          children: [
+            TileLayer(
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.example.ingv_app',
+            ),
+            MarkerClusterLayerWidget(
+              options: MarkerClusterLayerOptions(
+                size: const Size(40, 40),
+                maxZoom: 15,
+                markers: [
+                  for (var event in _viewModel.events)
+                    MapMarker(
+                      point: latlong2.LatLng(event.lat, event.long),
+                      author: 'Author ${event.author}',
+                      category: event.category,
+                      title: event.title,
+                      tag: event.tag,
+                      progress: 0.5,
+                      onAction: () {
+                      }
+                    ),
+                ],
+                builder: (context, combinedMarkers) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color.fromARGB(255, 58, 133, 183), 
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        combinedMarkers.length.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

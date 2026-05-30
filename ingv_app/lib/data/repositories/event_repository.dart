@@ -1,15 +1,16 @@
 import '../models/event_model.dart';
-import '../services/database_service.dart';
-
+import '../services/storage_service.dart';
 
 class EventRepository {
-  final DatabaseService _databaseService;
+  final StorageService _storageService;
 
-  EventRepository(this._databaseService);
+  EventRepository(this._storageService);
 
   Future<List<EventModel>> getAllEvents() {
-    return _databaseService.getAllEvents();
+    return _storageService.getAllEvents();
   }
 
-  
+  Future<void> insertEvent(EventModel event) {
+    return _storageService.insertEvent(event);
+  }
 }
