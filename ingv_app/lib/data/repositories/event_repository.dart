@@ -1,8 +1,8 @@
 import '../models/event_model.dart';
-import '../services/storage_service.dart';
+import '../services/event_service_json.dart';
 
 class EventRepository {
-  final StorageService _storageService;
+  final EventServiceJSON _storageService;
 
   EventRepository(this._storageService);
 

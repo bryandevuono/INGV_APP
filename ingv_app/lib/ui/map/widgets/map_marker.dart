@@ -25,148 +25,159 @@ class MapMarker extends Marker {
            padding: EdgeInsets.zero,
            decoration: const BoxDecoration(color: Colors.transparent),
            richMessage: WidgetSpan(
-             child: Container(
-               width: 520,
-               padding: const EdgeInsets.all(28),
-               decoration: BoxDecoration(
-                 color: const Color(0xFFF5F5F5),
-                 border: Border.all(color: Colors.black54, width: 1),
-                 boxShadow: [
-                   BoxShadow(
-                     color: Colors.black.withValues(alpha: 0.15),
-                     blurRadius: 12,
-                     offset: const Offset(0, 4),
+             child: Column(
+               mainAxisSize: MainAxisSize.min,
+               children: [
+                 Container(
+                   width: 520,
+                   padding: const EdgeInsets.all(28),
+                   decoration: BoxDecoration(
+                     color: const Color(0xFFF5F5F5),
+                     border: Border.all(color: Colors.black54, width: 1),
+                     boxShadow: [
+                       BoxShadow(
+                         color: Colors.black.withValues(alpha: 0.15),
+                         blurRadius: 12,
+                         offset: const Offset(0, 4),
+                       ),
+                     ],
                    ),
-                 ],
-               ),
-               child: Column(
-                 mainAxisSize: MainAxisSize.min,
-                 children: [
-                   // top part
-                   Row(
-                     crossAxisAlignment: CrossAxisAlignment.start,
+                   child: Column(
+                     mainAxisSize: MainAxisSize.min,
                      children: [
-                       // left side of the details
-                       Expanded(
-                         child: Column(
-                           crossAxisAlignment: CrossAxisAlignment.start,
-                           children: [
-                             Text(
-                               title,
-                               style: const TextStyle(
-                                 fontSize: 38,
-                                 fontWeight: FontWeight.bold,
-                                 color: Color(0xFF444444),
-                               ),
-                             ),
-                             const SizedBox(height: 12),
-                             Row(
+                       // top part
+                       Row(
+                         crossAxisAlignment: CrossAxisAlignment.start,
+                         children: [
+                           // left side of the details
+                           Expanded(
+                             child: Column(
+                               crossAxisAlignment: CrossAxisAlignment.start,
                                children: [
-                                 const SizedBox(width: 8),
                                  Text(
-                                   "Author: $author",
+                                   title,
                                    style: const TextStyle(
-                                     fontSize: 16,
-                                     color: Colors.black54,
+                                     fontSize: 38,
+                                     fontWeight: FontWeight.bold,
+                                     color: Color(0xFF444444),
                                    ),
+                                 ),
+                                 const SizedBox(height: 12),
+                                 Row(
+                                   children: [
+                                     const SizedBox(width: 8),
+                                     Text(
+                                       "Author: $author",
+                                       style: const TextStyle(
+                                         fontSize: 16,
+                                         color: Colors.black54,
+                                       ),
+                                     ),
+                                   ],
                                  ),
                                ],
                              ),
-                           ],
-                         ),
-                       ),
-                       const SizedBox(width: 40),
-                       // right side of the details
-                       Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           Row(
-                             children: [
-                               const Text(
-                                 "Category:",
-                                 style: TextStyle(
-                                   fontSize: 16,
-                                   color: Colors.black54,
-                                 ),
-                               ),
-                               const SizedBox(width: 12),
-                               Container(
-                                 padding: const EdgeInsets.symmetric(
-                                   horizontal: 12,
-                                   vertical: 4,
-                                 ),
-                                 color: categoryColor,
-                                 child: Text(
-                                   category,
-                                   style: const TextStyle(
-                                     fontSize: 16,
-                                     color: Colors.black,
-                                   ),
-                                 ),
-                               ),
-                             ],
                            ),
-                           const SizedBox(height: 12),
-                           Row(
+                           const SizedBox(width: 40),
+                           // right side of the details
+                           Column(
+                             crossAxisAlignment: CrossAxisAlignment.start,
                              children: [
-                               const Text(
-                                 "Tag:",
-                                 style: TextStyle(
-                                   fontSize: 16,
-                                   color: Colors.black54,
-                                 ),
-                               ),
-                               const SizedBox(width: 46),
-                               Container(
-                                 padding: const EdgeInsets.symmetric(
-                                   horizontal: 18,
-                                   vertical: 6,
-                                 ),
-                                 decoration: BoxDecoration(
-                                   color: tagColor,
-                                   borderRadius: BorderRadius.circular(6),
-                                 ),
-                                 child: Text(
-                                   tag,
-                                   style: const TextStyle(
-                                     color: Colors.white,
-                                     fontWeight: FontWeight.w600,
+                               Row(
+                                 children: [
+                                   const Text(
+                                     "Category:",
+                                     style: TextStyle(
+                                       fontSize: 16,
+                                       color: Colors.black54,
+                                     ),
                                    ),
-                                 ),
+                                   const SizedBox(width: 12),
+                                   Container(
+                                     padding: const EdgeInsets.symmetric(
+                                       horizontal: 12,
+                                       vertical: 4,
+                                     ),
+                                     color: categoryColor,
+                                     child: Text(
+                                       category,
+                                       style: const TextStyle(
+                                         fontSize: 16,
+                                         color: Colors.black,
+                                       ),
+                                     ),
+                                   ),
+                                 ],
+                               ),
+                               const SizedBox(height: 12),
+                               Row(
+                                 children: [
+                                   const Text(
+                                     "Tag:",
+                                     style: TextStyle(
+                                       fontSize: 16,
+                                       color: Colors.black54,
+                                     ),
+                                   ),
+                                   const SizedBox(width: 46),
+                                   Container(
+                                     padding: const EdgeInsets.symmetric(
+                                       horizontal: 18,
+                                       vertical: 6,
+                                     ),
+                                     decoration: BoxDecoration(
+                                       color: tagColor,
+                                       borderRadius: BorderRadius.circular(6),
+                                     ),
+                                     child: Text(
+                                       tag,
+                                       style: const TextStyle(
+                                         color: Colors.white,
+                                         fontWeight: FontWeight.w600,
+                                       ),
+                                     ),
+                                   ),
+                                 ],
                                ),
                              ],
                            ),
                          ],
                        ),
-                     ],
-                   ),
-                   const SizedBox(height: 20),
-                   Align(
-                     alignment: Alignment.bottomRight,
-                     child: SizedBox(
-                       width: 150,
-                       height: 32,
-                       child: ElevatedButton(
-                         style: ElevatedButton.styleFrom(
-                           backgroundColor: const Color(0xFF76A7FF),
-                           shape: RoundedRectangleBorder(
-                             borderRadius: BorderRadius.circular(8),
-                           ),
-                         ),
-                         onPressed: onAction,
-                         child: const Text(
-                           "Submit a note",
-                           style: TextStyle(
-                             fontSize: 12,
-                             color: Colors.white,
-                             height: 1.5,
+                       const SizedBox(height: 20),
+                       Align(
+                         alignment: Alignment.bottomRight,
+                         child: SizedBox(
+                           width: 150,
+                           height: 32,
+                           child: ElevatedButton(
+                             style: ElevatedButton.styleFrom(
+                               backgroundColor: const Color(0xFF76A7FF),
+                               shape: RoundedRectangleBorder(
+                                 borderRadius: BorderRadius.circular(8),
+                               ),
+                             ),
+                             onPressed: onAction,
+                             child: const Text(
+                               "Submit a note",
+                               style: TextStyle(
+                                 fontSize: 12,
+                                 color: Colors.white,
+                                 height: 1.5,
+                               ),
+                             ),
                            ),
                          ),
                        ),
-                     ),
+                     ],
                    ),
-                 ],
-               ),
+                 ),
+                 // The connecting line
+                 Container(
+                   width: 2, // Thickness of the line
+                   height: 20, // This should match your verticalOffset
+                   color: Colors.black54,
+                 ),
+               ],
              ),
            ),
            // marker
