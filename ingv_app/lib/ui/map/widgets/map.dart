@@ -8,13 +8,24 @@ import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/ui/map/widgets/map_interface.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 
-class MapScreen extends IMap {
+class MapScreen extends StatefulWidget {
   final EventRepository eventRepository;
-
   const MapScreen({super.key, required this.eventRepository});
 
   @override
   State<MapScreen> createState() => _MapScreenState();
+
+}
+
+class _MapScreenState extends State<MapScreen> implements IMap {
+  late final MapScreenViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = MapScreenViewModel(widget.eventRepository);
+    _loadEvents();
+  }
 
   @override
   List<MapMarker> generateMarkers(List<EventModel> events) {
@@ -85,17 +96,6 @@ class MapScreen extends IMap {
       ],
     );
   }
-}
-
-class _MapScreenState extends State<MapScreen> {
-  late final MapScreenViewModel _viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewModel = MapScreenViewModel(widget.eventRepository);
-    _loadEvents();
-  }
 
   Future<void> _loadEvents() async {
     await _viewModel.fetchEvents();
@@ -106,7 +106,7 @@ class _MapScreenState extends State<MapScreen> {
     return ListenableBuilder(
       listenable: _viewModel,
       builder: (context, _) {
-        return widget.getMapWidget(_viewModel.events);
+        return getMapWidget(_viewModel.events);
       },
     );
   }

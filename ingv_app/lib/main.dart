@@ -24,6 +24,7 @@ class MyApp extends StatelessWidget {
       ),
       home: TopNavigationBar(
         mapScreen: MapScreen(eventRepository: eventRepository),
+        eventRepository: eventRepository,
       ),
     );
   }

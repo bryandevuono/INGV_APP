@@ -2,8 +2,8 @@
   {
     "event_id": 1,
     "category": "Earthquake",
-    "start_datetime": "2026-05-30T10:00:00Z",
-    "end_datetime": "2026-05-30T10:05:00Z",
+    "start_datetime": "2026-05-30T10:00",
+    "end_datetime": "2026-05-30T10:05",
     "author": "INGV",
     "lat": 41.9028,
     "lon": 12.4964,
@@ -14,8 +14,8 @@
   {
     "event_id": 2,
     "category": "Earthquake",
-    "start_datetime": "2026-05-29T22:30:00Z",
-    "end_datetime": "2026-05-29T22:35:00Z",
+    "start_datetime": "2026-05-29T22:30:00",
+    "end_datetime": "2026-05-29T22:35:00",
     "author": "INGV",
     "lat": 43.7167,
     "lon": 10.4000,
@@ -26,8 +26,8 @@
   {
     "event_id": 3,
     "category": "Volcanic",
-    "start_datetime": "2026-05-28T15:00:00Z",
-    "end_datetime": "2026-05-28T18:00:00Z",
+    "start_datetime": "2026-05-28T15:00:00",
+    "end_datetime": "2026-05-28T18:00:00",
     "author": "INGV",
     "lat": 37.7510,
     "lon": 14.9934,
