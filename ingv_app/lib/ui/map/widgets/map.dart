@@ -113,23 +113,6 @@ class _MapScreenState extends State<MapScreen> implements IMap {
                 spacing: 12.0,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  SizedBox(
-                    width: 200,
-                    child: TextField(
-                      onChanged: _viewModel.setSearchQuery,
-                      decoration: InputDecoration(
-                        hintText: 'Search (keywords, tags)...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 0,
-                        ),
-                      ),
-                    ),
-                  ),
                   if (_viewModel.categories.isNotEmpty)
                     DropdownButton<String>(
                       value: _viewModel.selectedCategory,
@@ -178,6 +161,23 @@ class _MapScreenState extends State<MapScreen> implements IMap {
                       onPressed: () =>
                           _viewModel.setDateRangeFilter(null, null),
                     ),
+                  SizedBox(
+                    width: 200,
+                    child: TextField(
+                      onChanged: _viewModel.setSearchQuery,
+                      decoration: InputDecoration(
+                        hintText: 'Search (keywords, tags)...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 0,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

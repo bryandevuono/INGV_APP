@@ -4,6 +4,7 @@ import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/ui/map/view_models/timeline_view_model.dart';
 import 'timeline_interface.dart';
 import 'package:ingv_app/data/models/event_model.dart';
+import 'add_event_dialog.dart';
 
 class TimelineScreen extends StatefulWidget {
   final EventRepository eventRepository;
@@ -169,23 +170,6 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                       spacing: 12.0,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        SizedBox(
-                          width: 200,
-                          child: TextField(
-                            onChanged: _viewModel.setSearchQuery,
-                            decoration: InputDecoration(
-                              hintText: 'Search (keywords, tags)...',
-                              prefixIcon: const Icon(Icons.search),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 0,
-                              ),
-                            ),
-                          ),
-                        ),
                         if (_viewModel.categories.isNotEmpty)
                           DropdownButton<String>(
                             value: _viewModel.selectedCategory,
@@ -241,6 +225,23 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                             onPressed: () =>
                                 _viewModel.setDateRangeFilter(null, null),
                           ),
+                        SizedBox(
+                          width: 200,
+                          child: TextField(
+                            onChanged: _viewModel.setSearchQuery,
+                            decoration: InputDecoration(
+                              hintText: 'Search (keywords, tags)...',
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 0,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -249,7 +250,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                     color: Colors.blue,
                     icon: const Icon(Icons.add),
                     onPressed: () {
-                      _showAddEventDialog();
+                      showAddEventDialog(context, _viewModel);
                     },
                   ),
                 ],
@@ -263,206 +264,6 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                   : buildTimeline(_viewModel.events),
             ),
           ],
-        );
-      },
-    );
-  }
-
-  void _showAddEventDialog() {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final latController = TextEditingController(text: '0.0');
-    final longController = TextEditingController(text: '0.0');
-    DateTime? startDate;
-    TimeOfDay? startTime;
-    DateTime? endDate;
-    TimeOfDay? endTime;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Add New Event'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      decoration: const InputDecoration(labelText: 'Title'),
-                    ),
-                    TextField(
-                      controller: descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                      ),
-                    ),
-                    TextField(
-                      controller: latController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(labelText: 'Latitude'),
-                    ),
-                    TextField(
-                      controller: longController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(labelText: 'Longitude'),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            startDate == null
-                                ? 'No start date'
-                                : 'Start: ${startDate!.toString().split(' ')[0]} ${startTime?.format(context) ?? ''}',
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate: startDate ?? DateTime.now(),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                            );
-                            if (date != null) {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: startTime ?? TimeOfDay.now(),
-                              );
-                              if (time != null) {
-                                setState(() {
-                                  startDate = date;
-                                  startTime = time;
-                                });
-                              }
-                            }
-                          },
-                          child: const Text('Pick Start Date'),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            endDate == null
-                                ? 'No end date'
-                                : 'End: ${endDate!.toString().split(' ')[0]} ${endTime?.format(context) ?? ''}',
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate:
-                                  endDate ?? startDate ?? DateTime.now(),
-                              firstDate: startDate ?? DateTime(2000),
-                              lastDate: DateTime(2100),
-                            );
-                            if (date != null) {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: endTime ?? TimeOfDay.now(),
-                              );
-                              if (time != null) {
-                                setState(() {
-                                  endDate = date;
-                                  endTime = time;
-                                });
-                              }
-                            }
-                          },
-                          child: const Text('Pick End Date'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      startDate = DateTime.now();
-                      startTime = TimeOfDay.fromDateTime(startDate!);
-                    });
-                  },
-                  child: const Text('Now'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (titleController.text.isNotEmpty &&
-                        startDate != null &&
-                        startTime != null) {
-                      DateTime finalStartDate = DateTime(
-                        startDate!.year,
-                        startDate!.month,
-                        startDate!.day,
-                        startTime!.hour,
-                        startTime!.minute,
-                      );
-                      DateTime? finalEndDate;
-
-                      if (endDate != null && endTime != null) {
-                        finalEndDate = DateTime(
-                          endDate!.year,
-                          endDate!.month,
-                          endDate!.day,
-                          endTime!.hour,
-                          endTime!.minute,
-                        );
-                        if (finalEndDate.isBefore(finalStartDate)) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'End date must be after Start date',
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-                      }
-
-                      final newEvent = EventModel(
-                        eventId: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                        category: _viewModel.categories.isNotEmpty
-                            ? _viewModel.categories.first
-                            : 'Volcanic',
-                        startDt: finalStartDate,
-                        endDt: finalEndDate,
-                        author: 'User',
-                        lat: double.tryParse(latController.text) ?? 0.0,
-                        long: double.tryParse(longController.text) ?? 0.0,
-                        title: titleController.text,
-                        tag: '',
-                        description: descriptionController.text,
-                      );
-                      _viewModel.addEvent(newEvent);
-                      Navigator.of(context).pop();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please fill all required fields'),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Add'),
-                ),
-              ],
-            );
-          },
         );
       },
     );
