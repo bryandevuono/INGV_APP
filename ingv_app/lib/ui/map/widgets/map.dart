@@ -14,6 +14,7 @@ class MapScreen extends StatefulWidget {
 
   @override
   State<MapScreen> createState() => _MapScreenState();
+
 }
 
 class _MapScreenState extends State<MapScreen> implements IMap {
@@ -105,86 +106,9 @@ class _MapScreenState extends State<MapScreen> implements IMap {
     return ListenableBuilder(
       listenable: _viewModel,
       builder: (context, _) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Wrap(
-                spacing: 12.0,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 200,
-                    child: TextField(
-                      onChanged: _viewModel.setSearchQuery,
-                      decoration: InputDecoration(
-                        hintText: 'Search (keywords, tags)...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 0,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_viewModel.categories.isNotEmpty)
-                    DropdownButton<String>(
-                      value: _viewModel.selectedCategory,
-                      items: _viewModel.categories.map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (newValue) {
-                        if (newValue != null) {
-                          _viewModel.setCategoryFilter(newValue);
-                        }
-                      },
-                    ),
-                  TextButton.icon(
-                    icon: const Icon(Icons.date_range),
-                    label: Text(
-                      _viewModel.filterStartDate == null
-                          ? 'Filter by Date'
-                          : '${_viewModel.filterStartDate!.toLocal().toString().split(' ')[0]} - ${_viewModel.filterEndDate?.toLocal().toString().split(' ')[0] ?? 'Any'}',
-                    ),
-                    onPressed: () async {
-                      final DateTimeRange? picked = await showDateRangePicker(
-                        context: context,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2101),
-                        initialDateRange:
-                            _viewModel.filterStartDate != null &&
-                                _viewModel.filterEndDate != null
-                            ? DateTimeRange(
-                                start: _viewModel.filterStartDate!,
-                                end: _viewModel.filterEndDate!,
-                              )
-                            : null,
-                      );
-                      if (picked != null) {
-                        _viewModel.setDateRangeFilter(picked.start, picked.end);
-                      }
-                    },
-                  ),
-                  if (_viewModel.filterStartDate != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      tooltip: 'Clear Date Filter',
-                      onPressed: () =>
-                          _viewModel.setDateRangeFilter(null, null),
-                    ),
-                ],
-              ),
-            ),
-            Expanded(child: getMapWidget(_viewModel.events)),
-          ],
-        );
+        return getMapWidget(_viewModel.events);
       },
     );
   }
 }
+

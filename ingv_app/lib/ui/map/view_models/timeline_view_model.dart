@@ -1,62 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
-import 'package:ingv_app/data/repositories/event_search_repository.dart';
-import 'package:ingv_app/data/services/event_search_service.dart';
-import 'package:ingv_app/data/services/event_service_json.dart';
 
 class TimelineViewModel extends ChangeNotifier {
   final EventRepository _eventRepository;
-  late final EventSearchRepository _searchRepository;
-
   List<EventModel> events = [];
   List<String> categories = [];
-
-  // Filter states
-  String searchQuery = '';
-  String selectedCategory = 'All';
-  DateTime? filterStartDate;
-  DateTime? filterEndDate;
-
   DateTime minStart = DateTime.now();
   DateTime maxEnd = DateTime.now();
 
-  TimelineViewModel(this._eventRepository) {
-    _searchRepository = EventSearchRepository(
-      EventSearchService(_eventRepository.service),
-    );
-  }
+  TimelineViewModel(this._eventRepository);
 
   Future<void> fetchEvents() async {
-    final fetchedCategories = await _eventRepository.getEventCategories();
-    categories = ['All', ...fetchedCategories];
-    await applyFilters();
-  }
-
-  Future<void> applyFilters() async {
-    events = await _searchRepository.searchAndFilterEvents(
-      keyword: searchQuery,
-      category: selectedCategory,
-      startDate: filterStartDate,
-      endDate: filterEndDate,
-    );
+    events = await _eventRepository.getAllEvents();
+    categories = await _eventRepository.getEventCategories();
     notifyListeners();
-  }
-
-  void setSearchQuery(String query) {
-    searchQuery = query;
-    applyFilters();
-  }
-
-  void setCategoryFilter(String category) {
-    selectedCategory = category;
-    applyFilters();
-  }
-
-  void setDateRangeFilter(DateTime? start, DateTime? end) {
-    filterStartDate = start;
-    filterEndDate = end;
-    applyFilters();
   }
 
   Future<Map<String, DateTime>> getEventDateRange() async {
