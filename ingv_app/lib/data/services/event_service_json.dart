@@ -80,8 +80,9 @@ class EventServiceJSON implements IEventService {
 
   Future<void> _writeEventsToJson() async {
     final file = await _localFile;
-    final List<Map<String, dynamic>> jsonList =
-        events.map((e) => e.toJson()).toList();
+    final List<Map<String, dynamic>> jsonList = events
+        .map((e) => e.toJson())
+        .toList();
     final String jsonString = json.encode(jsonList);
     await file.writeAsString(jsonString);
   }
@@ -110,8 +111,8 @@ class EventServiceJSON implements IEventService {
 
   @override
   Future<List<String>> getEventCategories() async {
-    if (events.isEmpty) {
-      return [];
+    if (!_initialized) {
+      await _initialize();
     }
 
     final categories = events.map((e) => e.category).toSet().toList();
