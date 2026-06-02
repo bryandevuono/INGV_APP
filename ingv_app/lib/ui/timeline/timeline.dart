@@ -37,8 +37,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
     await _viewModel.fetchEvents();
   }
 
-  // TODO: Calculate start date based on earliest event
-  final startDate = DateTime(2026, 5, 31);
+  final startDate = DateTime.now().subtract(const Duration(days: 1));
 
   @override
   StatefulWidget buildEventContainer(String eventId) {
