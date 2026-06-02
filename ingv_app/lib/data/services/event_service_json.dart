@@ -84,7 +84,6 @@ class EventServiceJSON implements IEventService {
         .map((e) => e.toJson())
         .toList();
     final String jsonString = json.encode(jsonList);
-    print('DATABASE UPDATED: Writing events to ${file.path}');
     await file.writeAsString(jsonString);
   }
 
