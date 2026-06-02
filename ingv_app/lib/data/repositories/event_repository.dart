@@ -13,4 +13,12 @@ class EventRepository {
   Future<void> insertEvent(EventModel event) {
     return _storageService.insertEvent(event);
   }
+
+  Future<Map<String, DateTime>> getEventDateRange() {
+    return _storageService.getEventDateRange();
+  }
+
+  Future<List<String>> getEventCategories() {
+    return _storageService.getEventCategories();
+  }
 }

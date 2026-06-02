@@ -41,4 +41,40 @@ class EventServiceJSON implements IEventService {
     if (!_initialized) await _initialize();
     events.add(event);
   }
+
+  @override
+  Future<Map<String, DateTime>> getEventDateRange() async {
+    if (events.isEmpty) {
+      return {
+        "minStart": DateTime.now(),
+        "maxEnd": DateTime.now(),
+      };
+    }
+
+    DateTime minStart = events.first.startDt;
+    DateTime maxEnd = events.first.endDt;
+
+    for (var event in events) {
+      if (event.startDt.isBefore(minStart)) {
+        minStart = event.startDt;
+      }
+      if (event.endDt.isAfter(maxEnd)) {
+        maxEnd = event.endDt;
+      }
+    }
+
+    return {
+      "minStart": minStart,
+      "maxEnd": maxEnd,
+    };
+  }
+
+  Future<List<String>> getEventCategories() async {
+    if (events.isEmpty) {
+      return [];
+    }
+
+    final categories = events.map((e) => e.category).toSet().toList();
+    return categories;
+  }
 }

@@ -1,8 +1,9 @@
-import 'package:flutter_gantt/flutter_gantt.dart';
+import 'package:legacy_gantt_chart/legacy_gantt_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/ui/map/view_models/timeline_view_model.dart';
 import 'timeline_interface.dart';
+import 'package:ingv_app/data/models/event_model.dart';
 
 class TimelineScreen extends StatefulWidget {
   final EventRepository eventRepository;
@@ -15,6 +16,7 @@ class TimelineScreen extends StatefulWidget {
 class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   late final TimelineViewModel _viewModel;
 
+  // TODO: Place somewhere else non hard coded
   final Map<String, Color> cellColors = {
     "Volcanic": Colors.red,
     "Earthquake": Colors.green,
@@ -37,55 +39,99 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
 
   // TODO: Calculate start date based on earliest event
   final startDate = DateTime(2026, 5, 31);
-  
+
+  @override
+  StatefulWidget buildEventContainer(String eventId) {
+    EventModel event = _viewModel.events.firstWhere(
+      (e) => e.eventId.toString() == eventId,
+    );
+
+    return Tooltip(
+      message:
+          "${event.title}\n${event.startDt} - ${event.endDt}\nDuration: ${event.endDt.difference(event.startDt).inHours} hrs",
+      child: Container(
+        alignment: Alignment.topLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+        color: cellColors[event.category] ?? Colors.grey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              event.title,
+              textAlign: TextAlign.left,
+              style: const TextStyle(color: Colors.white),
+            ),
+            Wrap(
+              spacing: 6,
+              children: [
+                Text(
+                  "${event.startDt} - ${event.endDt}",
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  "${event.endDt.difference(event.startDt).inHours} hrs",
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   StatefulWidget buildTimeline(events) {
-   return Gantt(
-      startDate: startDate,
-      activities: [
-        for (var event in events)
-          GanttActivity(
-            key: event.eventId.toString(),
-            title: event.title,
-            start: event.startDt,
-            end: event.endDt,
-            color: cellColors[event.category] ?? Colors.grey,
-            builder: (activity) {
-              return Container(
-                alignment: Alignment.topLeft,
-                color: activity.color,
-                child: Column(
-                  children: [
-                    Text(
-                      event.title,
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          "${event.startDt.toString().split(' ')[1]} - ${event.endDt.toString().split(' ')[1]}",
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12),
-                        ),
-                        Text(
-                          "${event.endDt.difference(event.startDt).inHours} hrs",
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12),
-                        )
-                      ],
-                    )
-                  ],
-                ),
-              );
-            },
-          ),
-      ],
-      theme: const GanttTheme(
-        dayMinWidth: 200.0,
-        cellHeight: 60.0,
-      ),
-      onActivityChanged: (activity, start, end) {},
+    final tasks = [
+      for (final event in events)
+        LegacyGanttTask(
+          id: event.eventId.toString(),
+          rowId: event.category,
+          name: event.title,
+          start: event.startDt,
+          end: event.endDt,
+          color: cellColors[event.category] ?? Colors.grey,
+        ),
+    ];
+
+    final rows = [
+      for (final category in _viewModel.categories)
+        LegacyGanttRow(id: category, label: category),
+    ];
+
+    final rowMaxStackDepth = <String, int>{
+      for (final category in _viewModel.categories) category: 1,
+    };
+
+    _viewModel.getEventDateRange();
+    DateTime minStart = _viewModel.minStart;
+
+    final rangeStart = startDate.isBefore(minStart) ? startDate : minStart;
+    final rangeEnd = rangeStart.add(const Duration(days: 2));
+    final totalStart = rangeStart.subtract(const Duration(days: 1));
+    final totalEnd = rangeEnd.add(const Duration(days: 1));
+
+    return LegacyGanttChartWidget(
+      data: tasks,
+      visibleRows: rows,
+      rowMaxStackDepth: rowMaxStackDepth,
+      rowHeight: 70.0,
+      axisHeight: 27.0,
+      gridMin: rangeStart.millisecondsSinceEpoch.toDouble(),
+      gridMax: rangeEnd.millisecondsSinceEpoch.toDouble(),
+      totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
+      totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
+      taskBarBuilder: (task) {
+        return buildEventContainer(task.id);
+      },
     );
   }
 
@@ -127,9 +173,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                 ],
               ),
             ),
-            Expanded(
-              child: buildTimeline(_viewModel.events),
-            ),
+            Expanded(child: buildTimeline(_viewModel.events)),
           ],
         );
       },
