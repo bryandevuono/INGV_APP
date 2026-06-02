@@ -4,6 +4,7 @@ import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/ui/map/view_models/timeline_view_model.dart';
 import 'timeline_interface.dart';
 import 'package:ingv_app/data/models/event_model.dart';
+import 'event_dialog.dart';
 
 class TimelineScreen extends StatefulWidget {
   final EventRepository eventRepository;
@@ -46,9 +47,14 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
       (e) => e.eventId.toString() == eventId,
     );
 
+    final duration = event.endDt != null
+        ? "${event.endDt!.difference(event.startDt).inHours} hrs"
+        : "Ongoing";
+    final endString = event.endDt != null ? event.endDt.toString() : '...';
+
     return Tooltip(
       message:
-          "${event.title}\n${event.startDt} - ${event.endDt}\nDuration: ${event.endDt.difference(event.startDt).inHours} hrs",
+          "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
       child: Container(
         alignment: Alignment.topLeft,
         padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
@@ -65,7 +71,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
               spacing: 6,
               children: [
                 Text(
-                  "${event.startDt} - ${event.endDt}",
+                  "${event.startDt} - $endString",
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
@@ -73,7 +79,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                   ),
                 ),
                 Text(
-                  "${event.endDt.difference(event.startDt).inHours} hrs",
+                  duration,
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
@@ -97,7 +103,11 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
           rowId: event.category,
           name: event.title,
           start: event.startDt,
-          end: event.endDt,
+          end:
+              event.endDt ??
+              event.startDt.add(
+                const Duration(hours: 1),
+              ), // Provide a default end
           color: cellColors[event.category] ?? Colors.grey,
         ),
     ];
@@ -141,7 +151,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
       listenable: _viewModel,
       builder: (context, _) {
         if (_viewModel.events.isEmpty) {
-          return const Center();
+          return const Center(child: CircularProgressIndicator());
         }
 
         return Column(
@@ -167,7 +177,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                     color: Colors.blue,
                     icon: const Icon(Icons.add),
                     onPressed: () {
-                      // Handle plus button press
+                      showAddEventDialog(context, _viewModel);
                     },
                   ),
                 ],
@@ -179,4 +189,5 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
       },
     );
   }
-}
+
+  }

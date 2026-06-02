@@ -22,9 +22,12 @@ class TimelineViewModel extends ChangeNotifier {
     minStart = range["minStart"] ?? DateTime.now();
     maxEnd = range["maxEnd"] ?? DateTime.now();
     notifyListeners();
-    return {
-      "minStart": minStart,
-      "maxEnd": maxEnd,
-    };
+    return {"minStart": minStart, "maxEnd": maxEnd};
+  }
+
+  Future<void> addEvent(EventModel event) async {
+    await _eventRepository.insertEvent(event);
+    await getEventDateRange();
+    await fetchEvents();
   }
 }

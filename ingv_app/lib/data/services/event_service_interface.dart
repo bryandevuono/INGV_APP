@@ -5,4 +5,5 @@ abstract interface class IEventService {
   Future<void> saveEvents(List<EventModel> events);
   Future<void> insertEvent(EventModel event);
   Future<Map<String, DateTime>> getEventDateRange();
+  Future<List<String>> getEventCategories();
 }
