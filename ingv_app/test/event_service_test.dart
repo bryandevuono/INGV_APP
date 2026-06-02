@@ -6,13 +6,17 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/services/event_service_json.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 // Mock PathProviderPlatform to control where files are written in tests
-class FakePathProviderPlatform extends Fake implements PathProviderPlatform {
+class FakePathProviderPlatform extends PathProviderPlatform
+    with MockPlatformInterfaceMixin {
+  final String _tempPath = Directory.systemTemp.createTempSync().path;
+
   @override
   Future<String?> getApplicationDocumentsPath() async {
     // Use a temporary directory for tests
-    return Directory.systemTemp.createTempSync().path;
+    return _tempPath;
   }
 }
 
@@ -89,11 +93,12 @@ void main() {
 
       expect(
         jsonList.length,
-        1,
-        reason: 'The JSON file should contain one event.',
+        greaterThanOrEqualTo(1),
+        reason: 'The JSON file should contain the new event.',
       );
-      expect(jsonList[0]['event_id'], 999);
-      expect(jsonList[0]['title'], 'Test Event Title');
+      final lastEvent = jsonList.last;
+      expect(lastEvent['event_id'], 999);
+      expect(lastEvent['title'], 'Test Event Title');
     });
   });
 }

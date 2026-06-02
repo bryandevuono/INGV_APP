@@ -111,13 +111,17 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
         ),
     ];
 
+    final displayCategories = _viewModel.categories
+        .where((c) => c != 'All')
+        .toList();
+
     final rows = [
-      for (final category in _viewModel.categories)
+      for (final category in displayCategories)
         LegacyGanttRow(id: category, label: category),
     ];
 
     final rowMaxStackDepth = <String, int>{
-      for (final category in _viewModel.categories) category: 1,
+      for (final category in displayCategories) category: 1,
     };
 
     _viewModel.getEventDateRange();
@@ -158,20 +162,90 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SizedBox(
-                    width: 200,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+                  // Filter Section
+                  Expanded(
+                    child: Wrap(
+                      spacing: 12.0,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 200,
+                          child: TextField(
+                            onChanged: _viewModel.setSearchQuery,
+                            decoration: InputDecoration(
+                              hintText: 'Search (keywords, tags)...',
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 0,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                        if (_viewModel.categories.isNotEmpty)
+                          DropdownButton<String>(
+                            value: _viewModel.selectedCategory,
+                            items: _viewModel.categories.map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            onChanged: (newValue) {
+                              if (newValue != null) {
+                                _viewModel.setCategoryFilter(newValue);
+                              }
+                            },
+                          ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.date_range),
+                          label: Text(
+                            _viewModel.filterStartDate == null
+                                ? 'Filter by Date'
+                                : '${_viewModel.filterStartDate!.toLocal().toString().split(' ')[0]} - ${_viewModel.filterEndDate?.toLocal().toString().split(' ')[0] ?? 'Any'}',
+                          ),
+                          onPressed: () async {
+                            final DateTimeRange? picked =
+                                await showDateRangePicker(
+                                  context: context,
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2101),
+                                  initialDateRange:
+                                      _viewModel.filterStartDate != null &&
+                                          _viewModel.filterEndDate != null
+                                      ? DateTimeRange(
+                                          start: _viewModel.filterStartDate!,
+                                          end: _viewModel.filterEndDate!,
+                                        )
+                                      : null,
+                                );
+                            if (picked != null) {
+                              _viewModel.setDateRangeFilter(
+                                picked.start,
+                                picked.end,
+                              );
+                            } else {
+                              // If user cancels, maybe clear filter? Uncomment to clear on cancel
+                              // _viewModel.setDateRangeFilter(null, null);
+                            }
+                          },
+                        ),
+                        if (_viewModel.filterStartDate != null)
+                          IconButton(
+                            icon: const Icon(Icons.clear),
+                            tooltip: 'Clear Date Filter',
+                            onPressed: () =>
+                                _viewModel.setDateRangeFilter(null, null),
+                          ),
+                      ],
                     ),
                   ),
+                  // Add Event Button
                   IconButton(
                     color: Colors.blue,
                     icon: const Icon(Icons.add),
@@ -182,7 +256,13 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                 ],
               ),
             ),
-            Expanded(child: buildTimeline(_viewModel.events)),
+            Expanded(
+              child: _viewModel.events.isEmpty
+                  ? const Center(
+                      child: Text('No events match the current filters'),
+                    )
+                  : buildTimeline(_viewModel.events),
+            ),
           ],
         );
       },

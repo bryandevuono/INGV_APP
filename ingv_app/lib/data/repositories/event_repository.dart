@@ -6,6 +6,8 @@ class EventRepository {
 
   EventRepository(this._storageService);
 
+  IEventService get service => _storageService;
+
   Future<List<EventModel>> getAllEvents() {
     return _storageService.getAllEvents();
   }

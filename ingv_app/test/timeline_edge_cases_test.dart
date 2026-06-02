@@ -30,14 +30,15 @@ class MockEventService implements IEventService {
     }
 
     DateTime minStart = events.first.startDt;
-    DateTime maxEnd = events.first.endDt;
+    DateTime maxEnd = events.first.endDt ?? events.first.startDt;
 
     for (var event in events) {
       if (event.startDt.isBefore(minStart)) {
         minStart = event.startDt;
       }
-      if (event.endDt.isAfter(maxEnd)) {
-        maxEnd = event.endDt;
+      final eventEnd = event.endDt ?? event.startDt;
+      if (eventEnd.isAfter(maxEnd)) {
+        maxEnd = eventEnd;
       }
     }
 
