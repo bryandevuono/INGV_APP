@@ -1,7 +1,11 @@
 import 'package:legacy_gantt_chart/legacy_gantt_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
+import 'package:ingv_app/data/repositories/event_detail_repository.dart';
+import 'package:ingv_app/data/services/event_detail_service.dart';
 import 'package:ingv_app/ui/map/view_models/timeline_view_model.dart';
+import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
+import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 import 'timeline_interface.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'add_event_dialog.dart';
@@ -16,6 +20,8 @@ class TimelineScreen extends StatefulWidget {
 
 class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   late final TimelineViewModel _viewModel;
+  late final EventDetailViewModel _detailViewModel;
+  EventModel? _selectedEvent;
 
   // TODO: Place somewhere else non hard coded
   final Map<String, Color> cellColors = {
@@ -31,6 +37,9 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   void initState() {
     super.initState();
     _viewModel = TimelineViewModel(widget.eventRepository);
+    _detailViewModel = EventDetailViewModel(
+      EventDetailRepository(EventDetailService()),
+    );
     _loadEvents();
   }
 
@@ -54,40 +63,53 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
     return Tooltip(
       message:
           "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
-      child: Container(
-        alignment: Alignment.topLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
-        color: cellColors[event.category] ?? Colors.grey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              event.title,
-              textAlign: TextAlign.left,
-              style: const TextStyle(color: Colors.white),
-            ),
-            Wrap(
-              spacing: 6,
-              children: [
-                Text(
-                  "${event.startDt} - $endString",
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
+      child: GestureDetector(
+        onTap: () async {
+          // Toggle behavior: if panel is already open, close it; otherwise open for this event
+          if (_selectedEvent != null &&
+              _selectedEvent!.eventId == event.eventId) {
+            setState(() {
+              _selectedEvent = null;
+            });
+            _detailViewModel.clearEventDetails();
+          } else {
+            setState(() {
+              _selectedEvent = event;
+            });
+            await _detailViewModel.loadEventDetails(event);
+          }
+        },
+        child: Container(
+          alignment: Alignment.topLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+          color: cellColors[event.category] ?? Colors.grey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                event.title,
+                textAlign: TextAlign.left,
+                style: const TextStyle(color: Colors.white),
+              ),
+              Wrap(
+                spacing: 6,
+                children: [
+                  Text(
+                    "${event.startDt} - $endString",
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  duration,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
+                  Text(
+                    duration,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -157,112 +179,128 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
           return const Center(child: CircularProgressIndicator());
         }
 
-        return Column(
+        return Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Filter Section
-                  Expanded(
-                    child: Wrap(
-                      spacing: 12.0,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (_viewModel.categories.isNotEmpty)
-                          DropdownButton<String>(
-                            value: _viewModel.selectedCategory,
-                            items: _viewModel.categories.map((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) {
-                              if (newValue != null) {
-                                _viewModel.setCategoryFilter(newValue);
-                              }
-                            },
-                          ),
-                        TextButton.icon(
-                          icon: const Icon(Icons.date_range),
-                          label: Text(
-                            _viewModel.filterStartDate == null
-                                ? 'Filter by Date'
-                                : '${_viewModel.filterStartDate!.toLocal().toString().split(' ')[0]} - ${_viewModel.filterEndDate?.toLocal().toString().split(' ')[0] ?? 'Any'}',
-                          ),
-                          onPressed: () async {
-                            final DateTimeRange? picked =
-                                await showDateRangePicker(
-                                  context: context,
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime(2101),
-                                  initialDateRange:
-                                      _viewModel.filterStartDate != null &&
-                                          _viewModel.filterEndDate != null
-                                      ? DateTimeRange(
-                                          start: _viewModel.filterStartDate!,
-                                          end: _viewModel.filterEndDate!,
-                                        )
-                                      : null,
-                                );
-                            if (picked != null) {
-                              _viewModel.setDateRangeFilter(
-                                picked.start,
-                                picked.end,
-                              );
-                            } else {
-                              // If user cancels, maybe clear filter? Uncomment to clear on cancel
-                              // _viewModel.setDateRangeFilter(null, null);
-                            }
-                          },
-                        ),
-                        if (_viewModel.filterStartDate != null)
-                          IconButton(
-                            icon: const Icon(Icons.clear),
-                            tooltip: 'Clear Date Filter',
-                            onPressed: () =>
-                                _viewModel.setDateRangeFilter(null, null),
-                          ),
-                        SizedBox(
-                          width: 200,
-                          child: TextField(
-                            onChanged: _viewModel.setSearchQuery,
-                            decoration: InputDecoration(
-                              hintText: 'Search (keywords, tags)...',
-                              prefixIcon: const Icon(Icons.search),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8.0),
+            // Timeline content
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Filter Section
+                      Expanded(
+                        child: Wrap(
+                          spacing: 12.0,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (_viewModel.categories.isNotEmpty)
+                              DropdownButton<String>(
+                                value: _viewModel.selectedCategory,
+                                items: _viewModel.categories.map((
+                                  String value,
+                                ) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(value),
+                                  );
+                                }).toList(),
+                                onChanged: (newValue) {
+                                  if (newValue != null) {
+                                    _viewModel.setCategoryFilter(newValue);
+                                  }
+                                },
                               ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 0,
+                            TextButton.icon(
+                              icon: const Icon(Icons.date_range),
+                              label: Text(
+                                _viewModel.filterStartDate == null
+                                    ? 'Filter by Date'
+                                    : '${_viewModel.filterStartDate!.toLocal().toString().split(' ')[0]} - ${_viewModel.filterEndDate?.toLocal().toString().split(' ')[0] ?? 'Any'}',
+                              ),
+                              onPressed: () async {
+                                final DateTimeRange? picked =
+                                    await showDateRangePicker(
+                                      context: context,
+                                      firstDate: DateTime(2000),
+                                      lastDate: DateTime(2101),
+                                      initialDateRange:
+                                          _viewModel.filterStartDate != null &&
+                                              _viewModel.filterEndDate != null
+                                          ? DateTimeRange(
+                                              start:
+                                                  _viewModel.filterStartDate!,
+                                              end: _viewModel.filterEndDate!,
+                                            )
+                                          : null,
+                                    );
+                                if (picked != null) {
+                                  _viewModel.setDateRangeFilter(
+                                    picked.start,
+                                    picked.end,
+                                  );
+                                }
+                              },
+                            ),
+                            if (_viewModel.filterStartDate != null)
+                              IconButton(
+                                icon: const Icon(Icons.clear),
+                                tooltip: 'Clear Date Filter',
+                                onPressed: () =>
+                                    _viewModel.setDateRangeFilter(null, null),
+                              ),
+                            SizedBox(
+                              width: 200,
+                              child: TextField(
+                                onChanged: _viewModel.setSearchQuery,
+                                decoration: InputDecoration(
+                                  hintText: 'Search (keywords, tags)...',
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 0,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      // Add Event Button
+                      IconButton(
+                        color: Colors.blue,
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          showAddEventDialog(context, _viewModel);
+                        },
+                      ),
+                    ],
                   ),
-                  // Add Event Button
-                  IconButton(
-                    color: Colors.blue,
-                    icon: const Icon(Icons.add),
-                    onPressed: () {
-                      showAddEventDialog(context, _viewModel);
-                    },
-                  ),
-                ],
+                ),
+                Expanded(
+                  child: _viewModel.events.isEmpty
+                      ? const Center(
+                          child: Text('No events match the current filters'),
+                        )
+                      : buildTimeline(_viewModel.events),
+                ),
+              ],
+            ),
+            // Event detail panel overlay
+            if (_selectedEvent != null)
+              EventDetailPanel(
+                viewModel: _detailViewModel,
+                onDismiss: () {
+                  setState(() {
+                    _selectedEvent = null;
+                  });
+                  _detailViewModel.clearEventDetails();
+                },
               ),
-            ),
-            Expanded(
-              child: _viewModel.events.isEmpty
-                  ? const Center(
-                      child: Text('No events match the current filters'),
-                    )
-                  : buildTimeline(_viewModel.events),
-            ),
           ],
         );
       },
