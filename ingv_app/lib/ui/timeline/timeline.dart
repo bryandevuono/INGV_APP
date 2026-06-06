@@ -55,11 +55,22 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
       (e) => e.eventId.toString() == eventId,
     );
 
-    final duration = event.endDt != null
-        ? "${event.endDt!.difference(event.startDt).inHours} hrs"
-        : "Ongoing";
-    final endString = event.endDt != null ? event.endDt.toString() : '...';
+    final String duration;
+      
+    if (event.endDt != null) {
+      duration = "${event.endDt!.difference(event.startDt).inHours} hrs";
+    } else {
+      duration = "Ongoing";
+    }
 
+    final String endString;
+    if (event.endDt != null) {
+      endString = event.endDt.toString();
+    } else {
+      endString = '...';
+    }
+
+    // colored boxes
     return Align(
       alignment: Alignment.centerLeft,
       child: Tooltip(
@@ -114,6 +125,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
     final totalEnd = rangeEnd.add(const Duration(days: 1));
 
     return ReorderableListView.builder(
+      // multiple chart rows
       buildDefaultDragHandles: false,
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       itemCount: _viewModel.orderedCategories.length,
@@ -123,9 +135,13 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
         final isFirstRow = index == 0;
         final isMinimized = _viewModel.isCategoryMinimized(category);
 
-        final double definedRowHeight = isMinimized
-            ? minimizedRowHeight
-            : expandedRowHeight;
+        final double definedRowHeight;
+        
+        if (isMinimized) {
+          definedRowHeight = minimizedRowHeight;
+        } else {
+          definedRowHeight = expandedRowHeight;
+        }
 
         final laneEvents = eventList
             .where((e) => (e.category?.toString().trim() ?? '') == category)
@@ -146,9 +162,14 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
 
         final rowMaxStackDepth = <String, int>{category: 2};
         final double fullWidgetHeight = definedRowHeight + baseAxisHeight;
-        final double visibleViewportHeight = isFirstRow
-            ? fullWidgetHeight
-            : definedRowHeight;
+        final double visibleViewportHeight;
+        
+        // different height for first row to show axis labels
+        if (isFirstRow) {
+          visibleViewportHeight = fullWidgetHeight;
+        } else {
+          visibleViewportHeight = definedRowHeight;
+        }
 
         Widget chartSection = SizedBox(
           width: totalCanvasWidth,
@@ -185,6 +206,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
           );
         }
 
+        //draggable headers
         Widget leftHeader = Container(
           width: leftHeaderWidth,
           height: visibleViewportHeight,
