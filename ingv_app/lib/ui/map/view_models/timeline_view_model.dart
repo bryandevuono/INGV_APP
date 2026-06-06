@@ -3,16 +3,21 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/data/repositories/event_search_repository.dart';
 import 'package:ingv_app/data/services/event_search_service.dart';
-import 'package:ingv_app/data/services/event_service_json.dart';
 
 class TimelineViewModel extends ChangeNotifier {
   final EventRepository _eventRepository;
   late final EventSearchRepository _searchRepository;
-  final Set<String> minimizedCategories = {};
 
+  // Managed UI states migrated from the Screen
+  final Set<String> _minimizedCategories = {};
+  List<String> _orderedCategories = [];
 
   List<EventModel> events = [];
   List<String> categories = [];
+
+  // Getters to expose read-only state to the view
+  List<String> get orderedCategories => _orderedCategories;
+  Set<String> get minimizedCategories => _minimizedCategories;
 
   // Filter states
   String searchQuery = '';
@@ -22,6 +27,7 @@ class TimelineViewModel extends ChangeNotifier {
 
   DateTime minStart = DateTime.now();
   DateTime maxEnd = DateTime.now();
+  final startDate = DateTime.now().subtract(const Duration(days: 1));
 
   TimelineViewModel(this._eventRepository) {
     _searchRepository = EventSearchRepository(
@@ -42,7 +48,51 @@ class TimelineViewModel extends ChangeNotifier {
       startDate: filterStartDate,
       endDate: filterEndDate,
     );
+    
+    _syncOrderedCategories();
     notifyListeners();
+  }
+
+  /// Synchronizes and filters current active timeline paths 
+  /// without blowing away the user's custom drag-and-drop order.
+  void _syncOrderedCategories() {
+    final sourceCategories = categories.where((cat) => cat != 'All').toList();
+
+    // Insert newly discovered categories
+    for (var cat in sourceCategories) {
+      if (!_orderedCategories.contains(cat)) {
+        _orderedCategories.add(cat);
+      }
+    }
+
+    // Strip out categories no longer present in current dataset 
+    _orderedCategories = _orderedCategories
+        .where((cat) => sourceCategories.contains(cat))
+        .toList();
+  }
+
+  // --- State Manipulation Methods ---
+
+  void reorderCategories(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final item = _orderedCategories.removeAt(oldIndex);
+    _orderedCategories.insert(newIndex, item);
+    notifyListeners();
+  }
+
+  void toggleCategoryMinimized(String category) {
+    if (_minimizedCategories.contains(category)) {
+      _minimizedCategories.remove(category);
+    } else {
+      _minimizedCategories.add(category);
+    }
+    notifyListeners();
+  }
+
+  bool isCategoryMinimized(String category) {
+    return _minimizedCategories.contains(category);
   }
 
   void setSearchQuery(String query) {

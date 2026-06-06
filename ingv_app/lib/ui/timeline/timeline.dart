@@ -17,11 +17,7 @@ class TimelineScreen extends StatefulWidget {
 class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   late final TimelineViewModel _viewModel;
 
-  final Set<String> _minimizedCategories = {};
-
-  // 1. STATE VARIABLE TO PERSIST CUSTOM LANE ORDER
-  List<String> _orderedCategories = [];
-
+  // TODO: shouldn't be hardcoded here, after SQL migration 
   final Map<String, Color> cellColors = {
     "Volcanic": Colors.red,
     "Earthquake": Colors.green,
@@ -67,8 +63,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
     return Align(
       alignment: Alignment.centerLeft,
       child: Tooltip(
-        message:
-            "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
+        message: "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
         child: Container(
           alignment: Alignment.topLeft,
           height: 45.0,
@@ -101,26 +96,9 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
 
   @override
   Widget buildTimeline(List<EventModel> eventList) {
-    // Collect unique source categories
-    final sourceCategories = eventList
-        .map((e) => e.category?.toString().trim() ?? '')
-        .where((cat) => cat.isNotEmpty && cat != 'All')
-        .toSet()
-        .toList();
-
-    if (sourceCategories.isEmpty) {
+    if (_viewModel.categories.isEmpty) {
       return const Center(child: Text('No events match the current filters'));
     }
-
-    // Synchronize and maintain the custom order state
-    for (var cat in sourceCategories) {
-      if (!_orderedCategories.contains(cat)) {
-        _orderedCategories.add(cat);
-      }
-    }
-    _orderedCategories = _orderedCategories
-        .where((cat) => sourceCategories.contains(cat))
-        .toList();
 
     const double expandedRowHeight = 140.0;
     const double minimizedRowHeight = 35.0;
@@ -135,23 +113,15 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
     final totalStart = rangeStart.subtract(const Duration(days: 1));
     final totalEnd = rangeEnd.add(const Duration(days: 1));
 
-    // FIX: Use standard ReorderableListView instead of .separated
     return ReorderableListView.builder(
+      buildDefaultDragHandles: false,
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      itemCount: _orderedCategories.length,
-      onReorder: (int oldIndex, int newIndex) {
-        setState(() {
-          if (oldIndex < newIndex) {
-            newIndex -= 1;
-          }
-          final item = _orderedCategories.removeAt(oldIndex);
-          _orderedCategories.insert(newIndex, item);
-        });
-      },
+      itemCount: _viewModel.orderedCategories.length,
+      onReorder: _viewModel.reorderCategories,
       itemBuilder: (context, index) {
-        final category = _orderedCategories[index];
+        final category = _viewModel.orderedCategories[index];
         final isFirstRow = index == 0;
-        final isMinimized = _minimizedCategories.contains(category);
+        final isMinimized = _viewModel.isCategoryMinimized(category);
 
         final double definedRowHeight = isMinimized
             ? minimizedRowHeight
@@ -247,15 +217,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                 tooltip: isMinimized ? 'Expand lane' : 'Minimize lane',
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                onPressed: () {
-                  setState(() {
-                    if (isMinimized) {
-                      _minimizedCategories.remove(category);
-                    } else {
-                      _minimizedCategories.add(category);
-                    }
-                  });
-                },
+                onPressed: () => _viewModel.toggleCategoryMinimized(category),
               ),
               const SizedBox(width: 4),
               Expanded(
@@ -272,7 +234,6 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
           ),
         );
 
-        // FIX: Wrap the lane Row and a manual Divider together inside a Column
         return Column(
           key: ValueKey('row_wrapper_$category'),
           children: [
@@ -345,18 +306,18 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                           onPressed: () async {
                             final DateTimeRange? picked =
                                 await showDateRangePicker(
-                                  context: context,
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime(2101),
-                                  initialDateRange:
-                                      _viewModel.filterStartDate != null &&
+                              context: context,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2101),
+                              initialDateRange:
+                                  _viewModel.filterStartDate != null &&
                                           _viewModel.filterEndDate != null
                                       ? DateTimeRange(
                                           start: _viewModel.filterStartDate!,
                                           end: _viewModel.filterEndDate!,
                                         )
                                       : null,
-                                );
+                            );
                             if (picked != null) {
                               _viewModel.setDateRangeFilter(
                                 picked.start,
