@@ -32,7 +32,7 @@ class EventDetailContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              // Right section: Media & Map
+              // Right section: Media, Attachments & Map
               Expanded(
                 flex: 2,
                 child: Column(

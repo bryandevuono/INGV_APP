@@ -1,8 +1,11 @@
 import 'package:legacy_gantt_chart/legacy_gantt_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
+import 'package:ingv_app/data/repositories/event_search_repository.dart';
+import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/services/event_detail_service.dart';
+import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'package:ingv_app/ui/map/view_models/timeline_view_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
@@ -11,8 +14,14 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'add_event_dialog.dart';
 
 class TimelineScreen extends StatefulWidget {
-  final EventRepository eventRepository;
-  const TimelineScreen({super.key, required this.eventRepository});
+  final IEventRepository eventRepository;
+  final IEventSearchRepository eventSearchRepository;
+
+  const TimelineScreen({
+    super.key,
+    required this.eventRepository,
+    required this.eventSearchRepository,
+  });
 
   @override
   State<TimelineScreen> createState() => _TimelineScreenState();
@@ -36,9 +45,15 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   @override
   void initState() {
     super.initState();
-    _viewModel = TimelineViewModel(widget.eventRepository);
+    _viewModel = TimelineViewModel(
+      widget.eventRepository,
+      widget.eventSearchRepository,
+    );
     _detailViewModel = EventDetailViewModel(
       EventDetailRepository(EventDetailService()),
+      LocalAttachmentRepository(),
+      LocalFileService(),
+      FileOpenService(),
     );
     _loadEvents();
   }

@@ -9,5 +9,6 @@ abstract class IEventDetailService {
   Future<List<EventAttachmentModel>> getAttachmentsByEventId(int eventId);
   Future<void> addNote(int eventId, EventNoteModel note);
   Future<void> deleteNote(int noteId);
+  Future<void> addMedia(int eventId, EventMediaModel media);
   Future<void> addAttachment(int eventId, EventAttachmentModel attachment);
 }

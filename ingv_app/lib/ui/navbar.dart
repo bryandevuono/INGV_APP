@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
+import 'package:ingv_app/data/repositories/event_search_repository.dart';
 import 'package:ingv_app/ui/timeline/timeline.dart';
 
 class TopNavigationBar extends StatelessWidget {
   final Widget mapScreen;
-  final EventRepository eventRepository;
+  final IEventRepository eventRepository;
+  final IEventSearchRepository eventSearchRepository;
 
   const TopNavigationBar({
     super.key,
     required this.mapScreen,
     required this.eventRepository,
+    required this.eventSearchRepository,
   });
 
   @override
@@ -38,8 +41,12 @@ class TopNavigationBar extends StatelessWidget {
         body: TabBarView(
           children: [
             const Center(
-                child: Text('Home Screen', style: TextStyle(fontSize: 24))),
-            TimelineScreen(eventRepository: eventRepository),
+              child: Text('Home Screen', style: TextStyle(fontSize: 24)),
+            ),
+            TimelineScreen(
+              eventRepository: eventRepository,
+              eventSearchRepository: eventSearchRepository,
+            ),
             mapScreen,
           ],
         ),
@@ -47,4 +54,3 @@ class TopNavigationBar extends StatelessWidget {
     );
   }
 }
-

@@ -9,6 +9,7 @@ class MapMarker extends Marker {
     required String category,
     required String tag,
     required double progress,
+    required VoidCallback onTap,
     required VoidCallback onAction,
     Color categoryColor = Colors.greenAccent,
     Color tagColor = Colors.red,
@@ -181,30 +182,33 @@ class MapMarker extends Marker {
              ),
            ),
            // marker
-           child: Stack(
-             alignment: Alignment.center,
-             children: [
-               // background circle
-               Container(
-                 width: width,
-                 height: height,
-                 decoration: BoxDecoration(
-                   shape: BoxShape.circle,
-                   color: fillColor,
+           child: GestureDetector(
+             onTap: onTap,
+             child: Stack(
+               alignment: Alignment.center,
+               children: [
+                 // background circle
+                 Container(
+                   width: width,
+                   height: height,
+                   decoration: BoxDecoration(
+                     shape: BoxShape.circle,
+                     color: fillColor,
+                   ),
                  ),
-               ),
-               // progress
-               SizedBox(
-                 width: width,
-                 height: height,
-                 child: CircularProgressIndicator(
-                   value: progress,
-                   strokeWidth: 6,
-                   color: ringColor,
-                   backgroundColor: Colors.transparent,
+                 // progress
+                 SizedBox(
+                   width: width,
+                   height: height,
+                   child: CircularProgressIndicator(
+                     value: progress,
+                     strokeWidth: 6,
+                     color: ringColor,
+                     backgroundColor: Colors.transparent,
+                   ),
                  ),
-               ),
-             ],
+               ],
+             ),
            ),
          ),
        );

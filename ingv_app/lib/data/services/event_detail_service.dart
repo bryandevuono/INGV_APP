@@ -150,6 +150,12 @@ class EventDetailService implements IEventDetailService {
   }
 
   @override
+  Future<void> addMedia(int eventId, EventMediaModel media) async {
+    _mockMedia.putIfAbsent(eventId, () => []);
+    _mockMedia[eventId]!.add(media);
+  }
+
+  @override
   Future<void> addAttachment(
     int eventId,
     EventAttachmentModel attachment,

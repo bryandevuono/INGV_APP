@@ -1,41 +1,56 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:ingv_app/data/models/attachment_type.dart';
+import 'package:ingv_app/data/models/event_attachment.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/event_note_model.dart';
-import 'package:ingv_app/data/models/event_media_model.dart';
-import 'package:ingv_app/data/models/event_attachment_model.dart';
+import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
+import 'package:ingv_app/data/services/file_picker_service.dart';
+import 'package:ingv_app/data/services/file_operations_interface.dart';
 
 class EventDetailViewModel extends ChangeNotifier {
-  final EventDetailRepository _detailRepository;
+  final IEventDetailRepository _detailRepository;
+  final IAttachmentRepository _attachmentRepository;
+  final ILocalFileService _localFileService;
+  final IFileOpenService _fileOpenService;
+  final IFilePickerService _filePickerService;
 
   EventModel? selectedEvent;
   List<EventNoteModel> notes = [];
-  List<EventMediaModel> media = [];
-  List<EventAttachmentModel> attachments = [];
+  List<EventAttachment> attachments = [];
+  EventAttachment? selectedAttachment;
 
   bool isLoading = false;
+  String? errorMessage;
+  String? lastSavedAttachmentPath;
+  final Set<String> busyAttachmentIds = <String>{};
 
-  EventDetailViewModel(this._detailRepository);
+  EventDetailViewModel(
+    this._detailRepository,
+    this._attachmentRepository,
+    this._localFileService,
+    this._fileOpenService, [
+    IFilePickerService? filePickerService,
+  ]) : _filePickerService = filePickerService ?? FilePickerService();
 
   Future<void> loadEventDetails(EventModel event) async {
     selectedEvent = event;
     isLoading = true;
+    errorMessage = null;
     notifyListeners();
 
     try {
-      final [notesList, mediaList, attachmentsList] = await Future.wait([
+      final [notesList, attachmentsList] = await Future.wait([
         _detailRepository.getNotesByEventId(event.eventId),
-        _detailRepository.getMediaByEventId(event.eventId),
-        _detailRepository.getAttachmentsByEventId(event.eventId),
+        _attachmentRepository.getAttachmentsForEvent(event.eventId.toString()),
       ]);
 
       notes = notesList as List<EventNoteModel>;
-      media = mediaList as List<EventMediaModel>;
-      attachments = attachmentsList as List<EventAttachmentModel>;
+      attachments = attachmentsList as List<EventAttachment>;
     } catch (e) {
-      // Handle error
+      errorMessage = 'Failed to load event details.';
       notes = [];
-      media = [];
       attachments = [];
     } finally {
       isLoading = false;
@@ -64,12 +79,194 @@ class EventDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<EventAttachment> get imageAttachments {
+    return attachments
+        .where((attachment) => attachment.type == AttachmentType.image)
+        .toList();
+  }
+
+  List<EventAttachment> get videoAttachments {
+    return attachments
+        .where((attachment) => attachment.type == AttachmentType.video)
+        .toList();
+  }
+
+  List<EventAttachment> get fileAttachments {
+    return attachments.where((attachment) => attachment.isFile).toList();
+  }
+
+  void selectAttachment(EventAttachment? attachment) {
+    selectedAttachment = attachment;
+    notifyListeners();
+  }
+
+  bool isAttachmentBusy(String attachmentId) {
+    return busyAttachmentIds.contains(attachmentId);
+  }
+
+  Future<void> addMediaFromFile(String mediaType, File file) async {
+    if (selectedEvent == null) return;
+
+    final attachment = EventAttachment(
+      id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+      eventId: selectedEvent!.eventId.toString(),
+      fileName: file.path.split(Platform.pathSeparator).last,
+      localPath: file.path,
+      type: mediaType == 'video' ? AttachmentType.video : AttachmentType.image,
+      sizeBytes: file.existsSync() ? file.lengthSync() : null,
+      mimeType: mediaType == 'video' ? 'video/*' : 'image/*',
+      createdAt: DateTime.now(),
+    );
+
+    await _attachmentRepository.addAttachment(attachment);
+    attachments.add(attachment);
+    notifyListeners();
+  }
+
+  Future<void> addAttachmentFromFile(File file) async {
+    if (selectedEvent == null) return;
+
+    final fileName = file.path.split('/').last;
+    final fileSize = file.lengthSync();
+    final fileExtension = fileName.split('.').last.toLowerCase();
+
+    final newAttachment = EventAttachment(
+      id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+      eventId: selectedEvent!.eventId.toString(),
+      fileName: fileName,
+      localPath: file.path,
+      type: parseAttachmentTypeFromExtension(fileExtension),
+      sizeBytes: fileSize,
+      mimeType: _guessMimeType(fileExtension),
+      createdAt: DateTime.now(),
+    );
+
+    await _attachmentRepository.addAttachment(newAttachment);
+    attachments.add(newAttachment);
+    notifyListeners();
+  }
+
+  Future<void> pickAndAddMedia(String mediaType) async {
+    File? file;
+    if (mediaType == 'image') {
+      file = await _filePickerService.pickImage();
+    } else if (mediaType == 'video') {
+      file = await _filePickerService.pickVideo();
+    }
+
+    if (file != null) {
+      await addMediaFromFile(mediaType, file);
+    }
+  }
+
+  Future<void> pickAndAddAttachment() async {
+    final file = await _filePickerService.pickFile();
+    if (file != null) {
+      await addAttachmentFromFile(file);
+    }
+  }
+
+  Future<String?> resolveAttachmentPath(EventAttachment attachment) async {
+    errorMessage = null;
+    busyAttachmentIds.add(attachment.id);
+    notifyListeners();
+
+    try {
+      final path = await _localFileService.resolvePath(attachment);
+      if (path == null) {
+        errorMessage = 'Local file not found for ${attachment.fileName}.';
+      }
+      return path;
+    } catch (e) {
+      errorMessage = 'Could not load ${attachment.fileName}.';
+      return null;
+    } finally {
+      busyAttachmentIds.remove(attachment.id);
+      notifyListeners();
+    }
+  }
+
+  Future<bool> openAttachment(EventAttachment attachment) async {
+    errorMessage = null;
+    busyAttachmentIds.add(attachment.id);
+    notifyListeners();
+
+    try {
+      final path = await _localFileService.resolvePath(attachment);
+      if (path == null) {
+        errorMessage = 'Local file not found for ${attachment.fileName}.';
+        return false;
+      }
+      final didOpen = await _fileOpenService.openFile(path);
+      if (!didOpen) {
+        errorMessage = 'Could not open ${attachment.fileName}.';
+      }
+      return didOpen;
+    } catch (e) {
+      errorMessage = 'Could not open ${attachment.fileName}.';
+      return false;
+    } finally {
+      busyAttachmentIds.remove(attachment.id);
+      notifyListeners();
+    }
+  }
+
+  Future<String?> saveAttachmentCopy(EventAttachment attachment) async {
+    errorMessage = null;
+    lastSavedAttachmentPath = null;
+    busyAttachmentIds.add(attachment.id);
+    notifyListeners();
+
+    try {
+      lastSavedAttachmentPath = await _localFileService.saveAttachmentCopy(
+        attachment,
+      );
+      if (lastSavedAttachmentPath == null) {
+        errorMessage = 'Could not save a local copy of ${attachment.fileName}.';
+      }
+      return lastSavedAttachmentPath;
+    } catch (e) {
+      errorMessage = 'Could not save a local copy of ${attachment.fileName}.';
+      return null;
+    } finally {
+      busyAttachmentIds.remove(attachment.id);
+      notifyListeners();
+    }
+  }
+
   void clearEventDetails() {
     selectedEvent = null;
     notes = [];
-    media = [];
     attachments = [];
+    selectedAttachment = null;
+    errorMessage = null;
+    lastSavedAttachmentPath = null;
+    busyAttachmentIds.clear();
     notifyListeners();
+  }
+
+  String _guessMimeType(String extension) {
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'webp':
+        return 'image/$extension';
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+      case 'mkv':
+      case 'webm':
+        return 'video/$extension';
+      case 'pdf':
+        return 'application/pdf';
+      case 'csv':
+        return 'text/csv';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      default:
+        return 'application/octet-stream';
+    }
   }
 
   String get eventDuration {
