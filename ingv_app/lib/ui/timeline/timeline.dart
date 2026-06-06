@@ -17,7 +17,11 @@ class TimelineScreen extends StatefulWidget {
 class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   late final TimelineViewModel _viewModel;
 
-  // TODO: Place somewhere else non hard coded
+  final Set<String> _minimizedCategories = {};
+
+  // 1. STATE VARIABLE TO PERSIST CUSTOM LANE ORDER
+  List<String> _orderedCategories = [];
+
   final Map<String, Color> cellColors = {
     "Volcanic": Colors.red,
     "Earthquake": Colors.green,
@@ -26,6 +30,9 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
     "Geological": Colors.purple,
     "Atmospheric": Colors.cyan,
   };
+
+  final startDate = DateTime.now().subtract(const Duration(days: 1));
+  final Map<String, ScrollController> _laneControllers = {};
 
   @override
   void initState() {
@@ -38,10 +45,16 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
     await _viewModel.fetchEvents();
   }
 
-  final startDate = DateTime.now().subtract(const Duration(days: 1));
+  @override
+  void dispose() {
+    for (final controller in _laneControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
-  StatefulWidget buildEventContainer(String eventId) {
+  Widget buildEventContainer(String eventId) {
     EventModel event = _viewModel.events.firstWhere(
       (e) => e.eventId.toString() == eventId,
     );
@@ -51,99 +64,236 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
         : "Ongoing";
     final endString = event.endDt != null ? event.endDt.toString() : '...';
 
-    return Tooltip(
-      message:
-          "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
-      child: Container(
-        alignment: Alignment.topLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
-        color: cellColors[event.category] ?? Colors.grey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              event.title,
-              textAlign: TextAlign.left,
-              style: const TextStyle(color: Colors.white),
-            ),
-            Wrap(
-              spacing: 6,
-              children: [
-                Text(
-                  "${event.startDt} - $endString",
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Tooltip(
+        message:
+            "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
+        child: Container(
+          alignment: Alignment.topLeft,
+          height: 45.0,
+          padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+          color: cellColors[event.category] ?? Colors.grey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                event.title,
+                textAlign: TextAlign.left,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
                 ),
-                Text(
-                  duration,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                duration,
+                style: const TextStyle(color: Colors.white70, fontSize: 9),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   @override
-  StatefulWidget buildTimeline(events) {
-    final tasks = [
-      for (final event in events)
-        LegacyGanttTask(
-          id: event.eventId.toString(),
-          rowId: event.category,
-          name: event.title,
-          start: event.startDt,
-          end:
-              event.endDt ??
-              event.startDt.add(
-                const Duration(hours: 1),
-              ), // Provide a default end
-          color: cellColors[event.category] ?? Colors.grey,
-        ),
-    ];
-
-    final displayCategories = _viewModel.categories
-        .where((c) => c != 'All')
+  Widget buildTimeline(List<EventModel> eventList) {
+    // Collect unique source categories
+    final sourceCategories = eventList
+        .map((e) => e.category?.toString().trim() ?? '')
+        .where((cat) => cat.isNotEmpty && cat != 'All')
+        .toSet()
         .toList();
 
-    final rows = [
-      for (final category in displayCategories)
-        LegacyGanttRow(id: category, label: category),
-    ];
+    if (sourceCategories.isEmpty) {
+      return const Center(child: Text('No events match the current filters'));
+    }
 
-    final rowMaxStackDepth = <String, int>{
-      for (final category in displayCategories) category: 1,
-    };
+    // Synchronize and maintain the custom order state
+    for (var cat in sourceCategories) {
+      if (!_orderedCategories.contains(cat)) {
+        _orderedCategories.add(cat);
+      }
+    }
+    _orderedCategories = _orderedCategories
+        .where((cat) => sourceCategories.contains(cat))
+        .toList();
+
+    const double expandedRowHeight = 140.0;
+    const double minimizedRowHeight = 35.0;
+    const double baseAxisHeight = 27.0;
+    const double totalCanvasWidth = 1200.0;
+    const double leftHeaderWidth = 160.0;
 
     _viewModel.getEventDateRange();
     DateTime minStart = _viewModel.minStart;
-
     final rangeStart = startDate.isBefore(minStart) ? startDate : minStart;
     final rangeEnd = rangeStart.add(const Duration(days: 2));
     final totalStart = rangeStart.subtract(const Duration(days: 1));
     final totalEnd = rangeEnd.add(const Duration(days: 1));
 
-    return LegacyGanttChartWidget(
-      data: tasks,
-      visibleRows: rows,
-      rowMaxStackDepth: rowMaxStackDepth,
-      rowHeight: 70.0,
-      axisHeight: 27.0,
-      gridMin: rangeStart.millisecondsSinceEpoch.toDouble(),
-      gridMax: rangeEnd.millisecondsSinceEpoch.toDouble(),
-      totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
-      totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
-      taskBarBuilder: (task) {
-        return buildEventContainer(task.id);
+    // FIX: Use standard ReorderableListView instead of .separated
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      itemCount: _orderedCategories.length,
+      onReorder: (int oldIndex, int newIndex) {
+        setState(() {
+          if (oldIndex < newIndex) {
+            newIndex -= 1;
+          }
+          final item = _orderedCategories.removeAt(oldIndex);
+          _orderedCategories.insert(newIndex, item);
+        });
+      },
+      itemBuilder: (context, index) {
+        final category = _orderedCategories[index];
+        final isFirstRow = index == 0;
+        final isMinimized = _minimizedCategories.contains(category);
+
+        final double definedRowHeight = isMinimized
+            ? minimizedRowHeight
+            : expandedRowHeight;
+
+        final laneEvents = eventList
+            .where((e) => (e.category?.toString().trim() ?? '') == category)
+            .toList();
+
+        final singleRow = [LegacyGanttRow(id: category, label: category)];
+
+        final laneTasks = laneEvents.map((event) {
+          return LegacyGanttTask(
+            id: event.eventId.toString(),
+            rowId: category,
+            name: event.title,
+            start: event.startDt,
+            end: event.endDt ?? event.startDt.add(const Duration(hours: 1)),
+            color: cellColors[category] ?? Colors.grey,
+          );
+        }).toList();
+
+        final rowMaxStackDepth = <String, int>{category: 2};
+        final double fullWidgetHeight = definedRowHeight + baseAxisHeight;
+        final double visibleViewportHeight = isFirstRow
+            ? fullWidgetHeight
+            : definedRowHeight;
+
+        Widget chartSection = SizedBox(
+          width: totalCanvasWidth,
+          height: fullWidgetHeight,
+          child: LegacyGanttChartWidget(
+            data: laneTasks,
+            visibleRows: singleRow,
+            rowMaxStackDepth: rowMaxStackDepth,
+            rowHeight: definedRowHeight,
+            axisHeight: baseAxisHeight,
+            gridMin: rangeStart.millisecondsSinceEpoch.toDouble(),
+            gridMax: rangeEnd.millisecondsSinceEpoch.toDouble(),
+            totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
+            totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
+            taskBarBuilder: (task) {
+              if (isMinimized) return const SizedBox.shrink();
+              return buildEventContainer(task.id);
+            },
+          ),
+        );
+
+        if (!isFirstRow) {
+          chartSection = ClipRect(
+            child: SizedBox(
+              width: totalCanvasWidth,
+              height: visibleViewportHeight,
+              child: OverflowBox(
+                minHeight: fullWidgetHeight,
+                maxHeight: fullWidgetHeight,
+                alignment: Alignment.bottomCenter,
+                child: chartSection,
+              ),
+            ),
+          );
+        }
+
+        Widget leftHeader = Container(
+          width: leftHeaderWidth,
+          height: visibleViewportHeight,
+          padding: EdgeInsets.only(
+            left: 4.0,
+            right: 4.0,
+            top: isFirstRow ? baseAxisHeight : 0.0,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            border: Border(right: BorderSide(color: Colors.grey.shade300)),
+          ),
+          child: Row(
+            children: [
+              ReorderableDragStartListener(
+                index: index,
+                child: const Icon(
+                  Icons.drag_indicator,
+                  size: 20,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(
+                  isMinimized ? Icons.chevron_right : Icons.expand_more,
+                  size: 20,
+                  color: Colors.black54,
+                ),
+                tooltip: isMinimized ? 'Expand lane' : 'Minimize lane',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                  setState(() {
+                    if (isMinimized) {
+                      _minimizedCategories.remove(category);
+                    } else {
+                      _minimizedCategories.add(category);
+                    }
+                  });
+                },
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  category,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+
+        // FIX: Wrap the lane Row and a manual Divider together inside a Column
+        return Column(
+          key: ValueKey('row_wrapper_$category'),
+          children: [
+            Row(
+              children: [
+                leftHeader,
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: totalCanvasWidth,
+                      height: visibleViewportHeight,
+                      child: chartSection,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Divider(color: Colors.grey.shade300, thickness: 1.0, height: 4.0),
+          ],
+        );
       },
     );
   }
@@ -164,10 +314,10 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Filter Section
                   Expanded(
                     child: Wrap(
                       spacing: 12.0,
+                      runSpacing: 8.0,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         if (_viewModel.categories.isNotEmpty)
@@ -212,9 +362,6 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                                 picked.start,
                                 picked.end,
                               );
-                            } else {
-                              // If user cancels, maybe clear filter? Uncomment to clear on cancel
-                              // _viewModel.setDateRangeFilter(null, null);
                             }
                           },
                         ),
@@ -245,24 +392,15 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                       ],
                     ),
                   ),
-                  // Add Event Button
                   IconButton(
                     color: Colors.blue,
                     icon: const Icon(Icons.add),
-                    onPressed: () {
-                      showAddEventDialog(context, _viewModel);
-                    },
+                    onPressed: () => showAddEventDialog(context, _viewModel),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: _viewModel.events.isEmpty
-                  ? const Center(
-                      child: Text('No events match the current filters'),
-                    )
-                  : buildTimeline(_viewModel.events),
-            ),
+            Expanded(child: buildTimeline(_viewModel.events)),
           ],
         );
       },

@@ -8,6 +8,8 @@ import 'package:ingv_app/data/services/event_service_json.dart';
 class TimelineViewModel extends ChangeNotifier {
   final EventRepository _eventRepository;
   late final EventSearchRepository _searchRepository;
+  final Set<String> minimizedCategories = {};
+
 
   List<EventModel> events = [];
   List<String> categories = [];
