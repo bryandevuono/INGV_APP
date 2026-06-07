@@ -17,7 +17,6 @@ class EventSearchService implements IEventSearchService {
     final allEvents = await _eventService.getAllEvents();
     
     return allEvents.where((event) {
-      // 1. Keyword search (matches title, description, or tags)
       bool matchesKeyword = true;
       if (keyword != null && keyword.isNotEmpty) {
         final lowerKeyword = keyword.toLowerCase();
@@ -27,13 +26,11 @@ class EventSearchService implements IEventSearchService {
             event.author.toLowerCase().contains(lowerKeyword);
       }
 
-      // 2. Category filter
       bool matchesCategory = true;
       if (category != null && category.isNotEmpty && category != 'All') {
         matchesCategory = event.category == category;
       }
 
-      // 3. Time filter (checks if event overlaps with selected range)
       bool matchesTime = true;
       if (startDate != null && endDate != null) {
         final eventEnd = event.endDt ?? event.startDt;

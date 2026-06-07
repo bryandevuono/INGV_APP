@@ -52,7 +52,6 @@ class EventServiceJSON implements IEventService {
       events.clear();
       events.addAll(loadedEvents);
     } catch (e) {
-      // If anything goes wrong, load from assets as a fallback
       final jsonString = await rootBundle.loadString(_assetPath);
       final List<dynamic> jsonList = json.decode(jsonString);
       final loadedEvents = jsonList

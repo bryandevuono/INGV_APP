@@ -15,7 +15,6 @@ class TimelineViewModel extends ChangeNotifier {
   List<EventModel> events = [];
   List<String> categories = [];
 
-  // Getters to expose read-only state to the view
   List<String> get orderedCategories => _orderedCategories;
   Set<String> get minimizedCategories => _minimizedCategories;
 
@@ -53,8 +52,6 @@ class TimelineViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Synchronizes and filters current active timeline paths 
-  /// without blowing away the user's custom drag-and-drop order.
   void _syncOrderedCategories() {
     final sourceCategories = categories.where((cat) => cat != 'All').toList();
 
@@ -71,7 +68,6 @@ class TimelineViewModel extends ChangeNotifier {
         .toList();
   }
 
-  // --- State Manipulation Methods ---
 
   void reorderCategories(int oldIndex, int newIndex) {
     if (oldIndex < newIndex) {
