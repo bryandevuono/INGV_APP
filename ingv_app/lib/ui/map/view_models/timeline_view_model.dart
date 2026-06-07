@@ -36,7 +36,12 @@ class TimelineViewModel extends ChangeNotifier {
 
   Future<void> fetchEvents() async {
     final fetchedCategories = await _eventRepository.getEventCategories();
-    categories = ['All', ...fetchedCategories];
+    categories = ['All'];
+    for (final category in fetchedCategories) {
+      if (category != 'All' && !categories.contains(category)) {
+        categories.add(category);
+      }
+    }
     await applyFilters();
   }
 
@@ -47,7 +52,7 @@ class TimelineViewModel extends ChangeNotifier {
       startDate: filterStartDate,
       endDate: filterEndDate,
     );
-    
+
     _syncOrderedCategories();
     notifyListeners();
   }
@@ -62,12 +67,11 @@ class TimelineViewModel extends ChangeNotifier {
       }
     }
 
-    // Strip out categories no longer present in current dataset 
+    // Strip out categories no longer present in current dataset
     _orderedCategories = _orderedCategories
         .where((cat) => sourceCategories.contains(cat))
         .toList();
   }
-
 
   void reorderCategories(int oldIndex, int newIndex) {
     if (oldIndex < newIndex) {

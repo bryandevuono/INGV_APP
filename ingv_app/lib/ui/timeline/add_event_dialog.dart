@@ -2,13 +2,27 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
+import 'package:ingv_app/ui/map/view_models/timeline_view_model.dart';
 
-void showAddEventDialog(context, _viewModel) {
+void showAddEventDialog(BuildContext context, TimelineViewModel viewModel) {
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final latController = TextEditingController(text: '0.0');
   final longController = TextEditingController(text: '0.0');
   final filePickerService = FilePickerService();
+  final defaultCategories = <String>[
+    'Volcanic',
+    'Earthquake',
+    'Hydrological',
+    'Meteorological',
+    'Geological',
+    'Atmospheric',
+  ];
+  final categoryOptions = defaultCategories.toList();
+  if (categoryOptions.isEmpty) {
+    categoryOptions.addAll(defaultCategories);
+  }
+  String selectedCategory = categoryOptions.first;
   List<File> selectedMediaFiles = [];
   DateTime? startDate;
   TimeOfDay? startTime;
@@ -49,6 +63,34 @@ void showAddEventDialog(context, _viewModel) {
                     ),
                     decoration: const InputDecoration(labelText: 'Longitude'),
                   ),
+                  const SizedBox(height: 8),
+                  InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedCategory,
+                        isExpanded: true,
+                        items: categoryOptions
+                            .map(
+                              (category) => DropdownMenuItem<String>(
+                                value: category,
+                                child: Text(category),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              selectedCategory = value;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
@@ -68,6 +110,9 @@ void showAddEventDialog(context, _viewModel) {
                             lastDate: DateTime(2100),
                           );
                           if (date != null) {
+                            if (!context.mounted) {
+                              return;
+                            }
                             final time = await showTimePicker(
                               context: context,
                               initialTime: startTime ?? TimeOfDay.now(),
@@ -102,6 +147,9 @@ void showAddEventDialog(context, _viewModel) {
                             lastDate: DateTime(2100),
                           );
                           if (date != null) {
+                            if (!context.mounted) {
+                              return;
+                            }
                             final time = await showTimePicker(
                               context: context,
                               initialTime: endTime ?? TimeOfDay.now(),
@@ -316,9 +364,7 @@ void showAddEventDialog(context, _viewModel) {
 
                     final newEvent = EventModel(
                       eventId: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                      category: _viewModel.categories.isNotEmpty
-                          ? _viewModel.categories.first
-                          : 'Volcanic',
+                      category: selectedCategory,
                       startDt: finalStartDate,
                       endDt: finalEndDate,
                       author: 'User',
@@ -328,7 +374,7 @@ void showAddEventDialog(context, _viewModel) {
                       tag: '',
                       description: descriptionController.text,
                     );
-                    _viewModel.addEvent(newEvent);
+                    viewModel.addEvent(newEvent);
                     Navigator.of(context).pop();
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
