@@ -30,7 +30,7 @@ class TimelineViewModel extends ChangeNotifier {
 
   TimelineViewModel(this._eventRepository) {
     _searchRepository = EventSearchRepository(
-      EventSearchService(_eventRepository.service),
+      EventSearchService(_eventRepository.storageService),
     );
   }
 
