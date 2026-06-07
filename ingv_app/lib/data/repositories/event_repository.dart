@@ -9,27 +9,27 @@ abstract interface class IEventRepository {
 }
 
 class EventRepository implements IEventRepository {
-  final IEventService _storageService;
+  final IEventService storageService;
 
-  EventRepository(this._storageService);
+  EventRepository(this.storageService);
 
   @override
   Future<List<EventModel>> getAllEvents() {
-    return _storageService.getAllEvents();
+    return storageService.getAllEvents();
   }
 
   @override
   Future<void> insertEvent(EventModel event) {
-    return _storageService.insertEvent(event);
+    return storageService.insertEvent(event);
   }
 
   @override
   Future<Map<String, DateTime>> getEventDateRange() {
-    return _storageService.getEventDateRange();
+    return storageService.getEventDateRange();
   }
 
   @override
   Future<List<String>> getEventCategories() {
-    return _storageService.getEventCategories();
+    return storageService.getEventCategories();
   }
 }
