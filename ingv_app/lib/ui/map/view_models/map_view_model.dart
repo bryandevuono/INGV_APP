@@ -20,7 +20,12 @@ class MapScreenViewModel extends ChangeNotifier {
 
   Future<void> fetchEvents() async {
     final fetchedCategories = await _eventRepository.getEventCategories();
-    categories = ['All', ...fetchedCategories];
+    categories = ['All'];
+    for (final category in fetchedCategories) {
+      if (category != 'All' && !categories.contains(category)) {
+        categories.add(category);
+      }
+    }
     await applyFilters();
   }
 
