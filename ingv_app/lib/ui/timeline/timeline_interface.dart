@@ -3,6 +3,6 @@ import 'package:ingv_app/data/models/event_model.dart';
 
 
 abstract interface class ITimeline {
-  StatefulWidget buildTimeline(List<EventModel> events);
-  StatefulWidget buildEventContainer(String eventId);
+  Widget buildTimeline(List<EventModel> events);
+  Widget buildEventContainer(String eventId);
 }
