@@ -6,7 +6,7 @@ import '../models/event_model.dart';
 import 'event_service_interface.dart';
 
 class EventServiceJSON implements IEventService {
-  // This is a singleton service, that could be replaced with a service that uses an API
+  // This is a singleton service, that could be replaced with a service that uses an API, without logic
   static final EventServiceJSON _instance = EventServiceJSON._internal();
   factory EventServiceJSON() => _instance;
   EventServiceJSON._internal();
@@ -52,7 +52,6 @@ class EventServiceJSON implements IEventService {
       events.clear();
       events.addAll(loadedEvents);
     } catch (e) {
-      // If anything goes wrong, load from assets as a fallback
       final jsonString = await rootBundle.loadString(_assetPath);
       final List<dynamic> jsonList = json.decode(jsonString);
       final loadedEvents = jsonList
