@@ -18,9 +18,7 @@ void showAddEventDialog(BuildContext context, TimelineViewModel viewModel) {
     'Geological',
     'Atmospheric',
   ];
-  final categoryOptions = <String>[
-    ...viewModel.categories.where((category) => category != 'All'),
-  ];
+  final categoryOptions = defaultCategories.toList();
   if (categoryOptions.isEmpty) {
     categoryOptions.addAll(defaultCategories);
   }

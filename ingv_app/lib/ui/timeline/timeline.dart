@@ -174,9 +174,11 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
     return ReorderableListView.builder(
       // multiple chart rows
       buildDefaultDragHandles: false,
+      onReorder: (oldIndex, newIndex) {
+        _viewModel.reorderCategories(oldIndex, newIndex);
+      },
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       itemCount: _viewModel.orderedCategories.length,
-      onReorderItem: _viewModel.reorderCategories,
       itemBuilder: (context, index) {
         final category = _viewModel.orderedCategories[index];
         final isFirstRow = index == 0;
