@@ -166,7 +166,7 @@ class GroupScreenViewModel extends ChangeNotifier {
     try {
       final success = await _groupRepository.deleteGroup(groupId);
       if (success) {
-        //  Remove the group from your local state instantly
+        //  Remove the group form state after deletion
         groups.removeWhere((group) => group.id == groupId);
         notifyListeners();
       } else {
