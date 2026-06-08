@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/repositories/group_repository.dart';
 import '../../../data/models/person_model.dart';
+import 'package:ingv_app/data/models/person_model.dart';
 
 class GroupScreenViewModel extends ChangeNotifier {
   final GroupRepository _groupRepository;
@@ -36,12 +37,14 @@ class GroupScreenViewModel extends ChangeNotifier {
       final newGroup = GroupModel(
         id: DateTime.now().toString(),
         name: name,
-        members: [],
+        members: selectedUserIds.toList(),
         description: '',
         image: '',
       );
       await _groupRepository.insertGroup(newGroup);
       groups.add(newGroup);
+
+      selectedUserIds.clear();
       notifyListeners();
     } catch (e) {
       errorMessage = "Failed to create group: $e";
@@ -176,5 +179,30 @@ class GroupScreenViewModel extends ChangeNotifier {
         false,
       ); // This will also call notifyListeners() via _setLoading
     }
+  }
+
+  void clearSelectedUsers() {
+    selectedUserIds.clear();
+    notifyListeners();
+  }
+
+  void toggleNotify() {
+    notifyListeners();
+  }
+
+  String _searchQuery = '';
+
+  void setSearchQuery(String query) {
+    _searchQuery = query.toLowerCase();
+    notifyListeners(); 
+  }
+
+  List<PersonModel> get filteredPersons {
+    if (_searchQuery.isEmpty) {
+      return persons;
+    }
+    return persons.where((person) {
+      return person.name.toLowerCase().contains(_searchQuery);
+    }).toList();
   }
 }

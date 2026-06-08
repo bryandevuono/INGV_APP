@@ -28,12 +28,19 @@ class _GroupDialogState extends State<GroupDialog> {
     _viewModel = widget.viewModel;
 
     _viewModel.getPersons();
-
     _viewModel.selectUsers(widget.mode, widget.groupId, nameController);
+
+    searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    _viewModel.setSearchQuery(searchController.text);
   }
 
   @override
   void dispose() {
+    // reset
+    searchController.removeListener(_onSearchChanged);
     nameController.dispose();
     searchController.dispose();
     super.dispose();
@@ -51,6 +58,8 @@ class _GroupDialogState extends State<GroupDialog> {
         child: ListenableBuilder(
           listenable: _viewModel,
           builder: (context, _) {
+            final displayPersons = _viewModel.filteredPersons;
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -157,7 +166,7 @@ class _GroupDialogState extends State<GroupDialog> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    'Showing ${_viewModel.persons.length} users:',
+                    'Showing ${displayPersons.length} users:',
                     style: const TextStyle(fontSize: 14, color: Colors.black),
                   ),
                 ),
@@ -166,14 +175,21 @@ class _GroupDialogState extends State<GroupDialog> {
                 // Users List
                 Expanded(
                   child: _viewModel.persons.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : displayPersons.isEmpty
                       ? const Center(
-                          child: CircularProgressIndicator(),
-                        ) // Shows loader if data is reading
+                          child: Text(
+                            'No users found.',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
                       : ListView.builder(
-                          itemCount: _viewModel.persons.length,
+                          itemCount: displayPersons.length,
                           itemBuilder: (context, index) {
-                            final person = _viewModel.persons[index];
-                            final isSelected = _viewModel.checkIfUserSelected(person.id);
+                            final person = displayPersons[index];
+                            final isSelected = _viewModel.checkIfUserSelected(
+                              person.id,
+                            );
 
                             return Padding(
                               padding: const EdgeInsets.symmetric(
@@ -207,17 +223,22 @@ class _GroupDialogState extends State<GroupDialog> {
 
                                   GestureDetector(
                                     onTap: () {
-                                      setState(() {
-                                        if (_viewModel.checkIfUserSelected(person.id)) {
-                                          _viewModel.removeUserId(person.id);
-                                        } else {
-                                          _viewModel.addUserId(person.id);
-                                        }
-                                      });
-                                      _viewModel.addorRemoveMember(
-                                        widget.groupId,
+                                      if (_viewModel.checkIfUserSelected(
                                         person.id,
-                                      );
+                                      )) {
+                                        _viewModel.removeUserId(person.id);
+                                      } else {
+                                        _viewModel.addUserId(person.id);
+                                      }
+
+                                      _viewModel.toggleNotify();
+
+                                      if (widget.mode == 'update') {
+                                        _viewModel.addorRemoveMember(
+                                          widget.groupId,
+                                          person.id,
+                                        );
+                                      }
                                     },
                                     child: AnimatedContainer(
                                       duration: const Duration(
@@ -256,7 +277,11 @@ class _GroupDialogState extends State<GroupDialog> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        _viewModel.clearSelectedUsers();
+                        _viewModel.setSearchQuery(''); // reset search on close
+                        Navigator.pop(context);
+                      },
                       child: const Text(
                         'Cancel',
                         style: TextStyle(color: Colors.black54),
@@ -268,12 +293,20 @@ class _GroupDialogState extends State<GroupDialog> {
                         if (nameController.text.isNotEmpty &&
                             widget.mode == 'create') {
                           _viewModel.createNewGroup(nameController.text);
+                          _viewModel.clearSelectedUsers();
+                          _viewModel.setSearchQuery(
+                            '',
+                          ); // reset search on success
                           Navigator.pop(context);
                         } else if (widget.mode == 'update') {
                           _viewModel.editGroup(
                             widget.groupId,
                             nameController.text,
                           );
+                          _viewModel.clearSelectedUsers();
+                          _viewModel.setSearchQuery(
+                            '',
+                          ); // reset search on success
                           Navigator.pop(context);
                         }
                       },
