@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
+import 'package:ingv_app/ui/event_detail/widgets/add_note_dialog.dart';
 
 class EventNotesSection extends StatelessWidget {
   final EventDetailViewModel viewModel;
@@ -35,7 +36,12 @@ class EventNotesSection extends StatelessWidget {
                 constraints: const BoxConstraints(),
                 tooltip: 'Add note',
                 onPressed: () {
-                  // TODO: Show add note dialog
+                  showDialog(
+                    context: context,
+                    builder: (context) => AddNoteDialog(
+                      viewModel: viewModel,
+                    ),
+                  );
                 },
               ),
             ],
@@ -52,73 +58,85 @@ class EventNotesSection extends StatelessWidget {
               ),
             )
           else
-            Column(
-              children: List.generate(viewModel.notes.length, (index) {
-                final note = viewModel.notes[index];
-                return Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        border: Border.all(color: Colors.grey.shade200),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            note.text,
-                            style: const TextStyle(fontSize: 11, height: 1.4),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
+            SizedBox(
+              height: 200, //
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: Column(
+                  children: List.generate(viewModel.notes.length, (index) {
+                    final note = viewModel.notes[index];
+                    return Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            border: Border.all(color: Colors.grey.shade200),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              Text(
+                                note.text,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  height: 1.4,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    note.author,
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      color: Colors.grey.shade700,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        note.author,
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: Colors.grey.shade700,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        note.timestamp.toString(),
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    note.timestamp.toString(),
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      color: Colors.grey.shade500,
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.close,
+                                      size: 12,
+                                      color: Colors.grey,
                                     ),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () {
+                                      viewModel.deleteNote(note.noteId);
+                                    },
                                   ),
                                 ],
                               ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.close,
-                                  size: 12,
-                                  color: Colors.grey,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () {
-                                  viewModel.deleteNote(note.noteId);
-                                },
-                              ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    if (index < viewModel.notes.length - 1)
-                      const SizedBox(height: 8),
-                  ],
-                );
-              }),
+                        ),
+
+                        if (index < viewModel.notes.length - 1)
+                          const SizedBox(height: 8),
+                      ],
+                    );
+                  }),
+                ),
+              ),
             ),
         ],
       ),
