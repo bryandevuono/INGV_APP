@@ -21,4 +21,8 @@ class GroupRepository {
   Future<void> updateGroup(GroupModel group) {
     return _groupService.updateGroup(group);
   }
+
+  Future<bool> deleteGroup(String groupId) {
+    return _groupService.deleteGroup(groupId);
+  }
 }

@@ -190,4 +190,21 @@ class GroupServiceSembast implements IGroupService {
       groups[index] = updatedGroup;
     }
   }
+
+  @override
+  Future<bool> deleteGroup(String groupId) async {
+    if (!_initialized) await _initialize();
+    
+    final db = await _db;
+    await _groupsStore.record(groupId).delete(db);
+    
+    groups.removeWhere((g) => g.id == groupId);
+
+    // check if the group was successfully removed from the local list
+    final groupExists = groups.any((g) => g.id == groupId);
+    if (groupExists) {
+      return false; // Deletion failed, group still exists in local list
+    }
+    return true;
+  }
 }

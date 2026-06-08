@@ -155,4 +155,26 @@ class GroupScreenViewModel extends ChangeNotifier {
   void addUserId(String personId) {
     selectedUserIds.add(personId);
   }
+
+  Future<void> deleteGroup(String groupId) async {
+    _setLoading(true);
+    errorMessage = null;
+
+    try {
+      final success = await _groupRepository.deleteGroup(groupId);
+      if (success) {
+        //  Remove the group from your local state instantly
+        groups.removeWhere((group) => group.id == groupId);
+        notifyListeners();
+      } else {
+        errorMessage = "Failed to delete group: Group not found";
+      }
+    } catch (e) {
+      errorMessage = "Failed to delete group: $e";
+    } finally {
+      _setLoading(
+        false,
+      ); // This will also call notifyListeners() via _setLoading
+    }
+  }
 }

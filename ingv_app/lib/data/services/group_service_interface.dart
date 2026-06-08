@@ -5,5 +5,5 @@ abstract class IGroupService {
   Future<void> insertGroup(GroupModel group);
   Future<List<PersonModel>> getAllPersons();
   Future<void> updateGroup(GroupModel updatedGroup);
-
+  Future<bool> deleteGroup(String groupId);
 }
