@@ -50,4 +50,3 @@ class TopNavigationBar extends StatelessWidget {
     );
   }
 }
-

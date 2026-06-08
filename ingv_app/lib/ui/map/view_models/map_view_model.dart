@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/data/repositories/event_search_repository.dart';
-import 'package:ingv_app/data/services/event_search_service.dart';
-import 'package:ingv_app/data/services/event_service_json.dart';
 
 class MapScreenViewModel extends ChangeNotifier {
-  final EventRepository _eventRepository;
-  late final EventSearchRepository _searchRepository;
+  final IEventRepository _eventRepository;
+  final IEventSearchRepository _searchRepository;
 
   List<EventModel> events = [];
   List<String> categories = [];
@@ -18,15 +16,16 @@ class MapScreenViewModel extends ChangeNotifier {
   DateTime? filterStartDate;
   DateTime? filterEndDate;
 
-  MapScreenViewModel(this._eventRepository) {
-    _searchRepository = EventSearchRepository(
-      EventSearchService(_eventRepository.service),
-    );
-  }
+  MapScreenViewModel(this._eventRepository, this._searchRepository);
 
   Future<void> fetchEvents() async {
     final fetchedCategories = await _eventRepository.getEventCategories();
-    categories = ['All', ...fetchedCategories];
+    categories = ['All'];
+    for (final category in fetchedCategories) {
+      if (category != 'All' && !categories.contains(category)) {
+        categories.add(category);
+      }
+    }
     await applyFilters();
   }
 
