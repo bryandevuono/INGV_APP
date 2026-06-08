@@ -19,7 +19,6 @@ class AppDatabase {
     if (_databaseFuture != null) {
       final db = await _databaseFuture!;
 
-      // 1. Close the active connection
       await db.dropAll();
     }
   }

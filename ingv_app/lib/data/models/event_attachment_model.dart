@@ -2,7 +2,7 @@ class EventAttachmentModel {
   final int attachmentId;
   final String fileName;
   final int fileSizeBytes;
-  final String fileType; // 'csv', 'pdf', etc.
+  final String fileType; // 'csv', 'pdf', 
   final DateTime uploadedAt;
 
   EventAttachmentModel({

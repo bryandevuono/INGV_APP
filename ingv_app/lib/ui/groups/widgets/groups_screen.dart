@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/repositories/group_repository.dart';
 import '../view_models/group_view_model.dart';
-import 'package:ingv_app/data/services/group_service_json.dart';
+import 'package:ingv_app/data/services/group_service_sembast.dart';
 import 'group_dialog.dart';
 import 'presentation_card.dart';
 
@@ -18,7 +18,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = GroupScreenViewModel(GroupRepository(GroupServiceJson()));
+    _viewModel = GroupScreenViewModel(GroupRepository(GroupServiceSembast()));
     _viewModel.fetchGroups();
   }
 
@@ -105,8 +105,6 @@ class _GroupsScreenState extends State<GroupsScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        // FIX 2: Passed the active _viewModel into the GroupDialog
-        // and removed the broken "const" keyword
         return GroupDialog(mode: 'create', groupId: "", viewModel: _viewModel);
       },
     );

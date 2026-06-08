@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:sembast/sembast.dart';
-
-import '../database/app_database.dart';
 import '../models/event_model.dart';
+import 'package:flutter/material.dart';
+import '../database/app_database.dart';
 import 'event_service_interface.dart';
 
 class EventServiceSembast implements IEventService {
@@ -11,6 +11,14 @@ class EventServiceSembast implements IEventService {
   EventServiceSembast._internal();
 
   static const String _storeName = 'events';
+    final Map<String, Color> cellColors = {
+    "Volcanic": Colors.red,
+    "Earthquake": Colors.green,
+    "Hydrological": Colors.blue,
+    "Meteorological": Colors.orange,
+    "Geological": Colors.purple,
+    "Atmospheric": Colors.cyan,
+  };
 
   final AppDatabase _appDatabase = AppDatabase();
   final StoreRef<int, Map<String, dynamic>> _store = intMapStoreFactory.store(
@@ -129,5 +137,20 @@ class EventServiceSembast implements IEventService {
   Future<List<String>> getEventCategories() async {
     await _ensureInitialized();
     return _events.map((event) => event.category).toSet().toList()..sort();
+  }
+
+  @override
+  Future<List<MapEntry<String, Color>>> getEventCategoriesWithColors() async {
+    if (!_initialized) {
+      await _initialize();
+    }
+
+    final categories = _events.map((e) => e.category).toSet().toList();
+    final categoriesWithColors = categories.map((category) {
+      final color = cellColors[category] ?? Colors.grey; // Default to grey if not found
+      return MapEntry(category, color);
+    }).toList();
+
+    return categoriesWithColors;
   }
 }

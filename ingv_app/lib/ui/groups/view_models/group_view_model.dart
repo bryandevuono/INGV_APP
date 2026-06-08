@@ -10,6 +10,7 @@ class GroupScreenViewModel extends ChangeNotifier {
   List<GroupModel> groups = [];
   List<PersonModel> persons = [];
   bool isLoading = false;
+  Set<String> selectedUserIds = {};
   String? errorMessage;
 
   GroupScreenViewModel(this._groupRepository);
@@ -17,7 +18,7 @@ class GroupScreenViewModel extends ChangeNotifier {
   Future<void> fetchGroups() async {
     _setLoading(true);
     errorMessage = null;
-    
+
     try {
       groups = await _groupRepository.getGroups();
     } catch (e) {
@@ -30,9 +31,15 @@ class GroupScreenViewModel extends ChangeNotifier {
   Future<void> createNewGroup(String name) async {
     _setLoading(true);
     errorMessage = null;
-    
+
     try {
-      final newGroup = GroupModel(id: DateTime.now().toString(), name: name, members: [], description: '', image: '');
+      final newGroup = GroupModel(
+        id: DateTime.now().toString(),
+        name: name,
+        members: [],
+        description: '',
+        image: '',
+      );
       await _groupRepository.insertGroup(newGroup);
       groups.add(newGroup);
       notifyListeners();
@@ -46,7 +53,7 @@ class GroupScreenViewModel extends ChangeNotifier {
   Future<void> editGroup(String groupId, String newName) async {
     _setLoading(true);
     errorMessage = null;
-    
+
     try {
       final groupIndex = groups.indexWhere((g) => g.id == groupId);
       if (groupIndex != -1) {
@@ -86,7 +93,7 @@ class GroupScreenViewModel extends ChangeNotifier {
   Future<void> addorRemoveMember(String groupId, String personId) async {
     _setLoading(true);
     errorMessage = null;
-    
+
     try {
       final groupIndex = groups.indexWhere((g) => g.id == groupId);
       if (groupIndex != -1) {
@@ -122,5 +129,30 @@ class GroupScreenViewModel extends ChangeNotifier {
       _setLoading(false);
     }
   }
+
+  Future<void> selectUsers(
+    String mode,
+    String groupId,
+    TextEditingController nameController,
+  ) async {
+    if (mode == 'update') {
+      final existingGroup = groups.firstWhere((g) => g.id == groupId);
+
+      nameController.text = existingGroup.name;
+
+      selectedUserIds.addAll(existingGroup.members);
+    }
+  }
+
+  bool checkIfUserSelected(String personId) {
+    return selectedUserIds.contains(personId);
+  }
+
+  void removeUserId(String personId) {
+    selectedUserIds.remove(personId);
+  }
+
+  void addUserId(String personId) {
+    selectedUserIds.add(personId);
+  }
 }
-      

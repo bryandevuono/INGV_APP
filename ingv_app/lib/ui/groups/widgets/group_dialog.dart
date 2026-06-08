@@ -21,7 +21,6 @@ class _GroupDialogState extends State<GroupDialog> {
   late final GroupScreenViewModel _viewModel;
   final TextEditingController nameController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
-  final Set<String> selectedUserIds = {};
 
   @override
   void initState() {
@@ -30,15 +29,7 @@ class _GroupDialogState extends State<GroupDialog> {
 
     _viewModel.getPersons();
 
-    if (widget.mode == 'update') {
-      final existingGroup = _viewModel.groups.firstWhere(
-        (g) => g.id == widget.groupId,
-      );
-
-      nameController.text = existingGroup.name;
-
-      selectedUserIds.addAll(existingGroup.members);
-    }
+    _viewModel.selectUsers(widget.mode, widget.groupId, nameController);
   }
 
   @override
@@ -182,9 +173,7 @@ class _GroupDialogState extends State<GroupDialog> {
                           itemCount: _viewModel.persons.length,
                           itemBuilder: (context, index) {
                             final person = _viewModel.persons[index];
-                            final isSelected = selectedUserIds.contains(
-                              person.id,
-                            );
+                            final isSelected = _viewModel.checkIfUserSelected(person.id);
 
                             return Padding(
                               padding: const EdgeInsets.symmetric(
@@ -219,16 +208,15 @@ class _GroupDialogState extends State<GroupDialog> {
                                   GestureDetector(
                                     onTap: () {
                                       setState(() {
-                                        if (isSelected) {
-                                          selectedUserIds.remove(person.id);
+                                        if (_viewModel.checkIfUserSelected(person.id)) {
+                                          _viewModel.removeUserId(person.id);
                                         } else {
-                                          selectedUserIds.add(person.id);
+                                          _viewModel.addUserId(person.id);
                                         }
                                       });
                                       _viewModel.addorRemoveMember(
                                         widget.groupId,
                                         person.id,
-
                                       );
                                     },
                                     child: AnimatedContainer(

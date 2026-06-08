@@ -14,6 +14,7 @@ class TimelineViewModel extends ChangeNotifier {
 
   List<EventModel> events = [];
   List<String> categories = [];
+  List<MapEntry<String, Color>> categoryColors = [];
 
   List<String> get orderedCategories => _orderedCategories;
   Set<String> get minimizedCategories => _minimizedCategories;
@@ -123,5 +124,10 @@ class TimelineViewModel extends ChangeNotifier {
     await _eventRepository.insertEvent(event);
     await getEventDateRange();
     await fetchEvents();
+  }
+
+  Future<void> getColors() async {
+    categoryColors = await _eventRepository.getEventColors();
+    notifyListeners();
   }
 }
