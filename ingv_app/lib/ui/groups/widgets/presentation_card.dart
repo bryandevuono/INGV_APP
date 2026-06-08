@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/group_model.dart';
+import '../view_models/group_view_model.dart';
 import 'group_dialog.dart';
+
 class GroupCard extends StatelessWidget {
   final GroupModel group;
-  const GroupCard({super.key, required this.group});
+  final String groupId;
+  final GroupScreenViewModel viewModel;
+  const GroupCard({super.key, required this.group, required this.groupId, required this.viewModel});
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +74,8 @@ class GroupCard extends StatelessWidget {
                       showDialog(
                         context: context,
                         builder: (context) {
-                          return const GroupDialog(mode: 'update');
+                          // Fixed: Added groupId parameter passing here
+                          return GroupDialog(mode: 'update', groupId: groupId, viewModel: viewModel);
                         },
                       );
                     },

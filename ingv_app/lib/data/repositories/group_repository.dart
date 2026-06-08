@@ -1,5 +1,6 @@
 import '../models/group_model.dart';
 import '../services/group_service_interface.dart';
+import '../models/person_model.dart';
 class GroupRepository {
   final IGroupService _groupService;
 
@@ -11,5 +12,13 @@ class GroupRepository {
 
   Future<void> insertGroup(GroupModel group) {
     return _groupService.insertGroup(group);
+  }
+
+  Future<List<PersonModel>> getPersons() async {
+    return _groupService.getAllPersons();
+  }
+
+  Future<void> updateGroup(GroupModel group) {
+    return _groupService.updateGroup(group);
   }
 }

@@ -1,38 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:ingv_app/ui/groups/view_models/group_view_model.dart';
 
 class GroupDialog extends StatefulWidget {
-  const GroupDialog({super.key, required this.mode});
+  const GroupDialog({
+    super.key,
+    required this.mode,
+    required this.groupId,
+    required this.viewModel,
+  });
 
   final String mode;
+  final String groupId;
+  final GroupScreenViewModel viewModel;
 
   @override
   State<GroupDialog> createState() => _GroupDialogState();
 }
 
 class _GroupDialogState extends State<GroupDialog> {
+  late final GroupScreenViewModel _viewModel;
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
+  final Set<String> selectedUserIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = widget.viewModel;
+
+    _viewModel.getPersons();
+
+    if (widget.mode == 'update') {
+      final existingGroup = _viewModel.groups.firstWhere(
+        (g) => g.id == widget.groupId,
+      );
+
+      nameController.text = existingGroup.name;
+
+      selectedUserIds.addAll(existingGroup.members);
+    }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final nameController = TextEditingController();
-    final searchController = TextEditingController();
-
-    // Mock data for the list view inside the dialog
-    final List<String> mockUsers = [
-      'Robert van Tilburg',
-      'Julia van Tilburg',
-      'Henkie van Tilburg',
-    ];
-    return StatefulBuilder(
-      builder: (context, setDialogState) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.8,
-            height: MediaQuery.of(context).size.height * 0.75,
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: MediaQuery.of(context).size.height * 0.75,
+        padding: const EdgeInsets.all(32.0),
+        child: ListenableBuilder(
+          listenable: _viewModel,
+          builder: (context, _) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Title
@@ -73,15 +101,6 @@ class _GroupDialogState extends State<GroupDialog> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(4),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade300,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(4),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade300,
-                              ),
                             ),
                           ),
                         ),
@@ -102,13 +121,10 @@ class _GroupDialogState extends State<GroupDialog> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {
-                        // File picker logic goes here
-                      },
+                      onPressed: () {},
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF3B82F6),
                         foregroundColor: Colors.white,
-                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
                           side: const BorderSide(
@@ -116,18 +132,8 @@ class _GroupDialogState extends State<GroupDialog> {
                             width: 1.2,
                           ),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 10,
-                        ),
                       ),
-                      child: const Text(
-                        'Add file',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: const Text('Add file'),
                     ),
                   ],
                 ),
@@ -149,7 +155,6 @@ class _GroupDialogState extends State<GroupDialog> {
                         size: 20,
                       ),
                       hintText: 'Search',
-                      hintStyle: TextStyle(color: Colors.black54),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(vertical: 10),
                     ),
@@ -161,7 +166,7 @@ class _GroupDialogState extends State<GroupDialog> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    'Showing ${mockUsers.length} users:',
+                    'Showing ${_viewModel.persons.length} users:',
                     style: const TextStyle(fontSize: 14, color: Colors.black),
                   ),
                 ),
@@ -169,70 +174,92 @@ class _GroupDialogState extends State<GroupDialog> {
 
                 // Users List
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: mockUsers.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10.0),
-                        child: Row(
-                          children: [
-                            // Circular Outline Profile Badge
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.grey.shade400,
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.person_outline,
-                                color: Colors.grey.shade600,
-                                size: 26,
-                              ),
-                            ),
-                            const SizedBox(width: 20),
+                  child: _viewModel.persons.isEmpty
+                      ? const Center(
+                          child: CircularProgressIndicator(),
+                        ) // Shows loader if data is reading
+                      : ListView.builder(
+                          itemCount: _viewModel.persons.length,
+                          itemBuilder: (context, index) {
+                            final person = _viewModel.persons[index];
+                            final isSelected = selectedUserIds.contains(
+                              person.id,
+                            );
 
-                            // User Display Name
-                            Expanded(
-                              child: Text(
-                                mockUsers[index],
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 10.0,
                               ),
-                            ),
-
-                            // Add Button
-                            GestureDetector(
-                              onTap: () {},
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2563EB),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.black,
-                                    width: 1.5,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.grey.shade400,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.person_outline,
+                                      color: Colors.black54,
+                                    ),
                                   ),
-                                ),
-                                child: const Icon(
-                                  Icons.add,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
+                                  const SizedBox(width: 20),
+
+                                  Expanded(
+                                    child: Text(
+                                      person.name,
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                  ),
+
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        if (isSelected) {
+                                          selectedUserIds.remove(person.id);
+                                        } else {
+                                          selectedUserIds.add(person.id);
+                                        }
+                                      });
+                                      _viewModel.addorRemoveMember(
+                                        widget.groupId,
+                                        person.id,
+
+                                      );
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? Colors.green
+                                            : const Color(0xFF2563EB),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.black,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        isSelected ? Icons.check : Icons.add,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
                 const SizedBox(height: 16),
 
@@ -250,8 +277,15 @@ class _GroupDialogState extends State<GroupDialog> {
                     const SizedBox(width: 12),
                     ElevatedButton(
                       onPressed: () {
-                        if (nameController.text.isNotEmpty) {
-                          // Trigger your _viewModel here to finalize creation
+                        if (nameController.text.isNotEmpty &&
+                            widget.mode == 'create') {
+                          _viewModel.createNewGroup(nameController.text);
+                          Navigator.pop(context);
+                        } else if (widget.mode == 'update') {
+                          _viewModel.editGroup(
+                            widget.groupId,
+                            nameController.text,
+                          );
                           Navigator.pop(context);
                         }
                       },
@@ -266,10 +300,10 @@ class _GroupDialogState extends State<GroupDialog> {
                   ],
                 ),
               ],
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

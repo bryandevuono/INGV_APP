@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../data/repositories/group_repository.dart';
 import '../view_models/group_view_model.dart';
 import 'package:ingv_app/data/services/group_service_json.dart';
-import 'presentation_card.dart';
 import 'group_dialog.dart';
+import 'presentation_card.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key});
@@ -84,7 +84,11 @@ class _GroupsScreenState extends State<GroupsScreen> {
                             childAspectRatio: 0.85,
                           ),
                       itemBuilder: (context, index) {
-                        return GroupCard(group: _viewModel.groups[index]);
+                        return GroupCard(
+                          group: _viewModel.groups[index],
+                          groupId: _viewModel.groups[index].id,
+                          viewModel: _viewModel,
+                        );
                       },
                     );
                   },
@@ -98,12 +102,12 @@ class _GroupsScreenState extends State<GroupsScreen> {
   }
 
   void _showAddGroupDialog(BuildContext context) {
-    
-
     showDialog(
       context: context,
       builder: (context) {
-        return const GroupDialog(mode: 'create');
+        // FIX 2: Passed the active _viewModel into the GroupDialog
+        // and removed the broken "const" keyword
+        return GroupDialog(mode: 'create', groupId: "", viewModel: _viewModel);
       },
     );
   }
