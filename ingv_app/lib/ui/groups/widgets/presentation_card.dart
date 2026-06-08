@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/group_model.dart';
-
-
+import 'group_dialog.dart';
 class GroupCard extends StatelessWidget {
   final GroupModel group;
   const GroupCard({super.key, required this.group});
@@ -17,6 +16,7 @@ class GroupCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Top image placeholder
           Expanded(
             flex: 3,
             child: Container(
@@ -24,26 +24,57 @@ class GroupCard extends StatelessWidget {
               child: const Icon(Icons.image, color: Colors.grey, size: 32),
             ),
           ),
+
+          // Bottom content area
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Padding(
               padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment
+                    .center, // Vertically centers text and button relative to each other
                 children: [
-                  Text(
-                    group.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // This Expanded forces the text column to take up all available left space,
+                  // pushing the Edit button nicely to the right side.
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          group.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Members: ${group.members.join(', ')}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Members: ${group.members.join(', ')}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+
+                  // Edit button right next to the text
+                  TextButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return const GroupDialog(mode: 'update');
+                        },
+                      );
+                    },
+                    child: const Text('Edit'),
                   ),
                 ],
               ),
