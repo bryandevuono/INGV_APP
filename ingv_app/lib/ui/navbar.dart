@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/ui/timeline/timeline.dart';
 import 'package:ingv_app/ui/groups/widgets/groups_screen.dart';
+import 'hybrid_view/widgets/hybrid_view.dart';
 
 class TopNavigationBar extends StatelessWidget {
   final Widget mapScreen;
@@ -39,8 +40,12 @@ class TopNavigationBar extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            const Center(
-                child: Text('Home Screen', style: TextStyle(fontSize: 24))),
+            ClipRect(
+              child: ResizableHybridView(
+                topWidget: mapScreen,
+                bottomWidget: TimelineScreen(eventRepository: eventRepository),
+              ),
+            ),
             TimelineScreen(eventRepository: eventRepository),
             mapScreen,
             GroupsScreen(), 

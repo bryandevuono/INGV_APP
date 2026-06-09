@@ -121,7 +121,7 @@ class EventDetailService implements IEventDetailService {
 
   @override
   Future<List<EventNoteModel>> getNotesByEventId(int eventId) async {
-    return _mockNotes[eventId] ?? [];
+    return _mockNotes[1000] ?? [];
   }
 
   @override

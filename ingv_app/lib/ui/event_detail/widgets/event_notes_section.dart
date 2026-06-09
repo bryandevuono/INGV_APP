@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/add_note_dialog.dart';
 
 class EventNotesSection extends StatelessWidget {
   final EventDetailViewModel viewModel;
+  final List<GroupModel> groupOptions;
 
-  const EventNotesSection({super.key, required this.viewModel});
+  const EventNotesSection({
+    super.key,
+    required this.viewModel,
+    this.groupOptions = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +46,7 @@ class EventNotesSection extends StatelessWidget {
                     context: context,
                     builder: (context) => AddNoteDialog(
                       viewModel: viewModel,
+                      groupOptions: groupOptions,
                     ),
                   );
                 },

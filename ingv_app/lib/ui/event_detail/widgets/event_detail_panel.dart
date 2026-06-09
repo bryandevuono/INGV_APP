@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_header.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_content.dart';
@@ -6,11 +7,13 @@ import 'package:ingv_app/ui/event_detail/widgets/event_detail_content.dart';
 class EventDetailPanel extends StatefulWidget {
   final EventDetailViewModel viewModel;
   final VoidCallback onDismiss;
+  final List<GroupModel> groupOptions;
 
   const EventDetailPanel({
     super.key,
     required this.viewModel,
     required this.onDismiss,
+    this.groupOptions = const [],
   });
 
   @override
@@ -120,7 +123,10 @@ class _EventDetailPanelState extends State<EventDetailPanel>
                   ),
                 // Content section (scrollable)
                 Expanded(
-                  child: EventDetailContent(viewModel: widget.viewModel),
+                  child: EventDetailContent(
+                    viewModel: widget.viewModel,
+                    groupOptions: widget.groupOptions,
+                  ),
                 ),
               ],
             ),

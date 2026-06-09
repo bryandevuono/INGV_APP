@@ -1,22 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 
-class AddNoteDialog extends StatelessWidget {
+class AddNoteDialog extends StatefulWidget {
   final EventDetailViewModel viewModel;
+  final List<GroupModel> groupOptions;
 
-  const AddNoteDialog({super.key, required this.viewModel});
+  const AddNoteDialog({
+    super.key,
+    required this.viewModel,
+    this.groupOptions = const [],
+  });
+
+  @override
+  State<AddNoteDialog> createState() => _AddNoteDialogState();
+}
+
+class _AddNoteDialogState extends State<AddNoteDialog> {
+  late final TextEditingController nameController;
+  late final TextEditingController noteController;
+  String? selectedGroup;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController();
+    noteController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    noteController.dispose();
+    super.dispose();
+  }
+
+  String? _selectedGroupName() {
+    if (selectedGroup == null) {
+      return null;
+    }
+
+    for (final group in widget.groupOptions) {
+      if (group.id == selectedGroup) {
+        return group.name;
+      }
+    }
+
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final nameController = TextEditingController();
-    final teamController = TextEditingController();
-    final noteController = TextEditingController();
-
     return Dialog(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SizedBox(
-          width: 320,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320, maxHeight: 520),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,7 +65,6 @@ class AddNoteDialog extends StatelessWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-
               Row(
                 children: [
                   const SizedBox(width: 50, child: Text('Name:')),
@@ -42,23 +80,42 @@ class AddNoteDialog extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  const SizedBox(width: 50, child: Text('Team:')),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: teamController,
-                      decoration: const InputDecoration(
-                        hintText: 'Input field',
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Group',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                ),
+                child: DropdownButton<String?>(
+                  value: selectedGroup,
+                  isExpanded: true,
+                  isDense: true,
+                  iconSize: 18,
+                  menuMaxHeight: 220,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    ...widget.groupOptions.map(
+                      (group) => DropdownMenuItem<String?>(
+                        value: group.id,
+                        child: Text(group.name),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedGroup = value;
+                    });
+                  },
+                ),
               ),
               const SizedBox(height: 12),
-
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -85,28 +142,28 @@ class AddNoteDialog extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Cancel'),
-                    ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
                   ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final authorInfo = teamController.text.isNotEmpty
-                            ? '${nameController.text} (${teamController.text})'
-                            : nameController.text;
+                  ElevatedButton(
+                    onPressed: () {
+                      final selectedGroupName = _selectedGroupName();
+                      final authorParts = <String>[];
+                      if (nameController.text.isNotEmpty) {
+                        authorParts.add(nameController.text);
+                      }
+                      if (selectedGroupName != null) {
+                        authorParts.add('- $selectedGroupName');
+                      }
 
-                        viewModel.addNote(noteController.text, authorInfo);
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Add Note'),
-                    ),
+                      widget.viewModel.addNote(
+                        noteController.text,
+                        authorParts.join(' '),
+                      );
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('Add Note'),
                   ),
                 ],
               ),

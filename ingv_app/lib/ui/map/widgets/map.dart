@@ -14,6 +14,7 @@ import 'package:ingv_app/data/repositories/event_search_repository.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 import 'package:ingv_app/ui/map/widgets/map_interface.dart';
+import 'package:ingv_app/ui/search.dart';
 
 class MapScreen extends StatefulWidget {
   final IEventRepository eventRepository;
@@ -210,23 +211,7 @@ class _MapScreenState extends State<MapScreen> implements IMap {
                           onPressed: () =>
                               _viewModel.setDateRangeFilter(null, null),
                         ),
-                      SizedBox(
-                        width: 200,
-                        child: TextField(
-                          onChanged: _viewModel.setSearchQuery,
-                          decoration: InputDecoration(
-                            hintText: 'Search (keywords, tags)...',
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 0,
-                            ),
-                          ),
-                        ),
-                      ),
+                      Search(viewModel: _viewModel)
                     ],
                   ),
                 ),

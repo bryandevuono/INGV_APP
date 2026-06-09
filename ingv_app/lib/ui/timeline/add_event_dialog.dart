@@ -11,9 +11,7 @@ void showAddEventDialog(
   List<GroupModel> groupOptions,
 ) async {
   final titleController = TextEditingController();
-  print(
-    'Group options in dialog: ${groupOptions.map((g) => g.name).join(', ')}',
-  );
+
   final descriptionController = TextEditingController();
   final latController = TextEditingController(text: '0.0');
   final longController = TextEditingController(text: '0.0');

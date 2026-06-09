@@ -9,6 +9,7 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/services/event_detail_service.dart';
 import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'add_event_dialog.dart';
+import '../search.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 
@@ -28,7 +29,6 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   final startDate = DateTime.now().subtract(const Duration(days: 1));
   final Map<String, ScrollController> _laneControllers = {};
 
-  
   @override
   void initState() {
     super.initState();
@@ -110,10 +110,12 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
             height: 45.0,
             padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
             decoration: BoxDecoration(
-              color: _viewModel.categoryColors.firstWhere(
-                (entry) => entry.key == event.category,
-                orElse: () => MapEntry(event.category, Colors.grey),
-              ).value,
+              color: _viewModel.categoryColors
+                  .firstWhere(
+                    (entry) => entry.key == event.category,
+                    orElse: () => MapEntry(event.category, Colors.grey),
+                  )
+                  .value,
               border: _selectedEvent?.eventId == event.eventId
                   ? Border.all(color: Colors.white, width: 2)
                   : null,
@@ -206,10 +208,12 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
             name: event.title,
             start: event.startDt,
             end: event.endDt ?? event.startDt.add(const Duration(hours: 1)),
-            color: _viewModel.categoryColors.firstWhere(
-              (entry) => entry.key == event.category,
-              orElse: () => MapEntry(event.category, Colors.grey),
-            ).value,
+            color: _viewModel.categoryColors
+                .firstWhere(
+                  (entry) => entry.key == event.category,
+                  orElse: () => MapEntry(event.category, Colors.grey),
+                )
+                .value,
           );
         }).toList();
 
@@ -409,31 +413,18 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                                 onPressed: () =>
                                     _viewModel.setDateRangeFilter(null, null),
                               ),
-                            SizedBox(
-                              width: 200,
-                              child: TextField(
-                                onChanged: _viewModel.setSearchQuery,
-                                decoration: InputDecoration(
-                                  hintText: 'Search (keywords, tags)...',
-                                  prefixIcon: const Icon(Icons.search),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8.0),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 0,
-                                  ),
-                                ),
-                              ),
-                            ),
+                            Search(viewModel: _viewModel),
                           ],
                         ),
                       ),
                       IconButton(
                         color: Colors.blue,
                         icon: const Icon(Icons.add),
-                        onPressed: () =>
-                          showAddEventDialog(context, _viewModel, _viewModel.groupOptions),
+                        onPressed: () => showAddEventDialog(
+                          context,
+                          _viewModel,
+                          _viewModel.groupOptions,
+                        ),
                       ),
                     ],
                   ),
@@ -444,6 +435,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
             if (_selectedEvent != null)
               EventDetailPanel(
                 viewModel: _detailViewModel,
+                groupOptions: _viewModel.groupOptions,
                 onDismiss: () {
                   setState(() {
                     _selectedEvent = null;

@@ -61,10 +61,7 @@ class GroupServiceSembast implements IGroupService {
     if (!_initialized) {
       await _initialize();
     }
-    print('Getting groups for userId: $userId');
-    print('users of each group: ${groups.map((g) => '${g.name}: ${g.members.join(', ')}').join(' | ')}');
     final List<GroupModel> groupsOfUser = groups.where((group) => group.members.contains(userId)).toList();
-    print('Total groups available: ${groupsOfUser.length}');
     return groupsOfUser;
   }
 

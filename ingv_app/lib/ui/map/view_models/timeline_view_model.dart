@@ -173,7 +173,6 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   Future<void> getGroupsOfUser() async {
     final groups = await _groupRepository.getGroupsOfUser(await getUserId());
     groupOptions = groups;
-    print('Groups for user: ${groupOptions.map((g) => g.name).join(', ')}');
     notifyListeners();
   }
 }
