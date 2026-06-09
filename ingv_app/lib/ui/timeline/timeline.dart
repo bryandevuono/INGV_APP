@@ -25,34 +25,32 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   late final EventDetailViewModel _detailViewModel;
   EventModel? _selectedEvent;
 
-  // TODO: shouldn't be hardcoded here, after SQL migration
-  final Map<String, Color> cellColors = {
-    "Volcanic": Colors.red,
-    "Earthquake": Colors.green,
-    "Hydrological": Colors.blue,
-    "Meteorological": Colors.orange,
-    "Geological": Colors.purple,
-    "Atmospheric": Colors.cyan,
-  };
-
   final startDate = DateTime.now().subtract(const Duration(days: 1));
   final Map<String, ScrollController> _laneControllers = {};
 
+  
   @override
   void initState() {
     super.initState();
     _viewModel = TimelineViewModel(widget.eventRepository);
+    _viewModel.getColors();
     _detailViewModel = EventDetailViewModel(
       EventDetailRepository(EventDetailService()),
       LocalAttachmentRepository(),
       LocalFileService(),
       FileOpenService(),
+      widget.eventRepository,
     );
     _loadEvents();
+    _loadGroups();
   }
 
   Future<void> _loadEvents() async {
     await _viewModel.fetchEvents();
+  }
+
+  Future<void> _loadGroups() async {
+    await _viewModel.getGroupsOfUser();
   }
 
   Future<void> _toggleEventDetails(EventModel event) async {
@@ -112,7 +110,10 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
             height: 45.0,
             padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
             decoration: BoxDecoration(
-              color: cellColors[event.category] ?? Colors.grey,
+              color: _viewModel.categoryColors.firstWhere(
+                (entry) => entry.key == event.category,
+                orElse: () => MapEntry(event.category, Colors.grey),
+              ).value,
               border: _selectedEvent?.eventId == event.eventId
                   ? Border.all(color: Colors.white, width: 2)
                   : null,
@@ -205,7 +206,10 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
             name: event.title,
             start: event.startDt,
             end: event.endDt ?? event.startDt.add(const Duration(hours: 1)),
-            color: cellColors[category] ?? Colors.grey,
+            color: _viewModel.categoryColors.firstWhere(
+              (entry) => entry.key == event.category,
+              orElse: () => MapEntry(event.category, Colors.grey),
+            ).value,
           );
         }).toList();
 
@@ -429,7 +433,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                         color: Colors.blue,
                         icon: const Icon(Icons.add),
                         onPressed: () =>
-                            showAddEventDialog(context, _viewModel),
+                          showAddEventDialog(context, _viewModel, _viewModel.groupOptions),
                       ),
                     ],
                   ),

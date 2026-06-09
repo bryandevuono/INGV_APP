@@ -122,7 +122,6 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
         params: PdfViewerParams(
           enableTextSelection: true,
           maxScale: 8.0,
-          // Use viewerOverlayBuilder to add the scrollbar
           viewerOverlayBuilder: (context, size, handle) => [
             PdfViewerScrollThumb(
               controller: _pdfController,

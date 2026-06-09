@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/ui/timeline/timeline.dart';
+import 'package:ingv_app/ui/groups/widgets/groups_screen.dart';
 
 class TopNavigationBar extends StatelessWidget {
   final Widget mapScreen;
@@ -15,7 +16,7 @@ class TopNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(kToolbarHeight),
@@ -30,6 +31,7 @@ class TopNavigationBar extends StatelessWidget {
                   Tab(text: "Home"),
                   Tab(text: "Timeline"),
                   Tab(text: "Map"),
+                  Tab(text: "Groups"),
                 ],
               ),
             ),
@@ -41,6 +43,7 @@ class TopNavigationBar extends StatelessWidget {
                 child: Text('Home Screen', style: TextStyle(fontSize: 24))),
             TimelineScreen(eventRepository: eventRepository),
             mapScreen,
+            GroupsScreen(), 
           ],
         ),
       ),

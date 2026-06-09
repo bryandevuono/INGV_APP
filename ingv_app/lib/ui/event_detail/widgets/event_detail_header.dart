@@ -157,7 +157,7 @@ class EventDetailHeader extends StatelessWidget {
                 const SizedBox(width: 16),
                 _MetadataChip(label: 'Initiator', value: event.author),
                 const SizedBox(width: 16),
-                _MetadataChip(label: 'Team', value: 'Observatory Team'),
+                _MetadataChip(label: 'Team', value: viewModel.groupName ?? 'N/A'),
               ],
             ),
           ),

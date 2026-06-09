@@ -14,4 +14,12 @@ class AppDatabase {
   Future<Database> get database {
     return _databaseFuture ??= database_factory.openAppDatabase();
   }
+
+  Future<void> clearAllData() async {
+    if (_databaseFuture != null) {
+      final db = await _databaseFuture!;
+
+      await db.dropAll();
+    }
+  }
 }

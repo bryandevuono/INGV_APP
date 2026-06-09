@@ -21,7 +21,6 @@ extension AttachmentTypeExtension on AttachmentType {
   }
 }
 
-/// Parse attachment type from file extension
 AttachmentType parseAttachmentTypeFromExtension(String extension) {
   final ext = extension.toLowerCase();
   switch (ext) {

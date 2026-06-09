@@ -3,9 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
 import 'package:ingv_app/ui/map/view_models/timeline_view_model.dart';
+import 'package:ingv_app/data/models/group_model.dart';
 
-void showAddEventDialog(BuildContext context, TimelineViewModel viewModel) {
+void showAddEventDialog(
+  BuildContext context,
+  TimelineViewModel viewModel,
+  List<GroupModel> groupOptions,
+) async {
   final titleController = TextEditingController();
+  print(
+    'Group options in dialog: ${groupOptions.map((g) => g.name).join(', ')}',
+  );
   final descriptionController = TextEditingController();
   final latController = TextEditingController(text: '0.0');
   final longController = TextEditingController(text: '0.0');
@@ -18,17 +26,19 @@ void showAddEventDialog(BuildContext context, TimelineViewModel viewModel) {
     'Geological',
     'Atmospheric',
   ];
-  final categoryOptions = defaultCategories.toList();
-  if (categoryOptions.isEmpty) {
-    categoryOptions.addAll(defaultCategories);
-  }
-  String selectedCategory = categoryOptions.first;
+
+  String? selectedGroup;
+  String selectedCategory = defaultCategories.first;
+  List<String> categoryOptions = viewModel.categories.isNotEmpty
+      ? viewModel.categories
+      : defaultCategories;
   List<File> selectedMediaFiles = [];
   DateTime? startDate;
   TimeOfDay? startTime;
   DateTime? endDate;
   TimeOfDay? endTime;
 
+  if (!context.mounted) return;
   showDialog(
     routeSettings: const RouteSettings(name: 'disable-accessibility-view'),
     context: context,
@@ -89,6 +99,34 @@ void showAddEventDialog(BuildContext context, TimelineViewModel viewModel) {
                           }
                         },
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Group',
+                      border: OutlineInputBorder(),
+                    ),
+                    child: DropdownButton<String?>(
+                      value: selectedGroup,
+                      isExpanded: true,
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('None'),
+                        ),
+                        ...groupOptions.map(
+                          (group) => DropdownMenuItem<String?>(
+                            value: group.id,
+                            child: Text(group.name),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedGroup = value;
+                        });
+                      },
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -372,6 +410,7 @@ void showAddEventDialog(BuildContext context, TimelineViewModel viewModel) {
                       long: double.tryParse(longController.text) ?? 0.0,
                       title: titleController.text,
                       tag: '',
+                      groupId: selectedGroup,
                       description: descriptionController.text,
                     );
                     viewModel.addEvent(newEvent);
