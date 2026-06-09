@@ -177,7 +177,7 @@ class GroupScreenViewModel extends ChangeNotifier {
     } finally {
       _setLoading(
         false,
-      ); // This will also call notifyListeners() via _setLoading
+      ); 
     }
   }
 

@@ -38,7 +38,6 @@ void showAddEventDialog(
   DateTime? endDate;
   TimeOfDay? endTime;
 
-  // 4. Check if the widget context is still valid after the async await gap
   if (!context.mounted) return;
   showDialog(
     routeSettings: const RouteSettings(name: 'disable-accessibility-view'),
@@ -109,10 +108,8 @@ void showAddEventDialog(
                       border: OutlineInputBorder(),
                     ),
                     child: DropdownButton<String?>(
-                      // 2. Make the generic type nullable
                       value: selectedGroup,
                       isExpanded: true,
-                      // 3. Prepend a "None" option manually to the items list
                       items: [
                         const DropdownMenuItem<String?>(
                           value: null,
@@ -126,7 +123,6 @@ void showAddEventDialog(
                         ),
                       ],
                       onChanged: (value) {
-                        // 4. Update the state (allowing null)
                         setState(() {
                           selectedGroup = value;
                         });

@@ -83,7 +83,6 @@ class GroupServiceSembast implements IGroupService {
     try {
       final db = await _db;
 
-      // 1. Handle Groups Initialization
       final groupsCount = await _groupsStore.count(db);
       if (groupsCount == 0) {
         final generatedGroups = _generateMockGroups();
@@ -129,7 +128,6 @@ class GroupServiceSembast implements IGroupService {
     final db = await _db;
     await _groupsStore.record(group.id).put(db, group.toJson());
     
-    // Maintain local state consistency
     groups.add(group);
   }
 
