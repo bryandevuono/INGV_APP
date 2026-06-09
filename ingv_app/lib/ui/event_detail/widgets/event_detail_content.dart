@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_overview_card.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_notes_section.dart';
@@ -7,8 +8,13 @@ import 'package:ingv_app/ui/event_detail/widgets/event_map_preview.dart';
 
 class EventDetailContent extends StatelessWidget {
   final EventDetailViewModel viewModel;
+  final List<GroupModel> groupOptions;
 
-  const EventDetailContent({super.key, required this.viewModel});
+  const EventDetailContent({
+    super.key,
+    required this.viewModel,
+    this.groupOptions = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +33,10 @@ class EventDetailContent extends StatelessWidget {
                   children: [
                     EventOverviewCard(viewModel: viewModel),
                     const SizedBox(height: 16),
-                    EventNotesSection(viewModel: viewModel),
+                    EventNotesSection(
+                      viewModel: viewModel,
+                      groupOptions: groupOptions,
+                    ),
                   ],
                 ),
               ),
