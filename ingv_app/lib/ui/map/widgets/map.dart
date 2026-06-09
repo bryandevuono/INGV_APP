@@ -46,6 +46,7 @@ class _MapScreenState extends State<MapScreen> implements IMap {
       LocalAttachmentRepository(),
       LocalFileService(),
       FileOpenService(),
+      widget.eventRepository,
     );
     _loadEvents();
   }

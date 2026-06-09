@@ -56,6 +56,18 @@ class GroupServiceSembast implements IGroupService {
     return List.from(groups);
   }
 
+  @override
+  Future<List<GroupModel>> getGroupsOfUser(String userId) async {
+    if (!_initialized) {
+      await _initialize();
+    }
+    print('Getting groups for userId: $userId');
+    print('users of each group: ${groups.map((g) => '${g.name}: ${g.members.join(', ')}').join(' | ')}');
+    final List<GroupModel> groupsOfUser = groups.where((group) => group.members.contains(userId)).toList();
+    print('Total groups available: ${groupsOfUser.length}');
+    return groupsOfUser;
+  }
+
   Future<bool> deleteGroupsFile() async {
     try {
       final db = await _db;
@@ -200,11 +212,21 @@ class GroupServiceSembast implements IGroupService {
     
     groups.removeWhere((g) => g.id == groupId);
 
-    // check if the group was successfully removed from the local list
     final groupExists = groups.any((g) => g.id == groupId);
     if (groupExists) {
-      return false; // Deletion failed, group still exists in local list
+      return false; 
     }
     return true;
+  }
+
+  Future<GroupModel?> getGroupById(String groupId) async {
+    if (!_initialized) await _initialize();
+    
+    final db = await _db;
+    final record = await _groupsStore.record(groupId).get(db);
+    if (record != null) {
+      return GroupModel.fromJson(record);
+    }
+    return null;
   }
 }

@@ -4,6 +4,8 @@ import '../models/event_model.dart';
 import 'package:flutter/material.dart';
 import '../database/app_database.dart';
 import 'event_service_interface.dart';
+import '../models/group_model.dart';
+import 'group_service_sembast.dart';
 
 class EventServiceSembast implements IEventService {
   static final EventServiceSembast _instance = EventServiceSembast._internal();
@@ -152,5 +154,22 @@ class EventServiceSembast implements IEventService {
     }).toList();
 
     return categoriesWithColors;
+  }
+  
+  @override
+  Future<String?> getGroupOfEvent(int eventId) async {
+    await _ensureInitialized();
+    final event = _events.firstWhere((e) => e.eventId == eventId, orElse: () => throw StateError('Event with id $eventId not found.'));
+    if (event.groupId == null) {
+      return null;
+    }
+    final groupService = GroupServiceSembast();
+    try {
+      final group = await groupService.getGroupById(event.groupId!);
+      return group?.name;
+    } catch (e) {
+      debugPrint('Failed to fetch group for event $eventId: $e');
+      return null;
+    }
   }
 }

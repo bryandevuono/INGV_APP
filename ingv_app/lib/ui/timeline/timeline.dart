@@ -28,6 +28,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   final startDate = DateTime.now().subtract(const Duration(days: 1));
   final Map<String, ScrollController> _laneControllers = {};
 
+  
   @override
   void initState() {
     super.initState();
@@ -38,12 +39,18 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
       LocalAttachmentRepository(),
       LocalFileService(),
       FileOpenService(),
+      widget.eventRepository,
     );
     _loadEvents();
+    _loadGroups();
   }
 
   Future<void> _loadEvents() async {
     await _viewModel.fetchEvents();
+  }
+
+  Future<void> _loadGroups() async {
+    await _viewModel.getGroupsOfUser();
   }
 
   Future<void> _toggleEventDetails(EventModel event) async {
@@ -426,7 +433,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                         color: Colors.blue,
                         icon: const Icon(Icons.add),
                         onPressed: () =>
-                            showAddEventDialog(context, _viewModel),
+                          showAddEventDialog(context, _viewModel, _viewModel.groupOptions),
                       ),
                     ],
                   ),

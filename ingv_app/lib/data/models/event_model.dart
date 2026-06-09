@@ -9,6 +9,7 @@ class EventModel {
   final String title;
   final String tag;
   final String description;
+  final String? groupId;
 
   EventModel({
     required this.eventId,
@@ -21,6 +22,7 @@ class EventModel {
     required this.title,
     required this.tag,
     required this.description,
+    required this.groupId,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +37,7 @@ class EventModel {
       'description': description,
       'category': category,
       'author': author,
+      'group_id': groupId,
     };
   }
 
@@ -49,6 +52,7 @@ class EventModel {
     'title': title,
     'tag': tag,
     'description': description,
+    'group_id': groupId,
   };
 
   factory EventModel.fromMap(Map<String, dynamic> map) {
@@ -65,6 +69,7 @@ class EventModel {
       title: (map['title'] ?? '') as String,
       tag: (map['tag'] ?? '') as String,
       description: (map['description'] ?? '') as String,
+      groupId: map['group_id'] != null ? map['group_id'].toString() : null,
     );
   }
 }

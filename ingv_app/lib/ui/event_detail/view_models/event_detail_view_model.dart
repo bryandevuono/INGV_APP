@@ -8,9 +8,11 @@ import 'package:ingv_app/data/repositories/attachment_repository_interface.dart'
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
+import 'package:ingv_app/data/repositories/event_repository.dart';
 
 class EventDetailViewModel extends ChangeNotifier {
   final IEventDetailRepository _detailRepository;
+  final IEventRepository _eventRepository;
   final IAttachmentRepository _attachmentRepository;
   final ILocalFileService _localFileService;
   final IFileOpenService _fileOpenService;
@@ -20,6 +22,7 @@ class EventDetailViewModel extends ChangeNotifier {
   List<EventNoteModel> notes = [];
   List<EventAttachment> attachments = [];
   EventAttachment? selectedAttachment;
+  String? groupName;
 
   bool isLoading = false;
   String? errorMessage;
@@ -30,11 +33,13 @@ class EventDetailViewModel extends ChangeNotifier {
     this._detailRepository,
     this._attachmentRepository,
     this._localFileService,
-    this._fileOpenService, [
+    this._fileOpenService,
+    this._eventRepository, [
     IFilePickerService? filePickerService,
   ]) : _filePickerService = filePickerService ?? FilePickerService();
 
   Future<void> loadEventDetails(EventModel event) async {
+    groupName = await _eventRepository.getGroupOfEvent(event.eventId);
     selectedEvent = event;
     isLoading = true;
     errorMessage = null;
@@ -289,5 +294,15 @@ class EventDetailViewModel extends ChangeNotifier {
   String get eventLocationDisplay {
     if (selectedEvent == null) return '';
     return '${selectedEvent!.lat.toStringAsFixed(6)}, ${selectedEvent!.long.toStringAsFixed(6)}';
+  }
+
+  Future<void> getGroupofEvent() async {
+    if (selectedEvent == null) return;
+    try {
+      groupName = await _eventRepository.getGroupOfEvent(selectedEvent!.eventId);
+    } catch (e) {
+      groupName = 'N/A';
+    }
+    notifyListeners();
   }
 }

@@ -8,6 +8,7 @@ abstract interface class IEventRepository {
   Future<Map<String, DateTime>> getEventDateRange();
   Future<List<String>> getEventCategories();
   Future<List<MapEntry<String, Color>>> getEventColors();
+  Future<String?> getGroupOfEvent(int eventId);
 }
 
 class EventRepository implements IEventRepository {
@@ -35,7 +36,12 @@ class EventRepository implements IEventRepository {
     return storageService.getEventCategories();
   }
 
+  @override
   Future<List<MapEntry<String, Color>>> getEventColors() {
     return storageService.getEventCategoriesWithColors();
+  }
+
+  Future<String?> getGroupOfEvent(int eventId) {
+    return storageService.getGroupOfEvent(eventId);
   }
 }

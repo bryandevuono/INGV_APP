@@ -8,4 +8,5 @@ abstract interface class IEventService {
   Future<Map<String, DateTime>> getEventDateRange();
   Future<List<String>> getEventCategories();
   Future<List<MapEntry<String, Color>>> getEventCategoriesWithColors();
+  Future<String?> getGroupOfEvent(int eventId);
 }

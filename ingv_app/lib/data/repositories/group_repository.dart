@@ -25,4 +25,8 @@ class GroupRepository {
   Future<bool> deleteGroup(String groupId) {
     return _groupService.deleteGroup(groupId);
   }
+
+  Future<List<GroupModel>> getGroupsOfUser(String userId) {
+    return _groupService.getGroupsOfUser(userId);
+  }
 }
