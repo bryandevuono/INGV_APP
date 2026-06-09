@@ -9,6 +9,7 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/services/event_detail_service.dart';
 import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'add_event_dialog.dart';
+import '../search.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 
@@ -409,23 +410,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                                 onPressed: () =>
                                     _viewModel.setDateRangeFilter(null, null),
                               ),
-                            SizedBox(
-                              width: 200,
-                              child: TextField(
-                                onChanged: _viewModel.setSearchQuery,
-                                decoration: InputDecoration(
-                                  hintText: 'Search (keywords, tags)...',
-                                  prefixIcon: const Icon(Icons.search),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8.0),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 0,
-                                  ),
-                                ),
-                              ),
-                            ),
+                            Search(viewModel: _viewModel)
                           ],
                         ),
                       ),
