@@ -7,6 +7,7 @@ import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/ui/map/view_models/map_view_model.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:ingv_app/data/services/event_detail_service.dart';
+import 'package:ingv_app/data/services/export_service.dart';
 import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'package:ingv_app/ui/map/widgets/map_marker.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
@@ -42,12 +43,28 @@ class _MapScreenState extends State<MapScreen> implements IMap {
       widget.eventRepository,
       widget.eventSearchRepository,
     );
+    final detailRepository = EventDetailRepository(EventDetailService());
+    final attachmentRepository = LocalAttachmentRepository();
+    final localFileService = LocalFileService();
+    final pdfExportService = PdfExportService(
+      detailRepository,
+      attachmentRepository,
+      localFileService,
+    );
+    final zipExportService = ZipExportService(
+      pdfExportService: pdfExportService,
+      attachmentRepository: attachmentRepository,
+      localFileService: localFileService,
+    );
     _detailViewModel = EventDetailViewModel(
-      EventDetailRepository(EventDetailService()),
-      LocalAttachmentRepository(),
-      LocalFileService(),
+      detailRepository,
+      attachmentRepository,
+      localFileService,
       FileOpenService(),
       widget.eventRepository,
+      null,
+      pdfExportService,
+      zipExportService,
     );
     _loadEvents();
   }
@@ -211,7 +228,7 @@ class _MapScreenState extends State<MapScreen> implements IMap {
                           onPressed: () =>
                               _viewModel.setDateRangeFilter(null, null),
                         ),
-                      Search(viewModel: _viewModel)
+                      Search(viewModel: _viewModel),
                     ],
                   ),
                 ),

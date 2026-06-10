@@ -124,23 +124,93 @@ class EventDetailHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Export button
-              TextButton.icon(
-                onPressed: () {
-                  // TODO: Implement export
-                },
-                icon: const Icon(Icons.download, size: 16),
-                label: const Text('Export as'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  TextButton.icon(
+                    onPressed: viewModel.isExporting
+                        ? null
+                        : () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final exportPath = await viewModel
+                                .exportSelectedEvent();
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  exportPath != null
+                                      ? 'Event PDF exported: $exportPath'
+                                      : (viewModel.errorMessage ??
+                                            'Failed to export event PDF.'),
+                                ),
+                              ),
+                            );
+                          },
+                    icon: viewModel.isExporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.picture_as_pdf, size: 16),
+                    label: const Text('Export PDF'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
                   ),
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+                  TextButton.icon(
+                    onPressed: viewModel.isExporting
+                        ? null
+                        : () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final exportPath = await viewModel
+                                .exportSelectedEventAsZip();
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  exportPath != null
+                                      ? 'Event ZIP exported: $exportPath'
+                                      : (viewModel.errorMessage ??
+                                            'Failed to export event ZIP.'),
+                                ),
+                              ),
+                            );
+                          },
+                    icon: viewModel.isExporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.folder_zip, size: 16),
+                    label: const Text('Export ZIP'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -157,7 +227,10 @@ class EventDetailHeader extends StatelessWidget {
                 const SizedBox(width: 16),
                 _MetadataChip(label: 'Initiator', value: event.author),
                 const SizedBox(width: 16),
-                _MetadataChip(label: 'Team', value: viewModel.groupName ?? 'N/A'),
+                _MetadataChip(
+                  label: 'Team',
+                  value: viewModel.groupName ?? 'N/A',
+                ),
               ],
             ),
           ),

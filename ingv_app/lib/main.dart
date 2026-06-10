@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:ingv_app/ui/map/widgets/map.dart';
 import 'data/repositories/event_repository.dart';
 import 'data/repositories/event_search_repository.dart';
@@ -8,6 +9,7 @@ import 'ui/navbar.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   runApp(const MyApp());
 }
 

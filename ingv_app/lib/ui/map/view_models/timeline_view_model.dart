@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_model.dart';
+import 'package:ingv_app/data/repositories/attachment_repository.dart';
+import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/data/repositories/event_search_repository.dart';
+import 'package:ingv_app/data/services/export_service.dart';
+import 'package:ingv_app/data/services/event_detail_service.dart';
 import 'package:ingv_app/data/services/event_search_service.dart';
 import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/data/repositories/group_repository.dart';
 import 'package:ingv_app/data/services/group_service_sembast.dart';
+import 'package:ingv_app/data/services/file_operations_service.dart';
 
 // interface for the view model to interact with the repositories
 abstract interface class ITimelineViewModel {
@@ -26,7 +31,11 @@ abstract interface class ITimelineViewModel {
 
 class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   final EventRepository _eventRepository;
-  final GroupRepository _groupRepository = GroupRepository(GroupServiceSembast());
+  late final PdfExportService _pdfExportService;
+  late final ZipExportService _zipExportService;
+  final GroupRepository _groupRepository = GroupRepository(
+    GroupServiceSembast(),
+  );
   late final EventSearchRepository _searchRepository;
 
   // Managed UI states migrated from the Screen
@@ -50,8 +59,29 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   DateTime minStart = DateTime.now();
   DateTime maxEnd = DateTime.now();
   final startDate = DateTime.now().subtract(const Duration(days: 1));
+  bool isExporting = false;
+  String? exportErrorMessage;
+  String? lastExportPath;
 
-  TimelineViewModel(this._eventRepository) {
+  TimelineViewModel(
+    this._eventRepository, {
+    PdfExportService? pdfExportService,
+    ZipExportService? zipExportService,
+  }) {
+    _pdfExportService =
+        pdfExportService ??
+        PdfExportService(
+          EventDetailRepository(EventDetailService()),
+          LocalAttachmentRepository(),
+          LocalFileService(),
+        );
+    _zipExportService =
+        zipExportService ??
+        ZipExportService(
+          pdfExportService: _pdfExportService,
+          attachmentRepository: LocalAttachmentRepository(),
+          localFileService: LocalFileService(),
+        );
     _searchRepository = EventSearchRepository(
       EventSearchService(_eventRepository.storageService),
     );
@@ -169,10 +199,71 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     // this would come from an authentication service with an Id not a name in a real backend
     return 'p_1';
   }
+
   @override
   Future<void> getGroupsOfUser() async {
     final groups = await _groupRepository.getGroupsOfUser(await getUserId());
     groupOptions = groups;
     notifyListeners();
+  }
+
+  Future<String?> exportTimelineReport() async {
+    if (events.isEmpty) {
+      exportErrorMessage = 'No timeline events available to export.';
+      notifyListeners();
+      return null;
+    }
+
+    isExporting = true;
+    exportErrorMessage = null;
+    lastExportPath = null;
+    notifyListeners();
+
+    try {
+      final result = await _pdfExportService.exportTimelineReport(
+        events: events,
+        orderedCategories: _orderedCategories,
+        filterStartDate: filterStartDate,
+        filterEndDate: filterEndDate,
+      );
+      lastExportPath = result.saveLocation;
+      return lastExportPath;
+    } catch (e) {
+      exportErrorMessage = 'Failed to export timeline PDF.';
+      return null;
+    } finally {
+      isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> exportTimelineAsZip() async {
+    if (events.isEmpty) {
+      exportErrorMessage = 'No timeline events available to export.';
+      notifyListeners();
+      return null;
+    }
+
+    isExporting = true;
+    exportErrorMessage = null;
+    lastExportPath = null;
+    notifyListeners();
+
+    try {
+      final result = await _zipExportService.exportTimelineAsZip(
+        events: events,
+        orderedCategories: _orderedCategories,
+        filterStartDate: filterStartDate,
+        filterEndDate: filterEndDate,
+      );
+      lastExportPath = result.saveLocation;
+      return lastExportPath;
+    } catch (e) {
+      exportErrorMessage = 'Failed to export timeline ZIP.';
+      return null;
+    } finally {
+      isExporting = false;
+      notifyListeners();
+    }
   }
 }

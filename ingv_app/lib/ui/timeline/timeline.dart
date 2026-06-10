@@ -7,6 +7,7 @@ import 'package:ingv_app/ui/map/view_models/timeline_view_model.dart';
 import 'timeline_interface.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/services/event_detail_service.dart';
+import 'package:ingv_app/data/services/export_service.dart';
 import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'add_event_dialog.dart';
 import '../search.dart';
@@ -32,14 +33,34 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
   @override
   void initState() {
     super.initState();
-    _viewModel = TimelineViewModel(widget.eventRepository);
+    final detailRepository = EventDetailRepository(EventDetailService());
+    final attachmentRepository = LocalAttachmentRepository();
+    final localFileService = LocalFileService();
+    final pdfExportService = PdfExportService(
+      detailRepository,
+      attachmentRepository,
+      localFileService,
+    );
+    final zipExportService = ZipExportService(
+      pdfExportService: pdfExportService,
+      attachmentRepository: attachmentRepository,
+      localFileService: localFileService,
+    );
+    _viewModel = TimelineViewModel(
+      widget.eventRepository,
+      pdfExportService: pdfExportService,
+      zipExportService: zipExportService,
+    );
     _viewModel.getColors();
     _detailViewModel = EventDetailViewModel(
-      EventDetailRepository(EventDetailService()),
-      LocalAttachmentRepository(),
-      LocalFileService(),
+      detailRepository,
+      attachmentRepository,
+      localFileService,
       FileOpenService(),
       widget.eventRepository,
+      null,
+      pdfExportService,
+      zipExportService,
     );
     _loadEvents();
     _loadGroups();
@@ -413,6 +434,82 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
                                 onPressed: () =>
                                     _viewModel.setDateRangeFilter(null, null),
                               ),
+                            TextButton.icon(
+                              onPressed: _viewModel.isExporting
+                                  ? null
+                                  : () async {
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
+                                      );
+                                      final exportPath = await _viewModel
+                                          .exportTimelineReport();
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            exportPath != null
+                                                ? 'Timeline PDF exported: $exportPath'
+                                                : (_viewModel
+                                                          .exportErrorMessage ??
+                                                      'Failed to export timeline PDF.'),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                              icon: _viewModel.isExporting
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.download),
+                              label: Text(
+                                _viewModel.isExporting
+                                    ? 'Exporting...'
+                                    : 'Export PDF',
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: _viewModel.isExporting
+                                  ? null
+                                  : () async {
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
+                                      );
+                                      final exportPath = await _viewModel
+                                          .exportTimelineAsZip();
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            exportPath != null
+                                                ? 'Timeline ZIP exported: $exportPath'
+                                                : (_viewModel
+                                                          .exportErrorMessage ??
+                                                      'Failed to export timeline ZIP.'),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                              icon: _viewModel.isExporting
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.folder_zip),
+                              label: const Text('Export ZIP'),
+                            ),
                             Search(viewModel: _viewModel),
                           ],
                         ),

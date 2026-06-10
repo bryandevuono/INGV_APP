@@ -120,7 +120,6 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
         widget.filePath,
         controller: _pdfController,
         params: PdfViewerParams(
-          enableTextSelection: true,
           maxScale: 8.0,
           viewerOverlayBuilder: (context, size, handle) => [
             PdfViewerScrollThumb(
