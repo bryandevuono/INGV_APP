@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:archive/archive.dart';
-import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:ingv_app/data/models/event_attachment.dart';
@@ -11,55 +9,35 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/event_note_model.dart';
 import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
+import 'package:ingv_app/data/services/export/export_contracts.dart';
+import 'package:ingv_app/data/services/export/export_file_save_service.dart';
+import 'package:ingv_app/data/services/export/export_result.dart';
+import 'package:ingv_app/data/services/export/zip_archive_service.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-class ExportResult {
-  final String fileName;
-  final String saveLocation;
-  final Uint8List bytes;
+export 'package:ingv_app/data/services/export/export_contracts.dart';
+export 'package:ingv_app/data/services/export/export_file_save_service.dart';
+export 'package:ingv_app/data/services/export/export_result.dart';
+export 'package:ingv_app/data/services/export/zip_archive_service.dart';
 
-  const ExportResult({
-    required this.fileName,
-    required this.saveLocation,
-    required this.bytes,
-  });
-}
-
-abstract class ExportService {
-  Future<ExportResult> exportEventReport({
-    required EventModel event,
-    String? groupName,
-    bool saveToDisk = true,
-  });
-
-  Future<ExportResult> exportTimelineReport({
-    required List<EventModel> events,
-    required List<String> orderedCategories,
-    DateTime? filterStartDate,
-    DateTime? filterEndDate,
-    bool saveToDisk = true,
-  });
-
-  Future<bool> previewPdf(Uint8List bytes, {required String filename});
-
-  Future<bool> sharePdf(Uint8List bytes, {required String filename});
-}
-
-class PdfExportService implements ExportService {
+class PdfExportService implements IPdfExportService {
   final IEventDetailRepository _detailRepository;
   final IAttachmentRepository _attachmentRepository;
   final ILocalFileService _localFileService;
+  final IExportFileSaveService _fileSaveService;
 
   PdfExportService(
     this._detailRepository,
     this._attachmentRepository,
-    this._localFileService,
-  );
+    this._localFileService, [
+    IExportFileSaveService? fileSaveService,
+  ]) : _fileSaveService = fileSaveService ?? FileSaverExportFileSaveService();
 
+  @override
   Future<Uint8List> buildEventPdfBytes({
     required EventModel event,
     String? groupName,
@@ -82,6 +60,7 @@ class PdfExportService implements ExportService {
     );
   }
 
+  @override
   Future<Uint8List> buildTimelinePdfBytes({
     required List<EventModel> events,
     required List<String> orderedCategories,
@@ -194,7 +173,7 @@ class PdfExportService implements ExportService {
       loadPreviewData: true,
     );
 
-    final document = pw.Document();
+    final document = pw.Document(theme: await _buildPdfTheme());
     final exportDate = DateTime.now();
     document.addPage(
       pw.MultiPage(
@@ -248,7 +227,7 @@ class PdfExportService implements ExportService {
     DateTime? filterEndDate,
     required Map<int, _TimelineEventDetail> eventDetails,
   }) async {
-    final document = pw.Document();
+    final document = pw.Document(theme: await _buildPdfTheme());
     final exportDate = DateTime.now();
     document.addPage(
       pw.MultiPage(
@@ -282,57 +261,53 @@ class PdfExportService implements ExportService {
   }
 
   Future<String> _savePdf(Uint8List bytes, String fileName) async {
-    try {
-      if (!kIsWeb &&
-          (defaultTargetPlatform == TargetPlatform.windows ||
-              defaultTargetPlatform == TargetPlatform.macOS)) {
-        final saveAsPath = await FileSaver.instance.saveAs(
-          name: fileName,
-          bytes: bytes,
-          fileExtension: 'pdf',
-          mimeType: MimeType.pdf,
-        );
-        if (saveAsPath != null && saveAsPath.isNotEmpty) {
-          return saveAsPath;
-        }
-      }
-    } catch (_) {
-      // Fall back to saveFile when save-as is unavailable on the platform.
+    return _fileSaveService.savePdf(bytes, fileName);
+  }
+
+  Future<pw.ThemeData> _buildPdfTheme() async {
+    if (defaultTargetPlatform != TargetPlatform.windows) {
+      return pw.ThemeData.withFont();
     }
 
-    return FileSaver.instance.saveFile(
-      name: fileName,
-      bytes: bytes,
-      fileExtension: 'pdf',
-      mimeType: MimeType.pdf,
+    final baseFont = await _loadWindowsFont('C:\\Windows\\Fonts\\segoeui.ttf');
+    final boldFont =
+        await _loadWindowsFont('C:\\Windows\\Fonts\\segoeuib.ttf') ?? baseFont;
+    final italicFont =
+        await _loadWindowsFont('C:\\Windows\\Fonts\\segoeuii.ttf') ?? baseFont;
+    final boldItalicFont =
+        await _loadWindowsFont('C:\\Windows\\Fonts\\segoeuiz.ttf') ?? boldFont;
+    final symbolFallback = await _loadWindowsFont(
+      'C:\\Windows\\Fonts\\seguisym.ttf',
+    );
+    final emojiFallback = await _loadWindowsFont(
+      'C:\\Windows\\Fonts\\seguiemj.ttf',
+    );
+
+    final fallbacks = <pw.Font>[
+      if (symbolFallback != null) symbolFallback,
+      if (emojiFallback != null) emojiFallback,
+    ];
+
+    return pw.ThemeData.withFont(
+      base: baseFont,
+      bold: boldFont,
+      italic: italicFont,
+      boldItalic: boldItalicFont,
+      fontFallback: fallbacks.isEmpty ? null : fallbacks,
     );
   }
 
-  Future<String> _saveZip(Uint8List bytes, String fileName) async {
+  Future<pw.Font?> _loadWindowsFont(String path) async {
     try {
-      if (!kIsWeb &&
-          (defaultTargetPlatform == TargetPlatform.windows ||
-              defaultTargetPlatform == TargetPlatform.macOS)) {
-        final saveAsPath = await FileSaver.instance.saveAs(
-          name: fileName,
-          bytes: bytes,
-          fileExtension: 'zip',
-          mimeType: MimeType.other,
-        );
-        if (saveAsPath != null && saveAsPath.isNotEmpty) {
-          return saveAsPath;
-        }
+      final file = File(path);
+      if (!await file.exists()) {
+        return null;
       }
+      final bytes = await file.readAsBytes();
+      return pw.Font.ttf(bytes.buffer.asByteData());
     } catch (_) {
-      // Fall back to saveFile when save-as is unavailable on the platform.
+      return null;
     }
-
-    return FileSaver.instance.saveFile(
-      name: fileName,
-      bytes: bytes,
-      fileExtension: 'zip',
-      mimeType: MimeType.other,
-    );
   }
 
   Future<List<_ResolvedAttachment>> _resolveAttachments(
@@ -440,35 +415,6 @@ class PdfExportService implements ExportService {
       throw Exception('File does not exist');
     }
     return file.readAsBytes();
-  }
-
-  String _buildEventZipFileName(EventModel event) {
-    final timestamp = DateTime.now();
-    final suffix =
-        _twoDigits(timestamp.month) +
-        _twoDigits(timestamp.day) +
-        '_' +
-        _twoDigits(timestamp.hour) +
-        _twoDigits(timestamp.minute);
-    return 'event_export_${event.eventId}_$suffix';
-  }
-
-  String _buildTimelineZipFileName({
-    DateTime? filterStartDate,
-    DateTime? filterEndDate,
-  }) {
-    final start = filterStartDate == null
-        ? 'all_events'
-        : _compactDate(filterStartDate);
-    final end = filterEndDate == null
-        ? 'all_events'
-        : _compactDate(filterEndDate);
-    return 'timeline_export_${start}_to_${end}';
-  }
-
-  String _compactDate(DateTime date) {
-    final local = date.toLocal();
-    return '${local.year}-${_twoDigits(local.month)}-${_twoDigits(local.day)}';
   }
 
   bool _looksLikeAssetPath(String path) {
@@ -1052,19 +998,29 @@ class PdfExportService implements ExportService {
   }
 }
 
-class ZipExportService {
-  final PdfExportService _pdfExportService;
+class ZipExportService implements IZipExportService {
+  final IPdfExportService _pdfExportService;
+  final IEventDetailRepository _detailRepository;
   final IAttachmentRepository _attachmentRepository;
   final ILocalFileService _localFileService;
+  final IExportFileSaveService _fileSaveService;
+  final IZipArchiveService _zipArchiveService;
 
   ZipExportService({
-    required PdfExportService pdfExportService,
+    required IPdfExportService pdfExportService,
+    required IEventDetailRepository detailRepository,
     required IAttachmentRepository attachmentRepository,
     required ILocalFileService localFileService,
+    IExportFileSaveService? fileSaveService,
+    IZipArchiveService? zipArchiveService,
   }) : _pdfExportService = pdfExportService,
+       _detailRepository = detailRepository,
        _attachmentRepository = attachmentRepository,
-       _localFileService = localFileService;
+       _localFileService = localFileService,
+       _fileSaveService = fileSaveService ?? FileSaverExportFileSaveService(),
+       _zipArchiveService = zipArchiveService ?? ArchiveZipArchiveService();
 
+  @override
   Future<ExportResult> exportEventAsZip({
     required EventModel event,
     String? groupName,
@@ -1081,12 +1037,12 @@ class ZipExportService {
       attachments: effectiveAttachments,
     );
 
-    final archive = Archive();
     final usedPaths = <String>{'event_report.pdf', 'metadata/export_info.json'};
+    final archiveEntries = <ExportArchiveEntry>[];
     final includedAttachmentFileNames = <String>[];
     final missingAttachmentFileNames = <String>[];
 
-    _addBytesToArchive(archive, 'event_report.pdf', pdfBytes, usedPaths);
+    _addBytesToArchive(archiveEntries, 'event_report.pdf', pdfBytes, usedPaths);
 
     for (final attachment in effectiveAttachments) {
       final resolved = await _resolveAttachmentBytes(attachment);
@@ -1098,7 +1054,12 @@ class ZipExportService {
 
       final archivePath = _eventAttachmentArchivePath(attachment);
       final uniqueArchivePath = _uniqueArchivePath(archivePath, usedPaths);
-      _addBytesToArchive(archive, uniqueArchivePath, resolved, usedPaths);
+      _addBytesToArchive(
+        archiveEntries,
+        uniqueArchivePath,
+        resolved,
+        usedPaths,
+      );
       includedAttachmentFileNames.add(uniqueArchivePath);
     }
 
@@ -1115,13 +1076,13 @@ class ZipExportService {
       'missingAttachmentFileNames': missingAttachmentFileNames,
     };
     _addBytesToArchive(
-      archive,
+      archiveEntries,
       'metadata/export_info.json',
       utf8.encode(JsonEncoder.withIndent('  ').convert(metadata)),
       usedPaths,
     );
 
-    final zipBytes = Uint8List.fromList(ZipEncoder().encode(archive)!);
+    final zipBytes = _zipArchiveService.createZip(archiveEntries);
     final fileName = _buildEventZipFileName(event);
     final saveLocation = await _saveZip(zipBytes, fileName);
 
@@ -1132,6 +1093,7 @@ class ZipExportService {
     );
   }
 
+  @override
   Future<ExportResult> exportTimelineAsZip({
     required List<EventModel> events,
     required List<String> orderedCategories,
@@ -1145,16 +1107,21 @@ class ZipExportService {
       filterEndDate: filterEndDate,
     );
 
-    final archive = Archive();
     final usedPaths = <String>{
       'timeline_report.pdf',
       'metadata/export_info.json',
     };
+    final archiveEntries = <ExportArchiveEntry>[];
     final includedAttachmentFileNames = <String>[];
     final missingAttachmentFileNames = <String>[];
     final eventIds = events.map((event) => event.eventId).toList();
 
-    _addBytesToArchive(archive, 'timeline_report.pdf', pdfBytes, usedPaths);
+    _addBytesToArchive(
+      archiveEntries,
+      'timeline_report.pdf',
+      pdfBytes,
+      usedPaths,
+    );
 
     int includedAttachmentCount = 0;
     for (final event in events) {
@@ -1169,7 +1136,12 @@ class ZipExportService {
 
         final archivePath = _timelineAttachmentArchivePath(event, attachment);
         final uniqueArchivePath = _uniqueArchivePath(archivePath, usedPaths);
-        _addBytesToArchive(archive, uniqueArchivePath, resolved, usedPaths);
+        _addBytesToArchive(
+          archiveEntries,
+          uniqueArchivePath,
+          resolved,
+          usedPaths,
+        );
         includedAttachmentFileNames.add(uniqueArchivePath);
         includedAttachmentCount += 1;
       }
@@ -1189,13 +1161,13 @@ class ZipExportService {
       'missingAttachmentFileNames': missingAttachmentFileNames,
     };
     _addBytesToArchive(
-      archive,
+      archiveEntries,
       'metadata/export_info.json',
       utf8.encode(JsonEncoder.withIndent('  ').convert(metadata)),
       usedPaths,
     );
 
-    final zipBytes = Uint8List.fromList(ZipEncoder().encode(archive)!);
+    final zipBytes = _zipArchiveService.createZip(archiveEntries);
     final fileName = _buildTimelineZipFileName(
       filterStartDate: filterStartDate,
       filterEndDate: filterEndDate,
@@ -1210,7 +1182,7 @@ class ZipExportService {
   }
 
   Future<List<EventNoteModel>> _fetchNotes(int eventId) async {
-    return _pdfExportService._detailRepository.getNotesByEventId(eventId);
+    return _detailRepository.getNotesByEventId(eventId);
   }
 
   Future<List<EventAttachment>> _fetchAttachments(String eventId) async {
@@ -1235,13 +1207,13 @@ class ZipExportService {
   }
 
   void _addBytesToArchive(
-    Archive archive,
+    List<ExportArchiveEntry> archiveEntries,
     String archivePath,
     List<int> bytes,
     Set<String> usedPaths,
   ) {
     final uniquePath = _uniqueArchivePath(archivePath, usedPaths);
-    archive.addFile(ArchiveFile(uniquePath, bytes.length, bytes));
+    archiveEntries.add(ExportArchiveEntry(path: uniquePath, bytes: bytes));
     usedPaths.add(uniquePath);
   }
 
@@ -1336,30 +1308,7 @@ class ZipExportService {
   }
 
   Future<String> _saveZip(Uint8List bytes, String fileName) async {
-    try {
-      if (!kIsWeb &&
-          (defaultTargetPlatform == TargetPlatform.windows ||
-              defaultTargetPlatform == TargetPlatform.macOS)) {
-        final saveAsPath = await FileSaver.instance.saveAs(
-          name: fileName,
-          bytes: bytes,
-          fileExtension: 'zip',
-          mimeType: MimeType.other,
-        );
-        if (saveAsPath != null && saveAsPath.isNotEmpty) {
-          return saveAsPath;
-        }
-      }
-    } catch (_) {
-      // Fall back to saveFile when save-as is unavailable on the platform.
-    }
-
-    return FileSaver.instance.saveFile(
-      name: fileName,
-      bytes: bytes,
-      fileExtension: 'zip',
-      mimeType: MimeType.other,
-    );
+    return _fileSaveService.saveZip(bytes, fileName);
   }
 }
 

@@ -18,8 +18,8 @@ class EventDetailViewModel extends ChangeNotifier {
   final ILocalFileService _localFileService;
   final IFileOpenService _fileOpenService;
   final IFilePickerService _filePickerService;
-  late final PdfExportService _pdfExportService;
-  late final ZipExportService _zipExportService;
+  late final IPdfExportService _pdfExportService;
+  late final IZipExportService _zipExportService;
 
   EventModel? selectedEvent;
   List<EventNoteModel> notes = [];
@@ -41,8 +41,8 @@ class EventDetailViewModel extends ChangeNotifier {
     this._fileOpenService,
     this._eventRepository, [
     IFilePickerService? filePickerService,
-    PdfExportService? pdfExportService,
-    ZipExportService? zipExportService,
+    IPdfExportService? pdfExportService,
+    IZipExportService? zipExportService,
   ]) : _filePickerService = filePickerService ?? FilePickerService() {
     _pdfExportService =
         pdfExportService ??
@@ -55,6 +55,7 @@ class EventDetailViewModel extends ChangeNotifier {
         zipExportService ??
         ZipExportService(
           pdfExportService: _pdfExportService,
+          detailRepository: _detailRepository,
           attachmentRepository: _attachmentRepository,
           localFileService: _localFileService,
         );

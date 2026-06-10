@@ -31,8 +31,8 @@ abstract interface class ITimelineViewModel {
 
 class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   final EventRepository _eventRepository;
-  late final PdfExportService _pdfExportService;
-  late final ZipExportService _zipExportService;
+  late final IPdfExportService _pdfExportService;
+  late final IZipExportService _zipExportService;
   final GroupRepository _groupRepository = GroupRepository(
     GroupServiceSembast(),
   );
@@ -65,22 +65,26 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
   TimelineViewModel(
     this._eventRepository, {
-    PdfExportService? pdfExportService,
-    ZipExportService? zipExportService,
+    IPdfExportService? pdfExportService,
+    IZipExportService? zipExportService,
   }) {
+    final detailRepository = EventDetailRepository(EventDetailService());
+    final attachmentRepository = LocalAttachmentRepository();
+    final localFileService = LocalFileService();
     _pdfExportService =
         pdfExportService ??
         PdfExportService(
-          EventDetailRepository(EventDetailService()),
-          LocalAttachmentRepository(),
-          LocalFileService(),
+          detailRepository,
+          attachmentRepository,
+          localFileService,
         );
     _zipExportService =
         zipExportService ??
         ZipExportService(
           pdfExportService: _pdfExportService,
-          attachmentRepository: LocalAttachmentRepository(),
-          localFileService: LocalFileService(),
+          detailRepository: detailRepository,
+          attachmentRepository: attachmentRepository,
+          localFileService: localFileService,
         );
     _searchRepository = EventSearchRepository(
       EventSearchService(_eventRepository.storageService),

@@ -53,6 +53,7 @@ class _MapScreenState extends State<MapScreen> implements IMap {
     );
     final zipExportService = ZipExportService(
       pdfExportService: pdfExportService,
+      detailRepository: detailRepository,
       attachmentRepository: attachmentRepository,
       localFileService: localFileService,
     );

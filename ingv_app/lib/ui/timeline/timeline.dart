@@ -43,6 +43,7 @@ class _TimelineScreenState extends State<TimelineScreen> implements ITimeline {
     );
     final zipExportService = ZipExportService(
       pdfExportService: pdfExportService,
+      detailRepository: detailRepository,
       attachmentRepository: attachmentRepository,
       localFileService: localFileService,
     );
