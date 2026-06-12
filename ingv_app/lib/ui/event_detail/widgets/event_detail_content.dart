@@ -5,6 +5,7 @@ import 'package:ingv_app/ui/event_detail/widgets/event_overview_card.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_notes_section.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_media_section.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_map_preview.dart';
+import 'package:ingv_app/ui/map/ui_services/map_service.dart';
 
 class EventDetailContent extends StatelessWidget {
   final EventDetailViewModel viewModel;
@@ -48,7 +49,7 @@ class EventDetailContent extends StatelessWidget {
                   children: [
                     EventMediaSection(viewModel: viewModel),
                     const SizedBox(height: 16),
-                    EventMapPreview(viewModel: viewModel),
+                    EventMapPreview(viewModel: viewModel, mapService: MapServiceUI(userAgentPackageName: 'it.ingv.app')), 
                   ],
                 ),
               ),
