@@ -2,12 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
-import 'package:ingv_app/ui/map/view_models/timeline_view_model.dart';
 import 'package:ingv_app/data/models/group_model.dart';
+import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
 
 void showAddEventDialog(
   BuildContext context,
-  TimelineViewModel viewModel,
+  ITimelineViewModel viewModel,
   List<GroupModel> groupOptions,
 ) async {
   final titleController = TextEditingController();

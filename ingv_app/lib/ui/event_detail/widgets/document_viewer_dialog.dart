@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/attachment_type.dart';
 import 'package:ingv_app/data/models/event_attachment.dart';
 import 'package:pdfrx/pdfrx.dart';
+import '../../../data/repositories/document_view_repository.dart';
+import '../view_models/document_viewer_view_model.dart';
 
 class DocumentViewerDialog extends StatefulWidget {
   final EventAttachment attachment;
@@ -22,10 +24,21 @@ class DocumentViewerDialog extends StatefulWidget {
 
 class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
   Object? _docxError;
-  final _pdfController = PdfViewerController();
+  late final DocumentViewerViewModel _documentViewModel;
 
   bool get _isPdf => widget.attachment.type == AttachmentType.pdf;
   bool get _isDocx => widget.attachment.type == AttachmentType.docx;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Instantiates our all-in-one repository solution directly
+    _documentViewModel = DocumentViewerViewModel(
+      documentRepository: DocumentViewRepository(),
+      filePath: widget.filePath,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +106,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
             IconButton(
               tooltip: 'Zoom In',
               icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-              onPressed: () => _pdfController.zoomUp(),
+              onPressed: () => _documentViewModel.handleZoomIn(),
             ),
             IconButton(
               tooltip: 'Zoom Out',
@@ -101,7 +114,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
                 Icons.remove_circle_outline,
                 color: Colors.white,
               ),
-              onPressed: () => _pdfController.zoomDown(),
+              onPressed: () => _documentViewModel.handleZoomOut(),
             ),
           ],
           IconButton(
@@ -118,12 +131,12 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
     if (_isPdf) {
       return PdfViewer.file(
         widget.filePath,
-        controller: _pdfController,
+        controller: _documentViewModel.pdfController,
         params: PdfViewerParams(
           maxScale: 8.0,
           viewerOverlayBuilder: (context, size, handle) => [
             PdfViewerScrollThumb(
-              controller: _pdfController,
+              controller: _documentViewModel.pdfController,
               orientation: ScrollbarOrientation.right,
             ),
           ],
@@ -139,12 +152,7 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
             Positioned.fill(
               child: DocxView(
                 path: widget.filePath,
-                config: DocxViewConfig(
-                  enableSearch: false,
-                  enableZoom: false, // Disables the accidental scroll-zoom
-                  backgroundColor: Colors.white,
-                  theme: DocxViewTheme.light(),
-                ),
+                config: _documentViewModel.docxConfig,
                 onError: (error) {
                   if (!mounted) return;
                   setState(() {

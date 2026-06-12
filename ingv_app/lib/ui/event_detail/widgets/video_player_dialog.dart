@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_attachment.dart';
-import 'package:media_kit/media_kit.dart';
+import 'package:media_kit/media_kit.dart'; // Needed for the poster sub-widget
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:ingv_app/data/repositories/media_kit_player_repository.dart';
+import 'package:ingv_app/ui/event_detail/view_models/media_kit_view_model.dart';
 
 class VideoPlayerDialog extends StatefulWidget {
   final EventAttachment attachment;
@@ -21,86 +21,23 @@ class VideoPlayerDialog extends StatefulWidget {
 }
 
 class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
-  late final Player _player;
-  late final VideoController _controller;
+  late final VideoPlayerViewModel _viewModel;
   late final Future<void> _initializeFuture;
   final GlobalKey<VideoState> _videoKey = GlobalKey<VideoState>();
-  final List<StreamSubscription<dynamic>> _subscriptions = [];
-
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
-  bool _isPlaying = false;
-  bool _isMuted = false;
-  Object? _initializationError;
 
   @override
   void initState() {
     super.initState();
-    _player = Player();
-    _controller = VideoController(_player);
-    _initializeFuture = _initialize();
-
-    _subscriptions.add(
-      _player.stream.playing.listen((playing) {
-        if (!mounted) return;
-        setState(() {
-          _isPlaying = playing;
-        });
-      }),
+    _viewModel = VideoPlayerViewModel(
+      videoRepository: MediaKitPlayerRepository(),
+      attachment: widget.attachment,
     );
-    _subscriptions.add(
-      _player.stream.duration.listen((duration) {
-        if (!mounted) return;
-        setState(() {
-          _duration = duration;
-        });
-      }),
-    );
-    _subscriptions.add(
-      _player.stream.position.listen((position) {
-        if (!mounted) return;
-        setState(() {
-          _position = position;
-        });
-      }),
-    );
-    _subscriptions.add(
-      _player.stream.volume.listen((volume) {
-        if (!mounted) return;
-        setState(() {
-          _isMuted = volume == 0;
-        });
-      }),
-    );
-  }
-
-  Future<void> _initialize() async {
-    try {
-      final source = widget.attachment.hasAssetPath
-          ? widget.attachment.assetPath
-          : widget.attachment.localPath;
-      if (source == null || source.isEmpty) {
-        throw StateError('Missing local video source');
-      }
-
-      await _player.open(Media(source), play: false);
-      await _player.setPlaylistMode(PlaylistMode.loop);
-      await _player.seek(Duration.zero);
-      await _player.setVolume(100);
-    } catch (error) {
-      _initializationError = error;
-      if (mounted) {
-        setState(() {});
-      }
-    }
+    _initializeFuture = _viewModel.initializeVideo();
   }
 
   @override
   void dispose() {
-    for (final sub in _subscriptions) {
-      sub.cancel();
-    }
-    _player.dispose();
+    _viewModel.dispose();
     super.dispose();
   }
 
@@ -110,111 +47,112 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
       insetPadding: const EdgeInsets.all(16),
       child: Container(
         color: Colors.black,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            FutureBuilder<void>(
-              future: _initializeFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _buildPoster(),
-                      const Center(
-                        child: CircularProgressIndicator(color: Colors.white),
-                      ),
-                    ],
-                  );
-                }
+        child: ListenableBuilder(
+          listenable: _viewModel,
+          builder: (context, _) {
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                FutureBuilder<void>(
+                  future: _initializeFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          _buildPoster(),
+                          const Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          ),
+                        ],
+                      );
+                    }
 
-                if (_initializationError != null) {
-                  return _buildFallbackState();
-                }
+                    if (_viewModel.initializationError != null) {
+                      return _buildFallbackState();
+                    }
 
-                return Column(
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: AspectRatio(
-                          aspectRatio: _videoAspectRatio,
-                          child: Video(
-                            key: _videoKey,
-                            controller: _controller,
-                            fit: BoxFit.contain,
-                            controls: NoVideoControls,
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: Center(
+                            child: AspectRatio(
+                              aspectRatio: _viewModel.videoAspectRatio,
+                              child: Video(
+                                key: _videoKey,
+                                controller: _viewModel.controller,
+                                fit: BoxFit.contain,
+                                controls: NoVideoControls,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    _buildControls(),
-                  ],
-                );
-              },
-            ),
-            Positioned(
-              top: 16,
-              right: 16,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-            if (_duration > Duration.zero)
-              Positioned(
-                top: 16,
-                left: 16,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.attachment.fileName,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.attachment.createdAt != null
-                            ? widget.attachment.createdAt!.toLocal().toString()
-                            : widget.attachment.formattedSize,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
+                        _buildControls(),
+                      ],
+                    );
+                  },
                 ),
-              ),
-          ],
+                _buildHeaderOverlay(),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  double get _videoAspectRatio {
-    final width = (_player.state.width ?? 0).toDouble();
-    final height = (_player.state.height ?? 0).toDouble();
-    if (width <= 0 || height <= 0) {
-      return 16 / 9;
-    }
-    return width / height;
+  Widget _buildHeaderOverlay() {
+    return Stack(
+      children: [
+        Positioned(
+          top: 16,
+          right: 16,
+          child: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white, size: 28),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+        if (_viewModel.duration > Duration.zero)
+          Positioned(
+            top: 16,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.attachment.fileName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.attachment.createdAt != null
+                        ? widget.attachment.createdAt!.toLocal().toString()
+                        : widget.attachment.formattedSize,
+                    style: const TextStyle(color: Colors.grey, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _buildControls() {
-    final durationMs = _duration.inMilliseconds;
+    final durationMs = _viewModel.duration.inMilliseconds;
     final maxMs = durationMs <= 0 ? 1 : durationMs;
-    final positionMs = _position.inMilliseconds.clamp(0, maxMs);
+    final positionMs = _viewModel.position.inMilliseconds.clamp(0, maxMs);
 
     return Container(
       color: Colors.black87,
@@ -233,9 +171,7 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
               max: maxMs.toDouble(),
               onChanged: durationMs <= 0
                   ? null
-                  : (value) async {
-                      await _player.seek(Duration(milliseconds: value.toInt()));
-                    },
+                  : (value) => _viewModel.seekTo(value),
             ),
           ),
           Row(
@@ -243,32 +179,24 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
             children: [
               IconButton(
                 icon: Icon(
-                  _isPlaying ? Icons.pause : Icons.play_arrow,
+                  _viewModel.isPlaying ? Icons.pause : Icons.play_arrow,
                   color: Colors.white,
                 ),
-                onPressed: () async {
-                  if (_isPlaying) {
-                    await _player.pause();
-                  } else {
-                    await _player.play();
-                  }
-                },
+                onPressed: () => _viewModel.togglePlayPause(),
               ),
               Expanded(
                 child: Text(
-                  '${_formatDuration(_position)} / ${_formatDuration(_duration)}',
+                  '${_formatDuration(_viewModel.position)} / ${_formatDuration(_viewModel.duration)}',
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
               ),
               IconButton(
                 icon: Icon(
-                  _isMuted ? Icons.volume_off : Icons.volume_up,
+                  _viewModel.isMuted ? Icons.volume_off : Icons.volume_up,
                   color: Colors.white,
                 ),
-                onPressed: () async {
-                  await _player.setVolume(_isMuted ? 100 : 0);
-                },
+                onPressed: () => _viewModel.toggleMute(),
               ),
               IconButton(
                 icon: const Icon(Icons.fullscreen, color: Colors.white),
@@ -298,11 +226,7 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.white,
-                      size: 48,
-                    ),
+                    const Icon(Icons.error_outline, color: Colors.white, size: 48),
                     const SizedBox(height: 16),
                     const Text(
                       'This local video could not be played in-app.',
@@ -336,26 +260,24 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
 
   Widget _buildPoster() {
     if (widget.attachment.isVideo) {
+      // 🎯 FIXED: Instantiated the Class properly with parameters
       return _DialogVideoPoster(attachment: widget.attachment);
     }
-
     final posterPath = widget.attachment.previewPath;
     if (widget.attachment.hasAssetPath && posterPath != null) {
       return Image.asset(
         posterPath,
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => _buildPosterFallback(),
+        errorBuilder: (_, __, ___) => _buildPosterFallback(),
       );
     }
-
     if (posterPath != null) {
       return Image.file(
         File(posterPath),
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => _buildPosterFallback(),
+        errorBuilder: (_, __, ___) => _buildPosterFallback(),
       );
     }
-
     return _buildPosterFallback();
   }
 
@@ -373,14 +295,11 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
     final hours = twoDigits(duration.inHours);
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
-
-    if (duration.inHours == 0) {
-      return '$minutes:$seconds';
-    }
-    return '$hours:$minutes:$seconds';
+    return duration.inHours == 0 ? '$minutes:$seconds' : '$hours:$minutes:$seconds';
   }
 }
 
+// 🎯 ADDED: Appended the missing class to the bottom of the file layout
 class _DialogVideoPoster extends StatefulWidget {
   final EventAttachment attachment;
 
