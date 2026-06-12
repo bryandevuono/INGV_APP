@@ -49,7 +49,7 @@ class EventDetailContent extends StatelessWidget {
                   children: [
                     EventMediaSection(viewModel: viewModel),
                     const SizedBox(height: 16),
-                    EventMapPreview(viewModel: viewModel, mapService: MapServiceUI(userAgentPackageName: 'it.ingv.app')), 
+                    EventMapPreview(viewModel: viewModel, mapService: MapServiceUI(userAgentPackageName: 'ingv_app')), 
                   ],
                 ),
               ),
