@@ -32,6 +32,12 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+    
+    packagingOptions {
+        assets {
+            exclude 'assets/packages/pdfrx/assets/pdfium.wasm'
+        }
+    }
 }
 
 kotlin {

@@ -6,6 +6,7 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/event_note_model.dart';
 import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
+import 'package:ingv_app/data/services/export_service.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
@@ -17,6 +18,8 @@ class EventDetailViewModel extends ChangeNotifier {
   final ILocalFileService _localFileService;
   final IFileOpenService _fileOpenService;
   final IFilePickerService _filePickerService;
+  late final IPdfExportService _pdfExportService;
+  late final IZipExportService _zipExportService;
 
   EventModel? selectedEvent;
   List<EventNoteModel> notes = [];
@@ -25,8 +28,10 @@ class EventDetailViewModel extends ChangeNotifier {
   String? groupName;
 
   bool isLoading = false;
+  bool isExporting = false;
   String? errorMessage;
   String? lastSavedAttachmentPath;
+  String? lastExportPath;
   final Set<String> busyAttachmentIds = <String>{};
 
   EventDetailViewModel(
@@ -36,7 +41,25 @@ class EventDetailViewModel extends ChangeNotifier {
     this._fileOpenService,
     this._eventRepository, [
     IFilePickerService? filePickerService,
-  ]) : _filePickerService = filePickerService ?? FilePickerService();
+    IPdfExportService? pdfExportService,
+    IZipExportService? zipExportService,
+  ]) : _filePickerService = filePickerService ?? FilePickerService() {
+    _pdfExportService =
+        pdfExportService ??
+        PdfExportService(
+          _detailRepository,
+          _attachmentRepository,
+          _localFileService,
+        );
+    _zipExportService =
+        zipExportService ??
+        ZipExportService(
+          pdfExportService: _pdfExportService,
+          detailRepository: _detailRepository,
+          attachmentRepository: _attachmentRepository,
+          localFileService: _localFileService,
+        );
+  }
 
   Future<void> loadEventDetails(EventModel event) async {
     groupName = await _eventRepository.getGroupOfEvent(event.eventId);
@@ -239,6 +262,64 @@ class EventDetailViewModel extends ChangeNotifier {
     }
   }
 
+  Future<String?> exportSelectedEvent() async {
+    if (selectedEvent == null) {
+      errorMessage = 'No event selected for export.';
+      notifyListeners();
+      return null;
+    }
+
+    isExporting = true;
+    errorMessage = null;
+    lastExportPath = null;
+    notifyListeners();
+
+    try {
+      final result = await _pdfExportService.exportEventReport(
+        event: selectedEvent!,
+        groupName: groupName,
+      );
+      lastExportPath = result.saveLocation;
+      return lastExportPath;
+    } catch (e) {
+      errorMessage = 'Failed to export event PDF.';
+      return null;
+    } finally {
+      isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> exportSelectedEventAsZip() async {
+    if (selectedEvent == null) {
+      errorMessage = 'No event selected for export.';
+      notifyListeners();
+      return null;
+    }
+
+    isExporting = true;
+    errorMessage = null;
+    lastExportPath = null;
+    notifyListeners();
+
+    try {
+      final result = await _zipExportService.exportEventAsZip(
+        event: selectedEvent!,
+        groupName: groupName,
+        notes: notes,
+        attachments: attachments,
+      );
+      lastExportPath = result.saveLocation;
+      return lastExportPath;
+    } catch (e) {
+      errorMessage = 'Failed to export event ZIP.';
+      return null;
+    } finally {
+      isExporting = false;
+      notifyListeners();
+    }
+  }
+
   void clearEventDetails() {
     selectedEvent = null;
     notes = [];
@@ -246,6 +327,7 @@ class EventDetailViewModel extends ChangeNotifier {
     selectedAttachment = null;
     errorMessage = null;
     lastSavedAttachmentPath = null;
+    lastExportPath = null;
     busyAttachmentIds.clear();
     notifyListeners();
   }
@@ -299,7 +381,9 @@ class EventDetailViewModel extends ChangeNotifier {
   Future<void> getGroupofEvent() async {
     if (selectedEvent == null) return;
     try {
-      groupName = await _eventRepository.getGroupOfEvent(selectedEvent!.eventId);
+      groupName = await _eventRepository.getGroupOfEvent(
+        selectedEvent!.eventId,
+      );
     } catch (e) {
       groupName = 'N/A';
     }

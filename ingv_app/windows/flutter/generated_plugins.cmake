@@ -3,15 +3,16 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  file_saver
   media_kit_libs_windows_video
   media_kit_video
+  printing
   url_launcher_windows
-  volume_controller
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
   jni
-  pdfrx
+  pdfium_flutter
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

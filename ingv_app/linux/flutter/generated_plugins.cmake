@@ -3,16 +3,17 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  file_saver
   media_kit_libs_linux
   media_kit_video
   open_file_linux
+  printing
   url_launcher_linux
-  volume_controller
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
   jni
-  pdfrx
+  pdfium_flutter
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)
