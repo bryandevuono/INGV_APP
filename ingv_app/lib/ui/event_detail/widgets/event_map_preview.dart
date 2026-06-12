@@ -1,12 +1,16 @@
+// lib/ui/event_detail/widgets/event_map_preview.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart' as latlong2;
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
-
+import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart'; 
 class EventMapPreview extends StatelessWidget {
   final EventDetailViewModel viewModel;
+  final IMapService mapService; 
 
-  const EventMapPreview({super.key, required this.viewModel});
+  const EventMapPreview({
+    super.key, 
+    required this.viewModel,
+    required this.mapService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +26,6 @@ class EventMapPreview extends StatelessWidget {
     }
 
     final event = viewModel.selectedEvent!;
-    final eventLocation = latlong2.LatLng(event.lat, event.long);
 
     return Container(
       height: 200,
@@ -33,42 +36,10 @@ class EventMapPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       clipBehavior: Clip.antiAlias,
-      child: FlutterMap(
-        options: MapOptions(initialCenter: eventLocation, initialZoom: 10),
-        children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.example.ingv_app',
-          ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: eventLocation,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withOpacity(0.4),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.location_on,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+      child: mapService.buildPreviewMap(
+        latitude: event.lat,
+        longitude: event.long,
+        initialZoom: 10,
       ),
     );
   }

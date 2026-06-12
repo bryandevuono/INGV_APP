@@ -215,7 +215,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const double totalCanvasWidth = 1200.0;
     const double leftHeaderWidth = 160.0;
 
-    // Evaluate running axis display frame windows safely downstream
     final DateTime rangeStart = _clientBaselineStart;
     final DateTime rangeEnd = rangeStart.add(const Duration(days: 2));
     final DateTime totalStart = rangeStart.subtract(const Duration(days: 1));
@@ -232,10 +231,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
         final isMinimized = widget.viewModel.isCategoryMinimized(lane.id);
         final double definedRowHeight = isMinimized ? minimizedRowHeight : expandedRowHeight;
 
-        // Consumer Maps abstract structures directly inside rendering logic runtime contexts
         final List<TimelineTaskData> genericTasks = widget.viewModel.getTimelineTasksForCategory(lane.id);
 
-        // Map layout models right at render point
         final packageRows = [LegacyGanttRow(id: lane.id, label: lane.label)];
         final packageTasks = genericTasks.map((task) {
           return LegacyGanttTask(

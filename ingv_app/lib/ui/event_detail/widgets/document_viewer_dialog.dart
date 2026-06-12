@@ -33,7 +33,6 @@ class _DocumentViewerDialogState extends State<DocumentViewerDialog> {
   void initState() {
     super.initState();
 
-    // Instantiates our all-in-one repository solution directly
     _documentViewModel = DocumentViewerViewModel(
       documentRepository: DocumentViewRepository(),
       filePath: widget.filePath,

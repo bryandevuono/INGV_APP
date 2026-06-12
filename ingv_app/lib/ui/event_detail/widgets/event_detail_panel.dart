@@ -59,7 +59,6 @@ class _EventDetailPanelState extends State<EventDetailPanel>
         widget.onDismiss();
       });
     } else {
-      // Snap back
       setState(() {
         _dragOffset = 0;
       });
@@ -95,7 +94,6 @@ class _EventDetailPanelState extends State<EventDetailPanel>
             ),
             child: Column(
               children: [
-                // Drag handle - tap to dismiss
                 GestureDetector(
                   onTap: () {
                     _animationController.reverse().then((_) {

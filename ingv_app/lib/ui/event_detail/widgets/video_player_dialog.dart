@@ -260,7 +260,6 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
 
   Widget _buildPoster() {
     if (widget.attachment.isVideo) {
-      // 🎯 FIXED: Instantiated the Class properly with parameters
       return _DialogVideoPoster(attachment: widget.attachment);
     }
     final posterPath = widget.attachment.previewPath;
@@ -299,7 +298,6 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
   }
 }
 
-// 🎯 ADDED: Appended the missing class to the bottom of the file layout
 class _DialogVideoPoster extends StatefulWidget {
   final EventAttachment attachment;
 

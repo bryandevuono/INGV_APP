@@ -126,12 +126,10 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   @override
   Future<void> applyFilters() async {
     _filteredEvents = _allEvents.where((event) {
-      // 1. Category Filter Match
       if (_selectedCategory != 'All' && event.category.trim() != _selectedCategory) {
         return false;
       }
 
-      // 2. Search Text Query Match
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final matchesTitle = event.title.toLowerCase().contains(query);

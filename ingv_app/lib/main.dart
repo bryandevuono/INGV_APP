@@ -11,7 +11,7 @@ import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/services/event_detail_service.dart';
 import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/services/file_operations_service.dart';
-
+import 'package:ingv_app/ui/map/ui_services/map_service.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
@@ -46,9 +46,9 @@ class MyApp extends StatelessWidget {
           eventSearchRepository: EventSearchRepository(
             EventSearchService(storageService),
           ),
+          mapService: MapServiceUI(userAgentPackageName: 'ingv_app'),
         ),
         eventRepository: eventRepository,
-        // 2. Feed the new required arguments directly into the navbar constructor
         detailRepository: detailRepository,
         attachmentRepository: attachmentRepository,
         localFileService: localFileService,
