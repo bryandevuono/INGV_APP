@@ -8,6 +8,7 @@ import 'package:ingv_app/ui/event_detail/widgets/image_preview_dialog.dart';
 import 'package:ingv_app/ui/event_detail/widgets/video_player_dialog.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:ingv_app/ui/file_history/widgets/file_history_editor.dart';
 
 class EventMediaSection extends StatelessWidget {
   final EventDetailViewModel viewModel;
@@ -481,6 +482,22 @@ class _FileTile extends StatelessWidget {
                 ),
               ],
             ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DocumentComparisonScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Open file history'),
+              ),
+            ],
+          ),
         ],
       ),
     );

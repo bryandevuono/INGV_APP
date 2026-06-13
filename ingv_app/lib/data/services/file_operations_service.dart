@@ -57,6 +57,8 @@ class LocalFileService implements ILocalFileService {
       return null;
     }
   }
+
+  
 }
 
 class FileOpenService implements IFileOpenService {

@@ -1,4 +1,5 @@
 import '../models/event_attachment.dart';
+import '../models/file_version.dart';
 
 abstract class IAttachmentRepository {
   Future<List<EventAttachment>> getAttachmentsForEvent(String eventId);
@@ -10,4 +11,7 @@ abstract class IAttachmentRepository {
   Future<void> deleteAttachment(String attachmentId);
 
   Future<void> updateAttachment(EventAttachment attachment);
+
+  Future<List<FileVersion>> getFileHistoryFromAttachment();
+
 }

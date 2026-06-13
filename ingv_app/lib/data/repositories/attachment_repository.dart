@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:ingv_app/data/models/attachment_type.dart';
 import 'package:ingv_app/data/models/event_attachment.dart';
+import 'package:ingv_app/data/models/file_version.dart';
 import 'attachment_repository_interface.dart';
 
 class LocalAttachmentRepository implements IAttachmentRepository {
@@ -159,5 +160,68 @@ class LocalAttachmentRepository implements IAttachmentRepository {
         attachments[index] = attachment;
       }
     }
+  }
+
+  @override
+  Future<List<FileVersion>> getFileHistoryFromAttachment(
+  ) async {
+    final List<String> textHistory = 
+    [
+      """
+      ## heading 1
+      Content of version 1, line 1.
+      Content of version 1, line 2.
+      Content of version 1, line 3.
+      Content of version 1, line 4.
+      ## heading 2
+      Content of version 2, line 1.
+      Content of version 2, line 2.
+      Content of version 2, line 3.
+      Content of version 2, line 4.
+      ## heading 3
+      Content of version 3, line 1.
+      Content of version 3, line 2.
+      Content of version 3, line 3.
+      Content of version 3, line 4 (changed).
+      """,
+      """
+      ## heading 1
+      Content of version 1, line 1.
+      Content of version 1, line 2.
+      Content of version 1, line 3.
+      Content of version 1, line 4.
+      ## heading 2
+      Content of version 2, line 1.
+      Content of version 2, line 2.
+      Content of version 2, line 3.
+      Content of version 2, line 4.
+      """,
+      """
+      ## heading 1
+      Content of version 1, line 1.
+      Content of version 1, line 2.
+      Content of version 1, line 3.
+      Content of version 1, line 4 (changed).
+      ## heading 2
+      Content of version 2, line 1.
+      Content of version 2, line 2.
+      Content of version 2, line 3.
+      Content of version 2, line 4.
+      """
+    ];
+
+    List<FileVersion> fileVersions = [];
+    for (int i = 0; i < textHistory.length; i++) {
+      FileVersion version = FileVersion(
+        versionId: 'v${i + 1}',
+        versionName: 'Version ${i + 1}',
+        metaInfo: 'Meta info for version ${i + 1}',
+        subtitle: 'Subtitle for version ${i + 1}',
+        blocks: [],
+      );
+      version.content = textHistory[i];
+      fileVersions.add(version);
+    }
+    return fileVersions;
   }
 }
