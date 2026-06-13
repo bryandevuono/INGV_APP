@@ -2,19 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/file_version.dart';
 import 'package:ingv_app/data/repositories/attachment_repository.dart';
 
-const String masterTemplateFile = '''
-## Recent Increase
-Seismic tremor activity remains steady but fluctuating ambient signatures.
-
-## Thermal Matrix
-No additional observations recorded for this sub-block sequence.
-''';
-
 class DocumentMergeViewModel extends ChangeNotifier {
   List<FileVersion> _documentHistory = [];
   FileVersion? _leftVersion;
   FileVersion? _rightVersion;
-  LocalAttachmentRepository? _attachmentRepository;
+
+  final LocalAttachmentRepository _attachmentRepository =
+      LocalAttachmentRepository();
   bool _isSaving = false;
 
   List<FileVersion> get documentHistory => _documentHistory;
@@ -23,21 +17,33 @@ class DocumentMergeViewModel extends ChangeNotifier {
   bool get isSaving => _isSaving;
 
   void generateFileHistory() async {
-    _attachmentRepository = LocalAttachmentRepository();
-    Future<List<FileVersion>> fileVersions = _attachmentRepository!.getFileHistoryFromAttachment();
-    for (int i = 0; i < (await fileVersions).length; i++) {
-      FileVersion version = (await fileVersions)[i];
-      _documentHistory.add(version);
-      (await fileVersions)[i].blocks = _parseStringToBlocks((await fileVersions)[i].content ?? '');
+    final versions = await _attachmentRepository.getFileHistoryFromAttachment(
+      'mock_1',
+    );
+
+    _documentHistory = versions;
+
+    for (var version in _documentHistory) {
+      version.blocks = _parseStringToBlocks(version.content ?? '');
     }
 
-    _leftVersion = _documentHistory[1];
-    _rightVersion = _documentHistory[0];
-    
+    if (_documentHistory.isNotEmpty) {
+      if (_documentHistory.length > 1) {
+        _leftVersion = _documentHistory[_documentHistory.length - 2];
+      } else {
+        _leftVersion = _documentHistory[0];
+      }
+
+      _rightVersion = _documentHistory[_documentHistory.length - 1];
+    }
+
     notifyListeners();
   }
 
-  void updateSelectedVersion({required FileVersion targetVersion, required bool isLeftColumn}) {
+  void updateSelectedVersion({
+    required FileVersion targetVersion,
+    required bool isLeftColumn,
+  }) {
     if (isLeftColumn) {
       _leftVersion = targetVersion;
     } else {
@@ -56,11 +62,13 @@ class DocumentMergeViewModel extends ChangeNotifier {
     for (String line in lines) {
       if (line.trim().startsWith('##')) {
         if (currentContent.isNotEmpty) {
-          blocks.add(TextBlock(
-            id: 'sec_$sectionCounter', 
-            title: currentTitle,
-            content: currentContent.toString().trim(),
-          ));
+          blocks.add(
+            TextBlock(
+              id: 'sec_$sectionCounter',
+              title: currentTitle,
+              content: currentContent.toString().trim(),
+            ),
+          );
           sectionCounter++;
           currentContent.clear();
         }
@@ -70,36 +78,61 @@ class DocumentMergeViewModel extends ChangeNotifier {
       }
     }
 
-    if (currentContent.isNotEmpty) {
-      blocks.add(TextBlock(
-        id: 'sec_$sectionCounter',
-        title: currentTitle,
-        content: currentContent.toString().trim(),
-      ));
+    if (currentContent.isNotEmpty || blocks.isEmpty) {
+      blocks.add(
+        TextBlock(
+          id: 'sec_$sectionCounter',
+          title: currentTitle,
+          content: currentContent.toString().trim(),
+        ),
+      );
     }
 
     return blocks;
   }
 
   void updateBlockSelection(String blockId, bool isLeft, bool selected) {
-    final targetVersion = isLeft ? _leftVersion : _rightVersion;
-    final opposingVersion = isLeft ? _rightVersion : _leftVersion;
+    FileVersion? targetVersion;
+    if (isLeft) {
+      targetVersion = _leftVersion;
+    } else {
+      targetVersion = _rightVersion;
+    }
+
+    FileVersion? opposingVersion;
+    if (isLeft) {
+      opposingVersion = _rightVersion;
+    } else {
+      opposingVersion = _leftVersion;
+    }
 
     if (targetVersion != null) {
-      targetVersion.blocks.firstWhere((b) => b.id == blockId).isSelected = selected;
-      
-      if (selected && opposingVersion != null) {
-        try {
-          opposingVersion.blocks.firstWhere((b) => b.id == blockId).isSelected = false;
-        } catch (_) {} 
-      }
+      try {
+        targetVersion.blocks.firstWhere((b) => b.id == blockId).isSelected =
+            selected;
+        if (selected && opposingVersion != null) {
+          opposingVersion.blocks.firstWhere((b) => b.id == blockId).isSelected =
+              false;
+        }
+      } catch (_) {}
       notifyListeners();
     }
   }
 
   void selectAllForVersion(bool isLeft) {
-    final targetVersion = isLeft ? _leftVersion : _rightVersion;
-    final opposingVersion = isLeft ? _rightVersion : _leftVersion;
+    FileVersion? targetVersion;
+    if (isLeft) {
+      targetVersion = _leftVersion;
+    } else {
+      targetVersion = _rightVersion;
+    }
+
+    FileVersion? opposingVersion;
+    if (isLeft) {
+      opposingVersion = _rightVersion;
+    } else {
+      opposingVersion = _leftVersion;
+    }
 
     if (targetVersion != null) {
       for (var block in targetVersion.blocks) {
@@ -115,11 +148,65 @@ class DocumentMergeViewModel extends ChangeNotifier {
   }
 
   Future<bool> compileAndSaveChanges() async {
+    if (_leftVersion == null || _rightVersion == null) return false;
+
     _isSaving = true;
     notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 600));
+
+    final StringBuffer compiledMarkdown = StringBuffer();
+
+    int maxBlocksCount;
+    if (_leftVersion!.blocks.length > _rightVersion!.blocks.length) {
+      maxBlocksCount = _leftVersion!.blocks.length;
+    } else {
+      maxBlocksCount = _rightVersion!.blocks.length;
+    }
+
+    for (int i = 0; i < maxBlocksCount; i++) {
+      TextBlock? leftBlock;
+      if (_leftVersion!.blocks.length > i) {
+        leftBlock = _leftVersion!.blocks[i];
+      } else {
+        leftBlock = null;
+      }
+
+      TextBlock? rightBlock;
+      if (_rightVersion!.blocks.length > i) {
+        rightBlock = _rightVersion!.blocks[i];
+      } else {
+        rightBlock = null;
+      }
+
+      // Whch block is accepted?
+      TextBlock? chosenBlock;
+      if (leftBlock != null && leftBlock.isSelected) {
+        chosenBlock = leftBlock;
+      } else if (rightBlock != null && rightBlock.isSelected) {
+        chosenBlock = rightBlock;
+      } else {
+        // Default Fallback if neither was actively accepted: use the newer version (right column)
+        if (rightBlock != null) {
+          chosenBlock = rightBlock;
+        } else {
+          chosenBlock = leftBlock;
+        }
+      }
+
+      if (chosenBlock != null) {
+        compiledMarkdown.writeln('## ${chosenBlock.title}');
+        compiledMarkdown.writeln(chosenBlock.content);
+        compiledMarkdown.writeln(); // spacing line
+      }
+    }
+
+    // Pass the text
+    await _attachmentRepository.saveMergedVersion(
+      'mock_1',
+      compiledMarkdown.toString().trim(),
+    );
+
     _isSaving = false;
     notifyListeners();
-    return true; 
+    return true;
   }
 }

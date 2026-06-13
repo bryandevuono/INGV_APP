@@ -119,7 +119,7 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
               children: [
                 // header components: version and select all button
                 SizedBox(
-                  height: 48, 
+                  height: 48,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -146,16 +146,24 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
                                 },
                                 items: _viewModel.documentHistory
                                     .map<DropdownMenuItem<FileVersion>>((
-                                  FileVersion value,
-                                ) {
-                                  return DropdownMenuItem<FileVersion>(
-                                    value: value,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                                      child: Text(value.versionName, style: const TextStyle(color: Colors.blue)),
-                                    ),
-                                  );
-                                }).toList(),
+                                      FileVersion value,
+                                    ) {
+                                      return DropdownMenuItem<FileVersion>(
+                                        value: value,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
+                                          child: Text(
+                                            value.versionName,
+                                            style: const TextStyle(
+                                              color: Colors.blue,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    })
+                                    .toList(),
                               ),
                             )
                           : Align(
@@ -185,7 +193,10 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
                 const SizedBox(height: 8),
                 Text(
                   currentSelectedVersion.metaInfo,
-                  style: TextStyle(color: const Color.fromARGB(255, 25, 25, 25), fontSize: 13),
+                  style: TextStyle(
+                    color: const Color.fromARGB(255, 25, 25, 25),
+                    fontSize: 13,
+                  ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -202,7 +213,10 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
               ],
             ),
           ),
-          Container(height: 20, color: const Color.fromARGB(255, 255, 255, 255)),
+          Container(
+            height: 20,
+            color: const Color.fromARGB(255, 255, 255, 255),
+          ),
           Expanded(
             child: ListView.builder(
               controller: scrollController,
@@ -248,7 +262,7 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
-                      color: Color.fromARGB(255, 0, 0, 0)
+                      color: Color.fromARGB(255, 0, 0, 0),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -333,9 +347,23 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-            },
+            onPressed: _viewModel.isSaving
+                ? null // Disable the button while saving
+                : () async {
+                    // Call the ViewModel method to compile and commit strings
+                    bool success = await _viewModel.compileAndSaveChanges();
+                    if (success && mounted) {
+                      // Show a confirmation banner
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Changes compiled and saved successfully!',
+                          ),
+                        ),
+                      );
+                      Navigator.pop(context);
+                    }
+                  },
             icon: const Icon(Icons.check_circle_outline, color: Colors.white),
             label: const Text(
               'Save Changes',
