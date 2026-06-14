@@ -101,10 +101,10 @@ class _MapScreenState extends State<MapScreen> {
           author: 'Author ${event.author}',
           category: event.category,
           title: event.title,
-          tag: event.tag,
+          startDateTime: event.startDt,
+          endDateTime: event.endDt,
           progress: 0.5,
           onTap: () => _toggleEventDetails(event),
-          onAction: () {},
         ),
     ];
   }

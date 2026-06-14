@@ -26,9 +26,10 @@ void showAddEventDialog(
   ];
 
   String? selectedGroup;
+  List<String> categories = viewModel.orderedCategories;
   String selectedCategory = defaultCategories.first;
-  List<String> categoryOptions = viewModel.categories.isNotEmpty
-      ? viewModel.categories
+  List<String> categoryOptions = categories.isNotEmpty
+      ? categories
       : defaultCategories;
   List<File> selectedMediaFiles = [];
   DateTime? startDate;

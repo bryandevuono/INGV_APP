@@ -137,8 +137,8 @@ class EventServiceSembast implements IEventService {
 
   @override
   Future<List<String>> getEventCategories() async {
-    await _ensureInitialized();
-    return _events.map((event) => event.category).toSet().toList()..sort();
+    List<String> categories = ['Volcanic', 'Earthquake', 'Hydrological', 'Meteorological', 'Geological', 'Atmospheric'];    
+    return categories;
   }
 
   @override
@@ -149,7 +149,7 @@ class EventServiceSembast implements IEventService {
 
     final categories = _events.map((e) => e.category).toSet().toList();
     final categoriesWithColors = categories.map((category) {
-      final color = cellColors[category] ?? Colors.grey; // Default to grey if not found
+      final color = cellColors[category] ?? Colors.grey;
       return MapEntry(category, color);
     }).toList();
 

@@ -3,44 +3,51 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/timeline_presentation_models.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'timeline_interface.dart';
+import 'package:ingv_app/data/repositories/group_repository.dart';
+import 'package:ingv_app/data/models/group_model.dart';
+import 'package:ingv_app/data/services/group_service_sembast.dart';
 
 class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   final IEventRepository _eventRepository;
 
-  // Internal State
   List<EventModel> _allEvents = [];
   List<EventModel> _filteredEvents = [];
   List<String> _orderedCategories = [];
+  GroupRepository? _groupRepository = GroupRepository(GroupServiceSembast());
+  List<GroupModel> _userGroups = [];
   final Set<String> _minimizedCategories = {};
-  
+
   String _selectedCategory = 'All';
   String _searchQuery = '';
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
-  
+
   bool _isExporting = false;
   String? _exportErrorMessage;
-  
-  // Color configuration map (populated via getColors)
+
+  // Color configuration map populated from Repository
   Map<String, Color> _categoryColors = {};
 
   TimelineViewModel(this._eventRepository) {
-    // Initial setup sequence
     _init();
   }
 
   Future<void> _init() async {
-    await getColors();
-    await fetchEvents();
+    try {
+      await getColors(); 
+      await fetchEvents();
+      await getGroupsOfUser();
+    } catch (e) {
+      _exportErrorMessage = "Initialization failed: $e";
+      notifyListeners();
+    }
   }
-
-  // --- ITimelineViewModel Getters ---
 
   @override
   List<EventModel> get events => _filteredEvents;
 
   @override
-  List<String> get categories => _allEvents.map((e) => e.category.trim()).toSet().toList();
+  List<GroupModel> get userGroups => _userGroups;
 
   @override
   List<String> get orderedCategories => _orderedCategories;
@@ -63,15 +70,13 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   @override
   String get searchQuery => _searchQuery;
 
-  // Calculate the absolute baseline minimum date across all loaded events
+  // Calculate the min date 
   DateTime get minStart {
     if (_allEvents.isEmpty) return DateTime.now();
     return _allEvents
         .map((e) => e.startDt)
         .reduce((value, element) => value.isBefore(element) ? value : element);
   }
-
-  // --- Abstract Presentation Layer Mappings ---
 
   @override
   List<TimelineLaneData> get timelineLanes {
@@ -82,8 +87,10 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
   @override
   List<TimelineTaskData> getTimelineTasksForCategory(String category) {
-    final laneEvents = _filteredEvents.where((e) => e.category.trim() == category).toList();
-    
+    final laneEvents = _filteredEvents
+        .where((e) => e.category.trim() == category)
+        .toList();
+
     return laneEvents.map((event) {
       final color = _categoryColors[event.category.trim()] ?? Colors.grey;
 
@@ -98,56 +105,69 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     }).toList();
   }
 
-  // --- Business Logic & State Mutations ---
 
   @override
   Future<void> fetchEvents() async {
     try {
-      // Fetching raw model data through the abstract repository link
-      _allEvents = await _eventRepository.getAllEvents();
-      
-      // Re-populate ordered categories if new ones are introduced
-      final currentCategories = categories;
+      final results = await Future.wait([
+        _eventRepository.getAllEvents(),
+        _eventRepository.getEventCategories(),
+      ]);
+
+      _allEvents = results[0] as List<EventModel>;
+      final List<String> currentCategories = results[1] as List<String>;
+
+      // Track missing or updated categories 
       for (var cat in currentCategories) {
         if (!_orderedCategories.contains(cat)) {
           _orderedCategories.add(cat);
         }
       }
-      // Remove stale categories that no longer have events
       _orderedCategories.removeWhere((cat) => !currentCategories.contains(cat));
 
-      await applyFilters();
+
+      _applyFilters();
+
+      _exportErrorMessage = null;
+      notifyListeners();
     } catch (e) {
       _exportErrorMessage = "Failed to load events: $e";
       notifyListeners();
     }
   }
 
-  @override
-  Future<void> applyFilters() async {
+  void _applyFilters() {
     _filteredEvents = _allEvents.where((event) {
-      if (_selectedCategory != 'All' && event.category.trim() != _selectedCategory) {
+      if (_selectedCategory != 'All' &&
+          event.category.trim() != _selectedCategory) {
         return false;
       }
 
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final matchesTitle = event.title.toLowerCase().contains(query);
-        final matchesDescription = event.description?.toLowerCase().contains(query) ?? false;
+        final matchesDescription =
+            event.description?.toLowerCase().contains(query) ?? false;
         if (!matchesTitle && !matchesDescription) return false;
       }
 
-      // 3. Date Frame Filter Match
-      if (_filterStartDate != null && event.startDt.isBefore(_filterStartDate!)) {
+      if (_filterStartDate != null &&
+          event.startDt.isBefore(_filterStartDate!)) {
         return false;
       }
-      if (_filterEndDate != null && event.endDt != null && event.endDt!.isAfter(_filterEndDate!)) {
+      if (_filterEndDate != null &&
+          event.endDt != null &&
+          event.endDt!.isAfter(_filterEndDate!)) {
         return false;
       }
 
       return true;
     }).toList();
+  }
 
+  @override
+  Future<void> applyFilters() async {
+    _applyFilters();
     notifyListeners();
   }
 
@@ -172,7 +192,8 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   }
 
   @override
-  bool isCategoryMinimized(String category) => _minimizedCategories.contains(category);
+  bool isCategoryMinimized(String category) =>
+      _minimizedCategories.contains(category);
 
   @override
   void setSearchQuery(String query) {
@@ -195,42 +216,70 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
   @override
   Future<Map<String, DateTime>> getEventDateRange() async {
-    if (_allEvents.isEmpty) {
-      return {'start': DateTime.now(), 'end': DateTime.now().add(const Duration(days: 2))};
+    try {
+      return await _eventRepository.getEventDateRange();
+    } catch (_) {
+      if (_allEvents.isEmpty) {
+        return {
+          'start': DateTime.now(),
+          'end': DateTime.now().add(const Duration(days: 2)),
+        };
+      }
+      final start = minStart;
+      final end = _allEvents
+          .map((e) => e.endDt ?? e.startDt)
+          .reduce((value, element) => value.isAfter(element) ? value : element);
+      return {'start': start, 'end': end};
     }
-    final start = minStart;
-    final end = _allEvents
-        .map((e) => e.endDt ?? e.startDt)
-        .reduce((value, element) => value.isAfter(element) ? value : element);
-    return {'start': start, 'end': end};
   }
 
   @override
   Future<void> addEvent(EventModel event) async {
     await _eventRepository.insertEvent(event);
-    await fetchEvents(); // Reload and re-filter array map downstream
+    await fetchEvents(); 
   }
 
   @override
   Future<void> getColors() async {
-    // Mimicking a layout color database configuration stream mapping
-    _categoryColors = {
-      'Work': Colors.blue,
-      'Personal': Colors.green,
-      'Urgent': Colors.red,
-      'Education': Colors.purple,
-    };
+    try {
+      final MapEntryList = await _eventRepository.getEventColors();
+      
+      _categoryColors = Map.fromEntries(MapEntryList);
+    } catch (e) {
+      _categoryColors = {
+        'Volcanic': Colors.red,
+        'Earthquake': Colors.orange,
+        'Hydrological': Colors.blue,
+        'Meteorological': Colors.cyan,
+        'Geological': Colors.brown,
+        'Atmospheric': Colors.green,
+      };
+    }
     notifyListeners();
   }
 
   @override
+  Future<String?> getGroupOfEvent(int eventId) async {
+    return await _eventRepository.getGroupOfEvent(eventId);
+  }
+
+  @override
   Future<void> getGroupsOfUser() async {
-    // Implementation placeholder for tracking collaborative user groups
+    try {
+      final userId = await getUserId();
+      final List<GroupModel> groups = await (_groupRepository?.getGroupsOfUser(userId)) ?? [];
+      _userGroups = groups;
+      notifyListeners();
+    } catch (e) {
+      _exportErrorMessage = "Failed to load user groups: $e";
+      notifyListeners();
+    }
   }
 
   @override
   Future<String> getUserId() async {
-    return "user_fallback_dev_123";
+    // placeholder, there is no login system implemented yet
+    return "p_1";
   }
 
   @override
@@ -240,7 +289,6 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     notifyListeners();
 
     try {
-      await Future.delayed(const Duration(seconds: 2)); // Simulate generation
       _isExporting = false;
       notifyListeners();
       return "reports/pdf/timeline_export_${DateTime.now().millisecondsSinceEpoch}.pdf";
@@ -256,8 +304,6 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   Future<String?> exportTimelineAsZip() async {
     _isExporting = true;
     notifyListeners();
-    // Simulate compressed archive bundle building
-    await Future.delayed(const Duration(seconds: 1));
     _isExporting = false;
     notifyListeners();
     return "exports/archives/bundle.zip";

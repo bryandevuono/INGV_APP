@@ -1,10 +1,8 @@
-// lib/infrastructure/map/widgets/app_map_marker_widget.dart
 import 'package:flutter/material.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart';
 
 class AppMapMarkerWidget extends StatelessWidget {
   final AppMarker marker;
-
   const AppMapMarkerWidget({super.key, required this.marker});
 
   @override
@@ -20,6 +18,7 @@ class AppMapMarkerWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // The Main Card Content
             Container(
               width: 520,
               padding: const EdgeInsets.all(28),
@@ -57,7 +56,7 @@ class AppMapMarkerWidget extends StatelessWidget {
                               children: [
                                 const SizedBox(width: 8),
                                 Text(
-                                  "Author: ${marker.author}",
+                                  "Author: ${marker.author}\nlat: ${marker.latitude}\nlong: ${marker.longitude}\nstart datetime: ${marker.startDateTime?.toLocal().toString().split(' ')[0] ?? 'Any'}\nend datetime: ${marker.endDateTime?.toLocal().toString().split(' ')[0] ?? 'Any'}",
                                   style: const TextStyle(
                                     fontSize: 16,
                                     color: Colors.black54,
@@ -98,36 +97,6 @@ class AppMapMarkerWidget extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              const Text(
-                                "Tag:",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              const SizedBox(width: 46),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: marker.tagColor,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  marker.tag,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ],
@@ -145,9 +114,11 @@ class AppMapMarkerWidget extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: marker.onAction,
+                        onPressed: () {
+                          marker.onTap();
+                        },
                         child: const Text(
-                          "Submit a note",
+                          "See event details",
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.white,
@@ -160,10 +131,13 @@ class AppMapMarkerWidget extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              width: 2,
-              height: 20,
-              color: Colors.black54,
+            // The Connecting Pointer (Triangle Arrow)
+            CustomPaint(
+              size: const Size(24, 12), // Width and Height of the pointer arrow
+              painter: TooltipPointerPainter(
+                color: const Color(0xFFF5F5F5),
+                borderColor: Colors.black54,
+              ),
             ),
           ],
         ),
@@ -196,4 +170,36 @@ class AppMapMarkerWidget extends StatelessWidget {
       ),
     );
   }
+}
+
+class TooltipPointerPainter extends CustomPainter {
+  final Color color;
+  final Color borderColor;
+
+  TooltipPointerPainter({required this.color, required this.borderColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(size.width / 2, size.height);
+    // Draw to top right
+    path.lineTo(size.width, 0);
+
+    canvas.drawPath(path, paint);
+
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
