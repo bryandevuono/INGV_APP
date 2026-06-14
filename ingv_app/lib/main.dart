@@ -12,6 +12,8 @@ import 'package:ingv_app/data/services/event_detail_service.dart';
 import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service.dart';
+
+import 'package:ingv_app/ui/file_history/widgets/file_history_editor.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
@@ -55,5 +57,15 @@ class MyApp extends StatelessWidget {
         fileOpenService: fileOpenService,
       ),
     );
+
+    // return MaterialApp(
+    //   debugShowCheckedModeBanner: false,
+    //   theme: ThemeData.dark().copyWith(
+    //     primaryColor: Colors.teal,
+    //     scaffoldBackgroundColor: const Color(0xFF121212),
+    //     cardColor: const Color(0xFF1E1E1E),
+    //   ),
+    //   home: DocumentComparisonScreen(),
+    // );
   }
 }

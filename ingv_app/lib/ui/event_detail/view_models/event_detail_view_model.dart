@@ -10,6 +10,7 @@ import 'package:ingv_app/data/services/export_service.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
+import 'package:ingv_app/data/services/file_operations_service.dart';
 
 class EventDetailViewModel extends ChangeNotifier {
   final IEventDetailRepository _detailRepository;
@@ -215,6 +216,7 @@ class EventDetailViewModel extends ChangeNotifier {
   }
 
   Future<bool> openAttachment(EventAttachment attachment) async {
+
     errorMessage = null;
     busyAttachmentIds.add(attachment.id);
     notifyListeners();

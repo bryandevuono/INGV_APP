@@ -56,6 +56,7 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   file_saver: ^0.4.0
+  diff_match_patch: ^0.4.1
 
 dev_dependencies:
   flutter_test:
