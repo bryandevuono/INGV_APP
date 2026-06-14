@@ -1,10 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:sembast/sembast.dart';
 import '../models/event_model.dart';
 import 'package:flutter/material.dart';
 import '../database/app_database.dart';
 import 'event_service_interface.dart';
-import '../models/group_model.dart';
 import 'group_service_sembast.dart';
 
 class EventServiceSembast implements IEventService {
@@ -13,7 +11,7 @@ class EventServiceSembast implements IEventService {
   EventServiceSembast._internal();
 
   static const String _storeName = 'events';
-    final Map<String, Color> cellColors = {
+  final Map<String, Color> cellColors = {
     "Volcanic": Colors.red,
     "Earthquake": Colors.green,
     "Hydrological": Colors.blue,
@@ -111,6 +109,26 @@ class EventServiceSembast implements IEventService {
   }
 
   @override
+  Future<void> updateEvent(EventModel event) async {
+    await _ensureInitialized();
+    final db = await _database;
+
+    try {
+      final record = _store.record(event.eventId);
+      final existing = await record.get(db);
+      if (existing == null) {
+        throw StateError('Event with id ${event.eventId} not found.');
+      }
+
+      await record.put(db, event.toJson());
+      await _refreshCache(db);
+    } catch (error, stackTrace) {
+      debugPrint('EventServiceSembast update failed: $error\n$stackTrace');
+      rethrow;
+    }
+  }
+
+  @override
   Future<Map<String, DateTime>> getEventDateRange() async {
     await _ensureInitialized();
 
@@ -149,17 +167,21 @@ class EventServiceSembast implements IEventService {
 
     final categories = _events.map((e) => e.category).toSet().toList();
     final categoriesWithColors = categories.map((category) {
-      final color = cellColors[category] ?? Colors.grey; // Default to grey if not found
+      final color =
+          cellColors[category] ?? Colors.grey; // Default to grey if not found
       return MapEntry(category, color);
     }).toList();
 
     return categoriesWithColors;
   }
-  
+
   @override
   Future<String?> getGroupOfEvent(int eventId) async {
     await _ensureInitialized();
-    final event = _events.firstWhere((e) => e.eventId == eventId, orElse: () => throw StateError('Event with id $eventId not found.'));
+    final event = _events.firstWhere(
+      (e) => e.eventId == eventId,
+      orElse: () => throw StateError('Event with id $eventId not found.'),
+    );
     if (event.groupId == null) {
       return null;
     }

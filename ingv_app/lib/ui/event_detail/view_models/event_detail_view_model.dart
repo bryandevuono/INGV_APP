@@ -10,7 +10,6 @@ import 'package:ingv_app/data/services/export_service.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
-import 'package:ingv_app/data/services/file_operations_service.dart';
 
 class EventDetailViewModel extends ChangeNotifier {
   final IEventDetailRepository _detailRepository;
@@ -62,6 +61,8 @@ class EventDetailViewModel extends ChangeNotifier {
         );
   }
 
+  IEventRepository get eventRepository => _eventRepository;
+
   Future<void> loadEventDetails(EventModel event) async {
     groupName = await _eventRepository.getGroupOfEvent(event.eventId);
     selectedEvent = event;
@@ -85,6 +86,16 @@ class EventDetailViewModel extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> updateSelectedEvent(EventModel updatedEvent) async {
+    selectedEvent = updatedEvent;
+    try {
+      groupName = await _eventRepository.getGroupOfEvent(updatedEvent.eventId);
+    } catch (e) {
+      groupName = null;
+    }
+    notifyListeners();
   }
 
   Future<void> addNote(String noteText, String author) async {
@@ -216,7 +227,6 @@ class EventDetailViewModel extends ChangeNotifier {
   }
 
   Future<bool> openAttachment(EventAttachment attachment) async {
-
     errorMessage = null;
     busyAttachmentIds.add(attachment.id);
     notifyListeners();
@@ -327,6 +337,7 @@ class EventDetailViewModel extends ChangeNotifier {
     notes = [];
     attachments = [];
     selectedAttachment = null;
+    groupName = null;
     errorMessage = null;
     lastSavedAttachmentPath = null;
     lastExportPath = null;

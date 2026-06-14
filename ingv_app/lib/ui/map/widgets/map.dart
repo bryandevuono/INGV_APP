@@ -10,20 +10,31 @@ import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 import 'package:ingv_app/ui/map/view_models/map_view_model.dart';
-import 'package:ingv_app/ui/search.dart';
+import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
+import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
 
-import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart'; 
+import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart';
 
 class MapScreen extends StatefulWidget {
   final IEventRepository eventRepository;
   final IEventSearchRepository eventSearchRepository;
-  final IMapService mapService; 
+  final IMapService mapService;
+  final bool showControlBar;
+  final EventFilterController? sharedFilterController;
+  final VoidCallback? onAddEvent;
+
+  IEventSearchRepository get exposedEventSearchRepository =>
+      eventSearchRepository;
+  IMapService get exposedMapService => mapService;
 
   const MapScreen({
     super.key,
     required this.eventRepository,
     required this.eventSearchRepository,
     required this.mapService,
+    this.showControlBar = true,
+    this.sharedFilterController,
+    this.onAddEvent,
   });
 
   @override
@@ -34,15 +45,11 @@ class _MapScreenState extends State<MapScreen> {
   late final MapScreenViewModel _viewModel;
   late final EventDetailViewModel _detailViewModel;
   EventModel? _selectedEvent;
+  EventFilterController? get _filterController => widget.sharedFilterController;
 
   @override
   void initState() {
     super.initState();
-    _viewModel = MapScreenViewModel(
-      widget.eventRepository,
-      widget.eventSearchRepository,
-    );
-
     // Keeping your original initialization chain exactly as it was:
     final detailRepository = EventDetailRepository(EventDetailService());
     final attachmentRepository = LocalAttachmentRepository();
@@ -57,6 +64,12 @@ class _MapScreenState extends State<MapScreen> {
       detailRepository: detailRepository,
       attachmentRepository: attachmentRepository,
       localFileService: localFileService,
+    );
+    _viewModel = MapScreenViewModel(
+      widget.eventRepository,
+      widget.eventSearchRepository,
+      pdfExportService,
+      zipExportService,
     );
     _detailViewModel = EventDetailViewModel(
       detailRepository,
@@ -74,6 +87,152 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _loadEvents() async {
     await _viewModel.fetchEvents();
+  }
+
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange:
+          _viewModel.filterStartDate != null && _viewModel.filterEndDate != null
+          ? DateTimeRange(
+              start: _viewModel.filterStartDate!,
+              end: _viewModel.filterEndDate!,
+            )
+          : null,
+    );
+    if (picked != null) {
+      _viewModel.setDateRangeFilter(picked.start, picked.end);
+      _filterController?.setDateRange(picked.start, picked.end);
+    }
+  }
+
+  Future<void> _exportVisibleEvents({required bool zip}) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final exportPath = zip
+        ? await _viewModel.exportVisibleEventsZip()
+        : await _viewModel.exportVisibleEventsPdf();
+
+    if (!mounted) {
+      return;
+    }
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          exportPath != null
+              ? 'Map export saved: $exportPath'
+              : (_viewModel.exportErrorMessage ??
+                    'Failed to export map events.'),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportEventsForRange({required bool zip}) async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange:
+          _viewModel.filterStartDate != null && _viewModel.filterEndDate != null
+          ? DateTimeRange(
+              start: _viewModel.filterStartDate!,
+              end: _viewModel.filterEndDate!,
+            )
+          : null,
+    );
+
+    if (picked == null) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    final exportPath = zip
+        ? await _viewModel.exportVisibleEventsZip(
+            startDate: picked.start,
+            endDate: picked.end,
+          )
+        : await _viewModel.exportVisibleEventsPdf(
+            startDate: picked.start,
+            endDate: picked.end,
+          );
+
+    if (!mounted) {
+      return;
+    }
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          exportPath != null
+              ? 'Range export saved: $exportPath'
+              : (_viewModel.exportErrorMessage ??
+                    'Failed to export the selected range.'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExportMenu() {
+    return PopupMenuButton<String>(
+      tooltip: 'Export map events',
+      onSelected: (value) async {
+        switch (value) {
+          case 'visible_pdf':
+            await _exportVisibleEvents(zip: false);
+            break;
+          case 'visible_zip':
+            await _exportVisibleEvents(zip: true);
+            break;
+          case 'range_pdf':
+            await _exportEventsForRange(zip: false);
+            break;
+          case 'range_zip':
+            await _exportEventsForRange(zip: true);
+            break;
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: 'visible_pdf',
+          child: Text('Export visible events as PDF'),
+        ),
+        PopupMenuItem(
+          value: 'visible_zip',
+          child: Text('Export visible events as ZIP'),
+        ),
+        PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'range_pdf',
+          child: Text('Export date range as PDF'),
+        ),
+        PopupMenuItem(
+          value: 'range_zip',
+          child: Text('Export date range as ZIP'),
+        ),
+      ],
+      icon: const Icon(Icons.download),
+    );
+  }
+
+  void _syncFromSharedFilters() {
+    final controller = _filterController;
+    if (controller == null) {
+      return;
+    }
+
+    if (_viewModel.selectedCategory != controller.selectedCategory) {
+      _viewModel.setCategoryFilter(controller.selectedCategory);
+    }
+    if (_viewModel.searchQuery != controller.searchQuery) {
+      _viewModel.setSearchQuery(controller.searchQuery);
+    }
+    if (_viewModel.filterStartDate != controller.startDate ||
+        _viewModel.filterEndDate != controller.endDate) {
+      _viewModel.setDateRangeFilter(controller.startDate, controller.endDate);
+    }
   }
 
   Future<void> _toggleEventDetails(EventModel event) async {
@@ -112,72 +271,56 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _viewModel,
+      listenable: Listenable.merge(
+        _filterController == null
+            ? [_viewModel]
+            : [_viewModel, _filterController!],
+      ),
       builder: (context, _) {
+        _syncFromSharedFilters();
         return Stack(
           children: [
             Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Wrap(
-                    spacing: 12.0,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      if (_viewModel.categories.isNotEmpty)
-                        DropdownButton<String>(
-                          value: _viewModel.selectedCategory,
-                          items: _viewModel.categories.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (newValue) {
-                            if (newValue != null) {
+                if (widget.showControlBar)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: EventFilterActionBar(
+                            categories: _viewModel.categories.isNotEmpty
+                                ? _viewModel.categories
+                                : const ['All'],
+                            selectedCategory: _viewModel.selectedCategory,
+                            searchQuery: _viewModel.searchQuery,
+                            startDate: _viewModel.filterStartDate,
+                            endDate: _viewModel.filterEndDate,
+                            showCategoryDropdown: true,
+                            showDateFilter: true,
+                            showSearch: true,
+                            showExportPdf: false,
+                            showExportZip: false,
+                            onCategoryChanged: (newValue) {
                               _viewModel.setCategoryFilter(newValue);
-                            }
-                          },
+                              _filterController?.setCategory(newValue);
+                            },
+                            onDateRangePicked: _pickDateRange,
+                            onClearDateFilter: () {
+                              _viewModel.setDateRangeFilter(null, null);
+                              _filterController?.clearDateRange();
+                            },
+                            onSearchChanged: (query) {
+                              _viewModel.setSearchQuery(query);
+                              _filterController?.setSearchQuery(query);
+                            },
+                          ),
                         ),
-                      TextButton.icon(
-                        icon: const Icon(Icons.date_range),
-                        label: Text(
-                          _viewModel.filterStartDate == null
-                              ? 'Filter by Date'
-                              : '${_viewModel.filterStartDate!.toLocal().toString().split(' ')[0]} - ${_viewModel.filterEndDate?.toLocal().toString().split(' ')[0] ?? 'Any'}',
-                        ),
-                        onPressed: () async {
-                          final DateTimeRange? picked = await showDateRangePicker(
-                            context: context,
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2101),
-                            initialDateRange: _viewModel.filterStartDate != null &&
-                                    _viewModel.filterEndDate != null
-                                ? DateTimeRange(
-                                    start: _viewModel.filterStartDate!,
-                                    end: _viewModel.filterEndDate!,
-                                  )
-                                : null,
-                          );
-                          if (picked != null) {
-                            _viewModel.setDateRangeFilter(
-                              picked.start,
-                              picked.end,
-                            );
-                          }
-                        },
-                      ),
-                      if (_viewModel.filterStartDate != null)
-                        IconButton(
-                          icon: const Icon(Icons.clear),
-                          tooltip: 'Clear Date Filter',
-                          onPressed: () =>
-                              _viewModel.setDateRangeFilter(null, null),
-                        ),
-                      Search(viewModel: _viewModel),
-                    ],
+                        const SizedBox(width: 8),
+                        _buildExportMenu(),
+                      ],
+                    ),
                   ),
-                ),
                 Expanded(
                   child: widget.mapService.buildMap(
                     initialLat: 41.9028,
@@ -191,6 +334,12 @@ class _MapScreenState extends State<MapScreen> {
             if (_selectedEvent != null)
               EventDetailPanel(
                 viewModel: _detailViewModel,
+                onEventUpdated: (updatedEvent) async {
+                  setState(() {
+                    _selectedEvent = updatedEvent;
+                  });
+                  await _loadEvents();
+                },
                 onDismiss: () {
                   setState(() {
                     _selectedEvent = null;

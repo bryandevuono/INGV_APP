@@ -6,12 +6,14 @@ class EventDetailHeader extends StatelessWidget {
   final EventModel event;
   final EventDetailViewModel viewModel;
   final VoidCallback onDismiss;
+  final VoidCallback? onEdit;
 
   const EventDetailHeader({
     super.key,
     required this.event,
     required this.viewModel,
     required this.onDismiss,
+    this.onEdit,
   });
 
   @override
@@ -31,7 +33,7 @@ class EventDetailHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Icon(Icons.terrain, color: Colors.red, size: 20),
@@ -59,9 +61,9 @@ class EventDetailHeader extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
+                            color: Colors.red.withValues(alpha: 0.1),
                             border: Border.all(
-                              color: Colors.red.withOpacity(0.3),
+                              color: Colors.red.withValues(alpha: 0.3),
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -83,12 +85,12 @@ class EventDetailHeader extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: viewModel.isEventEnded
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.orange.withOpacity(0.1),
+                                ? Colors.green.withValues(alpha: 0.1)
+                                : Colors.orange.withValues(alpha: 0.1),
                             border: Border.all(
                               color: viewModel.isEventEnded
-                                  ? Colors.green.withOpacity(0.3)
-                                  : Colors.orange.withOpacity(0.3),
+                                  ? Colors.green.withValues(alpha: 0.3)
+                                  : Colors.orange.withValues(alpha: 0.3),
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -128,6 +130,21 @@ class EventDetailHeader extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  TextButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Edit event'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      side: BorderSide(color: Colors.grey.shade300),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
                   TextButton.icon(
                     onPressed: viewModel.isExporting
                         ? null
@@ -209,6 +226,11 @@ class EventDetailHeader extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'Dismiss event panel',
+                    onPressed: onDismiss,
+                    icon: const Icon(Icons.close),
                   ),
                 ],
               ),
