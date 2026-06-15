@@ -119,6 +119,15 @@ class EventDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAttachment(EventAttachment attachment) async {
+    await _attachmentRepository.deleteAttachment(attachment.id);
+    attachments.removeWhere((item) => item.id == attachment.id);
+    if (selectedAttachment?.id == attachment.id) {
+      selectedAttachment = null;
+    }
+    notifyListeners();
+  }
+
   List<EventAttachment> get imageAttachments {
     return attachments
         .where((attachment) => attachment.type == AttachmentType.image)
@@ -144,65 +153,73 @@ class EventDetailViewModel extends ChangeNotifier {
     return busyAttachmentIds.contains(attachmentId);
   }
 
-  Future<void> addMediaFromFile(String mediaType, File file) async {
+  Future<void> addMediaFromFiles(String mediaType, List<File> files) async {
     if (selectedEvent == null) return;
 
-    final attachment = EventAttachment(
-      id: 'local_${DateTime.now().microsecondsSinceEpoch}',
-      eventId: selectedEvent!.eventId.toString(),
-      fileName: file.path.split(Platform.pathSeparator).last,
-      localPath: file.path,
-      type: mediaType == 'video' ? AttachmentType.video : AttachmentType.image,
-      sizeBytes: file.existsSync() ? file.lengthSync() : null,
-      mimeType: mediaType == 'video' ? 'video/*' : 'image/*',
-      createdAt: DateTime.now(),
-    );
+    for (final file in files) {
+      final attachment = EventAttachment(
+        id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+        eventId: selectedEvent!.eventId.toString(),
+        fileName: file.path.split(Platform.pathSeparator).last,
+        localPath: file.path,
+        type: mediaType == 'video'
+            ? AttachmentType.video
+            : AttachmentType.image,
+        sizeBytes: file.existsSync() ? file.lengthSync() : null,
+        mimeType: mediaType == 'video' ? 'video/*' : 'image/*',
+        createdAt: DateTime.now(),
+      );
 
-    await _attachmentRepository.addAttachment(attachment);
-    attachments.add(attachment);
+      await _attachmentRepository.addAttachment(attachment);
+      attachments.add(attachment);
+    }
+
     notifyListeners();
   }
 
-  Future<void> addAttachmentFromFile(File file) async {
+  Future<void> addAttachmentFromFiles(List<File> files) async {
     if (selectedEvent == null) return;
 
-    final fileName = file.path.split('/').last;
-    final fileSize = file.lengthSync();
-    final fileExtension = fileName.split('.').last.toLowerCase();
+    for (final file in files) {
+      final fileName = file.path.split('/').last;
+      final fileSize = file.lengthSync();
+      final fileExtension = fileName.split('.').last.toLowerCase();
 
-    final newAttachment = EventAttachment(
-      id: 'local_${DateTime.now().microsecondsSinceEpoch}',
-      eventId: selectedEvent!.eventId.toString(),
-      fileName: fileName,
-      localPath: file.path,
-      type: parseAttachmentTypeFromExtension(fileExtension),
-      sizeBytes: fileSize,
-      mimeType: _guessMimeType(fileExtension),
-      createdAt: DateTime.now(),
-    );
+      final newAttachment = EventAttachment(
+        id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+        eventId: selectedEvent!.eventId.toString(),
+        fileName: fileName,
+        localPath: file.path,
+        type: parseAttachmentTypeFromExtension(fileExtension),
+        sizeBytes: fileSize,
+        mimeType: _guessMimeType(fileExtension),
+        createdAt: DateTime.now(),
+      );
 
-    await _attachmentRepository.addAttachment(newAttachment);
-    attachments.add(newAttachment);
+      await _attachmentRepository.addAttachment(newAttachment);
+      attachments.add(newAttachment);
+    }
+
     notifyListeners();
   }
 
   Future<void> pickAndAddMedia(String mediaType) async {
-    File? file;
+    List<File> files = [];
     if (mediaType == 'image') {
-      file = await _filePickerService.pickImage();
+      files = await _filePickerService.pickImages();
     } else if (mediaType == 'video') {
-      file = await _filePickerService.pickVideo();
+      files = await _filePickerService.pickVideos();
     }
 
-    if (file != null) {
-      await addMediaFromFile(mediaType, file);
+    if (files.isNotEmpty) {
+      await addMediaFromFiles(mediaType, files);
     }
   }
 
   Future<void> pickAndAddAttachment() async {
-    final file = await _filePickerService.pickFile();
-    if (file != null) {
-      await addAttachmentFromFile(file);
+    final files = await _filePickerService.pickFiles();
+    if (files.isNotEmpty) {
+      await addAttachmentFromFiles(files);
     }
   }
 

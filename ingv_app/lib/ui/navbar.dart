@@ -74,7 +74,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          exportPath != null
+          exportPath?.isNotEmpty == true
               ? 'Home export saved: $exportPath'
               : (_hybridTimelineViewModel.exportErrorMessage ??
                     'Failed to export home events.'),

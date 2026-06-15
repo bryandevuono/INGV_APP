@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:ingv_app/data/models/attachment_type.dart';
+import 'package:ingv_app/data/models/event_attachment.dart';
 import 'package:ingv_app/data/models/event_model.dart';
+import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
 import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
@@ -16,6 +19,7 @@ void showAddEventDialog(
   final latController = TextEditingController(text: '0.0');
   final longController = TextEditingController(text: '0.0');
   final filePickerService = FilePickerService();
+  final attachmentRepository = LocalAttachmentRepository();
   final defaultCategories = <String>[
     'Volcanic',
     'Earthquake',
@@ -237,7 +241,7 @@ void showAddEventDialog(
                             ) {
                               final index = entry.key;
                               final file = entry.value;
-                              final fileName = file.path.split('/').last;
+                              final fileName = _fileNameFromPath(file);
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 4,
@@ -304,11 +308,11 @@ void showAddEventDialog(
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () async {
-                                  final file = await filePickerService
-                                      .pickImage();
-                                  if (file != null) {
+                                  final files = await filePickerService
+                                      .pickImages();
+                                  if (files.isNotEmpty) {
                                     setState(() {
-                                      selectedMediaFiles.add(file);
+                                      selectedMediaFiles.addAll(files);
                                     });
                                   }
                                 },
@@ -326,16 +330,38 @@ void showAddEventDialog(
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () async {
-                                  final file = await filePickerService
-                                      .pickFile();
-                                  if (file != null) {
+                                  final files = await filePickerService
+                                      .pickVideos();
+                                  if (files.isNotEmpty) {
                                     setState(() {
-                                      selectedMediaFiles.add(file);
+                                      selectedMediaFiles.addAll(files);
+                                    });
+                                  }
+                                },
+                                icon: const Icon(Icons.videocam, size: 14),
+                                label: const Text('Video'),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final files = await filePickerService
+                                      .pickFiles();
+                                  if (files.isNotEmpty) {
+                                    setState(() {
+                                      selectedMediaFiles.addAll(files);
                                     });
                                   }
                                 },
                                 icon: const Icon(Icons.attach_file, size: 14),
-                                label: const Text('File'),
+                                label: const Text('Files'),
                                 style: ElevatedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
@@ -367,7 +393,7 @@ void showAddEventDialog(
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   if (titleController.text.isNotEmpty &&
                       startDate != null &&
                       startTime != null) {
@@ -411,7 +437,16 @@ void showAddEventDialog(
                       groupId: selectedGroup,
                       description: descriptionController.text,
                     );
-                    viewModel.addEvent(newEvent);
+                    await viewModel.addEvent(newEvent);
+
+                    for (final file in selectedMediaFiles) {
+                      await attachmentRepository.addAttachment(
+                        _buildAttachment(newEvent.eventId.toString(), file),
+                      );
+                    }
+
+                    if (!context.mounted) return;
+
                     Navigator.of(context).pop();
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -429,4 +464,60 @@ void showAddEventDialog(
       );
     },
   );
+}
+
+String _fileNameFromPath(File file) {
+  return file.path.split(Platform.pathSeparator).last;
+}
+
+EventAttachment _buildAttachment(String eventId, File file) {
+  final fileName = _fileNameFromPath(file);
+  final extension = fileName.split('.').last.toLowerCase();
+
+  return EventAttachment(
+    id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+    eventId: eventId,
+    fileName: fileName,
+    localPath: file.path,
+    type: parseAttachmentTypeFromExtension(extension),
+    sizeBytes: file.existsSync() ? file.lengthSync() : null,
+    mimeType: _guessMimeType(extension),
+    createdAt: DateTime.now(),
+  );
+}
+
+String _guessMimeType(String extension) {
+  switch (extension.toLowerCase()) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    case 'webp':
+      return 'image/webp';
+    case 'mp4':
+      return 'video/mp4';
+    case 'mov':
+      return 'video/quicktime';
+    case 'avi':
+      return 'video/x-msvideo';
+    case 'mkv':
+      return 'video/x-matroska';
+    case 'webm':
+      return 'video/webm';
+    case 'pdf':
+      return 'application/pdf';
+    case 'csv':
+      return 'text/csv';
+    case 'docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'xlsx':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    case 'xls':
+      return 'application/vnd.ms-excel';
+    default:
+      return 'application/octet-stream';
+  }
 }

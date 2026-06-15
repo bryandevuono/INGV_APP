@@ -109,7 +109,6 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _exportVisibleEvents({required bool zip}) async {
-    final messenger = ScaffoldMessenger.of(context);
     final exportPath = zip
         ? await _viewModel.exportVisibleEventsZip()
         : await _viewModel.exportVisibleEventsPdf();
@@ -118,10 +117,11 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          exportPath != null
+          exportPath?.isNotEmpty == true
               ? 'Map export saved: $exportPath'
               : (_viewModel.exportErrorMessage ??
                     'Failed to export map events.'),
@@ -148,7 +148,6 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
 
-    final messenger = ScaffoldMessenger.of(context);
     final exportPath = zip
         ? await _viewModel.exportVisibleEventsZip(
             startDate: picked.start,
@@ -163,10 +162,11 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          exportPath != null
+          exportPath?.isNotEmpty == true
               ? 'Range export saved: $exportPath'
               : (_viewModel.exportErrorMessage ??
                     'Failed to export the selected range.'),

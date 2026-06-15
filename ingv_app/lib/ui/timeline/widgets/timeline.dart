@@ -81,7 +81,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          exportPath != null
+          exportPath?.isNotEmpty == true
               ? 'Timeline export saved: $exportPath'
               : (widget.viewModel.exportErrorMessage ??
                     'Failed to export timeline events.'),
