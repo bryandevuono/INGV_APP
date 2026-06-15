@@ -38,6 +38,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
+
     _viewModel = MapScreenViewModel(
       widget.eventRepository,
       widget.eventSearchRepository,
@@ -103,8 +104,10 @@ class _MapScreenState extends State<MapScreen> {
           title: event.title,
           startDateTime: event.startDt,
           endDateTime: event.endDt,
-          progress: 0.5,
+          progress: _viewModel.calculateMarkerDuration(event.startDt, event.endDt),
           onTap: () => _toggleEventDetails(event),
+          categoryColor: _viewModel.getCategoryColor(event.category),
+          fillColor: _viewModel.getCategoryColor(event.category),
         ),
     ];
   }

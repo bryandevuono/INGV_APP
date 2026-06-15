@@ -277,14 +277,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const double totalCanvasWidth = 1200.0;
     const double leftHeaderWidth = 160.0;
 
-    // calc the start and end   
     final DateTime rangeStart =
-    widget.viewModel.filterStartDate ?? _clientBaselineStart; 
+        widget.viewModel.filterStartDate ?? _clientBaselineStart; 
     final DateTime rangeEnd =
-    widget.viewModel.filterEndDate ??
-    rangeStart.add(const Duration(days: 7));
+        widget.viewModel.filterEndDate ?? rangeStart.add(const Duration(days: 7));
 
-    // boundaries
     final DateTime totalStart = rangeStart.subtract(const Duration(days: 2));
     final DateTime totalEnd = rangeEnd.add(const Duration(days: 2));
 
@@ -298,6 +295,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
         final lane = lanes[index];
         final isFirstRow = index == 0;
         final isMinimized = widget.viewModel.isCategoryMinimized(lane.id);
+        
         final double definedRowHeight = isMinimized
             ? minimizedRowHeight
             : expandedRowHeight;
@@ -312,7 +310,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
           if (task.start == task.end || task.end == null) {
             finalEnd = task.start.add(const Duration(hours: 1));
           } else {
-            finalEnd = task.end;
+            finalEnd = task.end!;
           }
           return LegacyGanttTask(
             id: task.id,
@@ -330,23 +328,70 @@ class _TimelineScreenState extends State<TimelineScreen> {
             ? fullWidgetHeight
             : definedRowHeight;
 
+        // overlapping?
+        bool showVerticalScrollIndicators = false;
+        if (!isMinimized && genericTasks.length > 1) {
+          for (int i = 0; i < genericTasks.length; i++) {
+            final taskA = genericTasks[i];
+            final endA = taskA.end ?? taskA.start.add(const Duration(hours: 1));
+
+            for (int j = i + 1; j < genericTasks.length; j++) {
+              final taskB = genericTasks[j];
+              final endB = taskB.end ?? taskB.start.add(const Duration(hours: 1));
+
+              final bool overlapsInTime = taskA.start.isBefore(endB) && taskB.start.isBefore(endA);
+
+              if (overlapsInTime) {
+                // Verify the collision happens 
+                if (taskA.start.isAfter(totalStart) && taskA.start.isBefore(totalEnd)) {
+                  showVerticalScrollIndicators = true;
+                  break;
+                }
+              }
+            }
+            if (showVerticalScrollIndicators) break;
+          }
+        }
+
         Widget chartSection = SizedBox(
           width: totalCanvasWidth,
           height: fullWidgetHeight,
-          child: LegacyGanttChartWidget(
-            data: packageTasks,
-            visibleRows: packageRows,
-            rowMaxStackDepth: rowMaxStackDepth,
-            rowHeight: definedRowHeight,
-            axisHeight: baseAxisHeight,
-            gridMin: rangeStart.millisecondsSinceEpoch.toDouble(),
-            gridMax: rangeEnd.millisecondsSinceEpoch.toDouble(),
-            totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
-            totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
-            taskBarBuilder: (task) {
-              if (isMinimized) return const SizedBox.shrink();
-              return _buildEventContainer(task.id);
-            },
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: LegacyGanttChartWidget(
+                  data: packageTasks,
+                  visibleRows: packageRows,
+                  rowMaxStackDepth: rowMaxStackDepth,
+                  rowHeight: definedRowHeight,
+                  axisHeight: baseAxisHeight,
+                  gridMin: rangeStart.millisecondsSinceEpoch.toDouble(),
+                  gridMax: rangeEnd.millisecondsSinceEpoch.toDouble(),
+                  totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
+                  totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
+                  taskBarBuilder: (task) {
+                    if (isMinimized) return const SizedBox.shrink();
+                    return _buildEventContainer(task.id);
+                  },
+                ),
+              ),
+              
+              // overlay arrow
+              if (showVerticalScrollIndicators) ...[
+                // Down Arrow
+                Positioned(
+                  bottom: 4,
+                  left: (totalCanvasWidth / 2) - 12,
+                  child: IgnorePointer(
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      
+                      child: const Icon(Icons.keyboard_arrow_down, color: Colors.blueAccent, size: 20),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         );
 
@@ -354,7 +399,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
           chartSection = ClipRect(
             child: SizedBox(
               width: totalCanvasWidth,
-              height: visibleViewportHeight,
+              height: visibleViewportHeight, 
               child: OverflowBox(
                 minHeight: fullWidgetHeight,
                 maxHeight: fullWidgetHeight,
@@ -419,16 +464,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
           key: ValueKey('row_wrapper_${lane.id}'),
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start, 
               children: [
                 leftHeader,
                 Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: SizedBox(
-                      width: totalCanvasWidth,
-                      height: visibleViewportHeight,
-                      child: chartSection,
-                    ),
+                  child: SizedBox(
+                    width: totalCanvasWidth,
+                    height: visibleViewportHeight,
+                    child: chartSection,
                   ),
                 ),
               ],

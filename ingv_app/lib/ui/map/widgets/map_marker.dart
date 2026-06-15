@@ -132,13 +132,6 @@ class AppMapMarkerWidget extends StatelessWidget {
               ),
             ),
             // The Connecting Pointer (Triangle Arrow)
-            CustomPaint(
-              size: const Size(24, 12), // Width and Height of the pointer arrow
-              painter: TooltipPointerPainter(
-                color: const Color(0xFFF5F5F5),
-                borderColor: Colors.black54,
-              ),
-            ),
           ],
         ),
       ),
@@ -172,34 +165,3 @@ class AppMapMarkerWidget extends StatelessWidget {
   }
 }
 
-class TooltipPointerPainter extends CustomPainter {
-  final Color color;
-  final Color borderColor;
-
-  TooltipPointerPainter({required this.color, required this.borderColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final borderPaint = Paint()
-      ..color = borderColor
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    path.moveTo(0, 0);
-    path.lineTo(size.width / 2, size.height);
-    // Draw to top right
-    path.lineTo(size.width, 0);
-
-    canvas.drawPath(path, paint);
-
-    canvas.drawPath(path, borderPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

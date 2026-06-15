@@ -15,6 +15,16 @@ class MapScreenViewModel extends ChangeNotifier {
   String selectedCategory = 'All';
   DateTime? filterStartDate;
   DateTime? filterEndDate;
+  Map<String, Color> _categoryColors = {};
+
+  Color getCategoryColor(String category) {
+    final normalizedCategory = category.toLowerCase().trim();
+
+    return _categoryColors[normalizedCategory] ??
+        const Color(0xFF9E9E9E); // Solid Grey
+  }
+
+  int timelineDurationDays = 7;
 
   MapScreenViewModel(this._eventRepository, this._searchRepository);
 
@@ -26,6 +36,7 @@ class MapScreenViewModel extends ChangeNotifier {
         categories.add(category);
       }
     }
+    await getColors();
     await applyFilters();
   }
 
@@ -53,5 +64,30 @@ class MapScreenViewModel extends ChangeNotifier {
     filterStartDate = start;
     filterEndDate = end;
     applyFilters();
+  }
+
+  // Calculate marker duration as a fraction of the timeline duration
+  double calculateMarkerDuration(DateTime? start, DateTime? end) {
+    if (start == null || end == null) return 0;
+    final duration = end.difference(start).inDays.toDouble();
+
+    return duration / timelineDurationDays;
+  }
+
+  Future<void> getColors() async {
+    try {
+      final mapEntryList = await _eventRepository.getEventColors();
+      _categoryColors = Map.fromEntries(mapEntryList);
+    } catch (e) {
+      _categoryColors = {
+        'Volcanic': Colors.red,
+        'Earthquake': Colors.orange,
+        'Hydrological': Colors.blue,
+        'Meteorological': Colors.cyan,
+        'Geological': Colors.brown,
+        'Atmospheric': Colors.green,
+      };
+    }
+    notifyListeners();
   }
 }
