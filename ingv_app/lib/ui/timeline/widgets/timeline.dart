@@ -186,12 +186,22 @@ class _TimelineScreenState extends State<TimelineScreen> {
       _clientBaselineStart = _clientBaselineStart.subtract(
         const Duration(days: 7),
       );
+      // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
+      if (widget.viewModel.filterStartDate != null) {
+        widget.viewModel.setDateRangeFilter(null, null);
+        _filterController?.clearDateRange();
+      }
     });
   }
 
   void _navigateToFuture() {
     setState(() {
       _clientBaselineStart = _clientBaselineStart.add(const Duration(days: 7));
+      // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
+      if (widget.viewModel.filterStartDate != null) {
+        widget.viewModel.setDateRangeFilter(null, null);
+        _filterController?.clearDateRange();
+      }
     });
   }
 
@@ -238,45 +248,64 @@ class _TimelineScreenState extends State<TimelineScreen> {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 18),
+        padding: const EdgeInsets.only(top: 12, bottom: 18, left: 16, right: 16),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1400),
-            child: EventFilterActionBar(
-              categories: {'All', ...widget.viewModel.categories}.toList(),
-              selectedCategory: widget.viewModel.selectedCategory,
-              searchQuery: widget.viewModel.searchQuery,
-              startDate: widget.viewModel.filterStartDate,
-              endDate: widget.viewModel.filterEndDate,
-              showCategoryDropdown: true,
-              showDateFilter: true,
-              showSearch: true,
-              showExportPdf: true,
-              showExportZip: true,
-              showAddEvent: true,
-              isExporting: widget.viewModel.isExporting,
-              embeddedInPage: true,
-              onCategoryChanged: (newValue) {
-                widget.viewModel.setCategoryFilter(newValue);
-                _filterController?.setCategory(newValue);
-              },
-              onDateRangePicked: _pickDateRange,
-              onClearDateFilter: () {
-                widget.viewModel.setDateRangeFilter(null, null);
-                _filterController?.clearDateRange();
-              },
-              onSearchChanged: (query) {
-                widget.viewModel.setSearchQuery(query);
-                _filterController?.setSearchQuery(query);
-              },
-              onExportPdf: () =>
-                  _showExportResult(widget.viewModel.exportTimelineReport),
-              onExportZip: () =>
-                  _showExportResult(widget.viewModel.exportTimelineAsZip),
-              onExportDateRangePdf: _exportDateRangePdf,
-              onExportDateRangeZip: _exportDateRangeZip,
-              onAddEvent: widget.onAddEvent ??
-                  () => showAddEventDialog(context, widget.viewModel, const []),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                  tooltip: 'Go back 7 days',
+                  onPressed: _navigateToPast,
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                  tooltip: 'Go forward 7 days',
+                  onPressed: _navigateToFuture,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: EventFilterActionBar(
+                    categories: {'All', ...widget.viewModel.categories}.toList(),
+                    selectedCategory: widget.viewModel.selectedCategory,
+                    searchQuery: widget.viewModel.searchQuery,
+                    startDate: widget.viewModel.filterStartDate,
+                    endDate: widget.viewModel.filterEndDate,
+                    showCategoryDropdown: true,
+                    showDateFilter: true,
+                    showSearch: true,
+                    showExportPdf: true,
+                    showExportZip: true,
+                    showAddEvent: true,
+                    isExporting: widget.viewModel.isExporting,
+                    embeddedInPage: true,
+                    onCategoryChanged: (newValue) {
+                      widget.viewModel.setCategoryFilter(newValue);
+                      _filterController?.setCategory(newValue);
+                    },
+                    onDateRangePicked: _pickDateRange,
+                    onClearDateFilter: () {
+                      widget.viewModel.setDateRangeFilter(null, null);
+                      _filterController?.clearDateRange();
+                    },
+                    onSearchChanged: (query) {
+                      widget.viewModel.setSearchQuery(query);
+                      _filterController?.setSearchQuery(query);
+                    },
+                    onExportPdf: () =>
+                        _showExportResult(widget.viewModel.exportTimelineReport),
+                    onExportZip: () =>
+                        _showExportResult(widget.viewModel.exportTimelineAsZip),
+                    onExportDateRangePdf: _exportDateRangePdf,
+                    onExportDateRangeZip: _exportDateRangeZip,
+                    onAddEvent: widget.onAddEvent ??
+                        () => showAddEventDialog(context, widget.viewModel, const []),
+                  ),
+                ),
+                
+              ],
             ),
           ),
         ),
@@ -356,6 +385,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
             ? fullWidgetHeight
             : definedRowHeight;
 
+        // overlapping?
         bool showVerticalScrollIndicators = false;
         if (!isMinimized && genericTasks.length > 1) {
           for (int i = 0; i < genericTasks.length; i++) {
@@ -371,6 +401,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
               final bool overlapsInTime = taskA.start.isBefore(endB) && taskB.start.isBefore(endA);
 
               if (overlapsInTime) {
+                // Verify the collision happens 
                 if (taskA.start.isAfter(totalStart) && taskA.start.isBefore(totalEnd)) {
                   showVerticalScrollIndicators = true;
                   break;
@@ -403,12 +434,18 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   },
                 ),
               ),
+              
+              // overlay arrow
               if (showVerticalScrollIndicators) ...[
+                // Down Arrow
                 Positioned(
                   bottom: 4,
                   left: (totalCanvasWidth / 2) - 12,
-                  child: const IgnorePointer(
-                    child: Icon(Icons.keyboard_arrow_down, color: Colors.blueAccent, size: 20),
+                  child: IgnorePointer(
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      child: const Icon(Icons.keyboard_arrow_down, color: Colors.blueAccent, size: 20),
+                    ),
                   ),
                 ),
               ],
@@ -509,14 +546,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
       (e) => e.eventId.toString() == eventId,
     );
 
-    final String duration = event.endDt != null
-        ? "${event.endDt!.difference(event.startDt).inHours} hrs"
-        : "Ongoing";
-
-    final String endString = event.endDt != null
-        ? event.endDt.toString()
-        : '...';
-
+    final String duration;
+    final String endString;
     final String startStringTime = event.startDt
         .toLocal()
         .toString()
@@ -527,6 +558,13 @@ class _TimelineScreenState extends State<TimelineScreen> {
         ? event.endDt!.toLocal().toString().split(' ')[1].substring(0, 5)
         : '';
 
+    if (event.endDt != null) {
+      duration = "${event.endDt!.difference(event.startDt).inHours} hrs";
+      endString = event.endDt.toString();
+    } else {
+      duration = "Ongoing";
+      endString = '...';
+    }
     final Color itemColor = widget.viewModel
         .getTimelineTasksForCategory(event.category.trim())
         .firstWhere((t) => t.id == eventId)
@@ -537,9 +575,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
       child: GestureDetector(
         onTap: () => _toggleEventDetails(event),
         child: Tooltip(
-          message: "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
+          message:
+              "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
           child: event.endDt == null
               ? OverflowBox(
+                  minWidth: 24.0,
                   maxWidth: 24.0,
                   minHeight: 24.0,
                   maxHeight: 24.0,
@@ -562,7 +602,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 )
               : Container(
                   alignment: Alignment.topLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+                  height: 45.0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6.0,
+                    vertical: 4.0,
+                  ),
                   decoration: BoxDecoration(
                     color: itemColor,
                     border: _selectedEvent?.eventId == event.eventId
@@ -584,7 +628,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Row(
-                        mainAxisSize: MainAxisSize.min,
+                        spacing: 8.0,
                         children: [
                           Text(
                             '$startStringTime - $endStringTime',
@@ -593,7 +637,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
                               fontSize: 9,
                             ),
                           ),
-                          const SizedBox(width: 8.0),
                           Text(
                             duration,
                             style: const TextStyle(
