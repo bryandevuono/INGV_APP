@@ -35,4 +35,8 @@ class GroupRepository {
   dynamic getImagebyGroupId(String groupId) {
     return _groupService.getImageByGroupId(groupId);
   }
+
+  void postImageToGroupId(String groupId, String imagePath) {
+    _groupService.postImageToGroupId(groupId, imagePath);
+  }
 }

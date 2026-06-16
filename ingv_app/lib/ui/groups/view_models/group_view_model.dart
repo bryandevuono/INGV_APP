@@ -209,4 +209,8 @@ class GroupScreenViewModel extends ChangeNotifier {
   dynamic getGroupImage(String groupId) {
     return _groupRepository.getImagebyGroupId(groupId);
   }
+
+  void postImageToGroupId(String groupId, String imagePath) {
+    _groupRepository.postImageToGroupId(groupId, imagePath);
+  }
 }

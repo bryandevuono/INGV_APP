@@ -231,4 +231,9 @@ class GroupServiceSembast implements IGroupService {
   dynamic getImageByGroupId(String groupId) {
     return const Icon(Icons.group, size: 48, color: Colors.white);
   }
+
+  @override
+  void postImageToGroupId(String groupId, String imagePath) {
+    return;
+  }
 }
