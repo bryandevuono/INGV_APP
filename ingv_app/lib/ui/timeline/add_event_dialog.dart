@@ -5,12 +5,12 @@ import 'package:ingv_app/data/models/event_attachment.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
+import 'package:ingv_app/ui/timeline/view_models/timeline_view_model.dart';
 import 'package:ingv_app/data/models/group_model.dart';
-import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
 
 void showAddEventDialog(
   BuildContext context,
-  ITimelineViewModel viewModel,
+  TimelineViewModel viewModel,
   List<GroupModel> groupOptions,
 ) async {
   final titleController = TextEditingController();
@@ -30,10 +30,9 @@ void showAddEventDialog(
   ];
 
   String? selectedGroup;
-  List<String> categories = viewModel.orderedCategories;
   String selectedCategory = defaultCategories.first;
-  List<String> categoryOptions = categories.isNotEmpty
-      ? categories
+  List<String> categoryOptions = viewModel.categories.isNotEmpty
+      ? viewModel.categories
       : defaultCategories;
   List<File> selectedMediaFiles = [];
   DateTime? startDate;

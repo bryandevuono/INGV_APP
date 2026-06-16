@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/group_model.dart';
+import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_header.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_content.dart';
+import 'package:ingv_app/ui/event_detail/widgets/edit_event_dialog.dart';
 
 class EventDetailPanel extends StatefulWidget {
   final EventDetailViewModel viewModel;
   final VoidCallback onDismiss;
   final List<GroupModel> groupOptions;
+  final Future<void> Function(EventModel updatedEvent)? onEventUpdated;
 
   const EventDetailPanel({
     super.key,
     required this.viewModel,
     required this.onDismiss,
     this.groupOptions = const [],
+    this.onEventUpdated,
   });
 
   @override
@@ -65,6 +69,29 @@ class _EventDetailPanelState extends State<EventDetailPanel>
     }
   }
 
+  Future<void> _openEditDialog(BuildContext context) async {
+    final selectedEvent = widget.viewModel.selectedEvent;
+    if (selectedEvent == null) {
+      return;
+    }
+
+    final updatedEvent = await showEditEventDialog(
+      context,
+      event: selectedEvent,
+      eventRepository: widget.viewModel.eventRepository,
+      groupOptions: widget.groupOptions,
+    );
+
+    if (!context.mounted || updatedEvent == null) {
+      return;
+    }
+
+    await widget.viewModel.updateSelectedEvent(updatedEvent);
+    if (widget.onEventUpdated != null) {
+      await widget.onEventUpdated!(updatedEvent);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -112,18 +139,32 @@ class _EventDetailPanelState extends State<EventDetailPanel>
                     ),
                   ),
                 ),
-                // Header section
-                if (widget.viewModel.selectedEvent != null)
-                  EventDetailHeader(
-                    event: widget.viewModel.selectedEvent!,
-                    viewModel: widget.viewModel,
-                    onDismiss: widget.onDismiss,
-                  ),
-                // Content section (scrollable)
                 Expanded(
-                  child: EventDetailContent(
-                    viewModel: widget.viewModel,
-                    groupOptions: widget.groupOptions,
+                  child: ListenableBuilder(
+                    listenable: widget.viewModel,
+                    builder: (context, _) {
+                      final selectedEvent = widget.viewModel.selectedEvent;
+                      if (selectedEvent == null) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return Column(
+                        children: [
+                          EventDetailHeader(
+                            event: selectedEvent,
+                            viewModel: widget.viewModel,
+                            onDismiss: widget.onDismiss,
+                            onEdit: () => _openEditDialog(context),
+                          ),
+                          Expanded(
+                            child: EventDetailContent(
+                              viewModel: widget.viewModel,
+                              groupOptions: widget.groupOptions,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],

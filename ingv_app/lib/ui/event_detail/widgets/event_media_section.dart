@@ -8,7 +8,6 @@ import 'package:ingv_app/ui/event_detail/widgets/image_preview_dialog.dart';
 import 'package:ingv_app/ui/event_detail/widgets/video_player_dialog.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:ingv_app/ui/file_history/widgets/file_history_editor.dart';
 
 class EventMediaSection extends StatelessWidget {
   final EventDetailViewModel viewModel;
@@ -66,6 +65,8 @@ class EventMediaSection extends StatelessWidget {
                   return _MediaTile(
                     attachment: attachment,
                     overlayIcon: null,
+                    onDelete: () =>
+                        _confirmDelete(context, viewModel, attachment),
                     onTap: () {
                       viewModel.selectAttachment(attachment);
                       showDialog(
@@ -94,6 +95,8 @@ class EventMediaSection extends StatelessWidget {
                   return _MediaTile(
                     attachment: attachment,
                     overlayIcon: Icons.play_circle_fill,
+                    onDelete: () =>
+                        _confirmDelete(context, viewModel, attachment),
                     onTap: () {
                       viewModel.selectAttachment(attachment);
                       showDialog(
@@ -127,6 +130,8 @@ class EventMediaSection extends StatelessWidget {
                   child: _FileTile(
                     attachment: attachment,
                     isBusy: isBusy,
+                    onDelete: () =>
+                        _confirmDelete(context, viewModel, attachment),
                     onOpen: () async {
                       if (attachment.type == AttachmentType.pdf ||
                           attachment.type == AttachmentType.docx) {
@@ -183,7 +188,7 @@ class EventMediaSection extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () => viewModel.pickAndAddMedia('image'),
                 icon: const Icon(Icons.image, size: 16),
-                label: const Text('Add Image'),
+                label: const Text('Add Images'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -196,7 +201,7 @@ class EventMediaSection extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () => viewModel.pickAndAddMedia('video'),
                 icon: const Icon(Icons.videocam, size: 16),
-                label: const Text('Add Video'),
+                label: const Text('Add Videos'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -209,7 +214,7 @@ class EventMediaSection extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () => viewModel.pickAndAddAttachment(),
                 icon: const Icon(Icons.attach_file, size: 16),
-                label: const Text('Add File'),
+                label: const Text('Add Files'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -225,6 +230,38 @@ class EventMediaSection extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _confirmDelete(
+  BuildContext context,
+  EventDetailViewModel viewModel,
+  EventAttachment attachment,
+) async {
+  final shouldDelete = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: const Text('Delete attachment?'),
+        content: Text('Remove ${attachment.fileName} from this event?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (shouldDelete != true || !context.mounted) {
+    return;
+  }
+
+  await viewModel.deleteAttachment(attachment);
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -248,11 +285,13 @@ class _SectionTitle extends StatelessWidget {
 class _MediaTile extends StatelessWidget {
   final EventAttachment attachment;
   final IconData? overlayIcon;
+  final VoidCallback onDelete;
   final VoidCallback onTap;
 
   const _MediaTile({
     required this.attachment,
     required this.overlayIcon,
+    required this.onDelete,
     required this.onTap,
   });
 
@@ -285,6 +324,36 @@ class _MediaTile extends StatelessWidget {
                       color: Colors.black26,
                       child: Icon(overlayIcon, color: Colors.white, size: 34),
                     ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Material(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      shape: const CircleBorder(),
+                      child: IconButton(
+                        tooltip: 'Delete attachment',
+                        icon: const Icon(Icons.delete_outline, size: 16),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 28,
+                          minHeight: 28,
+                        ),
+                        style: ButtonStyle(
+                          foregroundColor: WidgetStateProperty.resolveWith(
+                            (states) => states.contains(WidgetState.hovered)
+                                ? Colors.red.shade100
+                                : Colors.white,
+                          ),
+                          backgroundColor: WidgetStateProperty.resolveWith(
+                            (states) => states.contains(WidgetState.hovered)
+                                ? Colors.red.withValues(alpha: 0.92)
+                                : Colors.black.withValues(alpha: 0.45),
+                          ),
+                        ),
+                        onPressed: onDelete,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -418,12 +487,14 @@ class _InlineVideoThumbnailState extends State<_InlineVideoThumbnail> {
 class _FileTile extends StatelessWidget {
   final EventAttachment attachment;
   final bool isBusy;
+  final VoidCallback onDelete;
   final VoidCallback onOpen;
   final VoidCallback onOpenExternally;
 
   const _FileTile({
     required this.attachment,
     required this.isBusy,
+    required this.onDelete,
     required this.onOpen,
     required this.onOpenExternally,
   });
@@ -480,24 +551,24 @@ class _FileTile extends StatelessWidget {
                   onPressed: onOpenExternally,
                   child: const Text('Open Externally'),
                 ),
+                TextButton(
+                  onPressed: onDelete,
+                  style: ButtonStyle(
+                    foregroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.hovered)
+                          ? Colors.red
+                          : Colors.grey.shade800,
+                    ),
+                    overlayColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.hovered)
+                          ? Colors.red.withValues(alpha: 0.08)
+                          : null,
+                    ),
+                  ),
+                  child: const Text('Delete'),
+                ),
               ],
             ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DocumentComparisonScreen(),
-                    ),
-                  );
-                },
-                child: const Text('Open file history'),
-              ),
-            ],
-          ),
         ],
       ),
     );

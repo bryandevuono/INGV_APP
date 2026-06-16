@@ -32,4 +32,12 @@ abstract interface class ITimelineViewModel implements Listenable {
   Future<String> getUserId();
   Future<String?> exportTimelineReport();
   Future<String?> exportTimelineAsZip();
+  Future<String?> exportTimelineReportForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  );
+  Future<String?> exportTimelineAsZipForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  );
 }

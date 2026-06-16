@@ -7,15 +7,23 @@ import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 import 'add_event_dialog.dart';
 import 'package:ingv_app/ui/search.dart';
+import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
+import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
 
 class TimelineScreen extends StatefulWidget {
   final ITimelineViewModel viewModel;
   final EventDetailViewModel detailViewModel;
+  final bool showControlBar;
+  final EventFilterController? sharedFilterController;
+  final VoidCallback? onAddEvent;
 
   const TimelineScreen({
     super.key,
     required this.viewModel,
     required this.detailViewModel,
+    this.showControlBar = true,
+    this.sharedFilterController,
+    this.onAddEvent,
   });
 
   @override
@@ -29,12 +37,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const Duration(days: 1),
   );
 
+  EventFilterController? get _filterController => widget.sharedFilterController;
+
   @override
   void initState() {
     super.initState();
     _refreshInitialData();
   }
 
+  @override
   void dispose() {
     super.dispose();
   }
@@ -43,6 +54,120 @@ class _TimelineScreenState extends State<TimelineScreen> {
     await widget.viewModel.getColors();
     await widget.viewModel.fetchEvents();
     await widget.viewModel.getGroupsOfUser();
+  }
+
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange:
+          widget.viewModel.filterStartDate != null &&
+              widget.viewModel.filterEndDate != null
+          ? DateTimeRange(
+              start: widget.viewModel.filterStartDate!,
+              end: widget.viewModel.filterEndDate!,
+            )
+          : null,
+    );
+    if (picked != null) {
+      widget.viewModel.setDateRangeFilter(picked.start, picked.end);
+      _filterController?.setDateRange(picked.start, picked.end);
+    }
+  }
+
+  Future<void> _showExportResult(
+    Future<String?> Function() exportAction,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final exportPath = await exportAction();
+    if (!mounted) {
+      return;
+    }
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          exportPath?.isNotEmpty == true
+              ? 'Timeline export saved: $exportPath'
+              : (widget.viewModel.exportErrorMessage ??
+                    'Failed to export timeline events.'),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportDateRangePdf() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange:
+          widget.viewModel.filterStartDate != null &&
+              widget.viewModel.filterEndDate != null
+          ? DateTimeRange(
+              start: widget.viewModel.filterStartDate!,
+              end: widget.viewModel.filterEndDate!,
+            )
+          : null,
+    );
+    if (picked == null) {
+      return;
+    }
+
+    await _showExportResult(
+      () => widget.viewModel.exportTimelineReportForDateRange(
+        picked.start,
+        picked.end,
+      ),
+    );
+  }
+
+  Future<void> _exportDateRangeZip() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange:
+          widget.viewModel.filterStartDate != null &&
+              widget.viewModel.filterEndDate != null
+          ? DateTimeRange(
+              start: widget.viewModel.filterStartDate!,
+              end: widget.viewModel.filterEndDate!,
+            )
+          : null,
+    );
+    if (picked == null) {
+      return;
+    }
+
+    await _showExportResult(
+      () => widget.viewModel.exportTimelineAsZipForDateRange(
+        picked.start,
+        picked.end,
+      ),
+    );
+  }
+
+  void _syncFromSharedFilters() {
+    final controller = _filterController;
+    if (controller == null) {
+      return;
+    }
+
+    if (widget.viewModel.selectedCategory != controller.selectedCategory) {
+      widget.viewModel.setCategoryFilter(controller.selectedCategory);
+    }
+    if (widget.viewModel.searchQuery != controller.searchQuery) {
+      widget.viewModel.setSearchQuery(controller.searchQuery);
+    }
+    if (widget.viewModel.filterStartDate != controller.startDate ||
+        widget.viewModel.filterEndDate != controller.endDate) {
+      widget.viewModel.setDateRangeFilter(
+        controller.startDate,
+        controller.endDate,
+      );
+    }
   }
 
   Future<void> _toggleEventDetails(EventModel event) async {
@@ -56,7 +181,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     await widget.detailViewModel.loadEventDetails(event);
   }
 
-  // Helper methods to shift the baseline date window
   void _navigateToPast() {
     setState(() {
       _clientBaselineStart = _clientBaselineStart.subtract(
@@ -74,13 +198,18 @@ class _TimelineScreenState extends State<TimelineScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.viewModel,
+      listenable: Listenable.merge(
+        _filterController == null
+            ? [widget.viewModel]
+            : [widget.viewModel, _filterController!],
+      ),
       builder: (context, _) {
+        _syncFromSharedFilters();
         return Stack(
           children: [
             Column(
               children: [
-                _buildToolbar(context),
+                if (widget.showControlBar) _buildToolbar(context),
                 Expanded(child: _buildTimelineCanvas(widget.viewModel.events)),
               ],
             ),
@@ -88,6 +217,12 @@ class _TimelineScreenState extends State<TimelineScreen> {
               EventDetailPanel(
                 viewModel: widget.detailViewModel,
                 groupOptions: widget.viewModel.userGroups,
+                onEventUpdated: (updatedEvent) async {
+                  setState(() {
+                    _selectedEvent = updatedEvent;
+                  });
+                  await widget.viewModel.fetchEvents();
+                },
                 onDismiss: () {
                   setState(() => _selectedEvent = null);
                   widget.detailViewModel.clearEventDetails();
@@ -100,158 +235,52 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   Widget _buildToolbar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Wrap(
-              spacing: 12.0,
-              runSpacing: 8.0,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (widget.viewModel.orderedCategories.isNotEmpty)
-                  DropdownButton<String>(
-                    value: widget.viewModel.selectedCategory,
-                    items: ['All', ...widget.viewModel.orderedCategories]
-                        .toSet()
-                        .map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        })
-                        .toList(),
-                    onChanged: (newValue) {
-                      if (newValue != null) {
-                        widget.viewModel.setCategoryFilter(newValue);
-                      }
-                    },
-                  ),
-
-                TextButton.icon(
-                  icon: const Icon(Icons.date_range),
-                  label: Text(
-                    widget.viewModel.filterStartDate == null
-                        ? 'Filter by Date'
-                        : '${widget.viewModel.filterStartDate!.toLocal().toString().split(' ')[0]} - ${widget.viewModel.filterEndDate?.toLocal().toString().split(' ')[0] ?? 'Any'}',
-                  ),
-                  onPressed: () async {
-                    final DateTimeRange? picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2101),
-                      initialDateRange:
-                          widget.viewModel.filterStartDate != null &&
-                              widget.viewModel.filterEndDate != null
-                          ? DateTimeRange(
-                              start: widget.viewModel.filterStartDate!,
-                              end: widget.viewModel.filterEndDate!,
-                            )
-                          : null,
-                    );
-                    if (picked != null) {
-                      widget.viewModel.setDateRangeFilter(
-                        picked.start,
-                        picked.end,
-                      );
-                      // Sync baseline to the user selection
-                      setState(() {
-                        _clientBaselineStart = picked.start;
-                      });
-                    }
-                  },
-                ),
-                // Backwards navigation button
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  tooltip: 'Previous 7 Days',
-                  onPressed: _navigateToPast,
-                ),
-                // Forwards navigation button
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  tooltip: 'Next 7 Days',
-                  onPressed: _navigateToFuture,
-                ),
-
-                if (widget.viewModel.filterStartDate != null)
-                  IconButton(
-                    icon: const Icon(Icons.clear),
-                    tooltip: 'Clear Date Filter',
-                    onPressed: () {
-                      widget.viewModel.setDateRangeFilter(null, null);
-                      setState(() {
-                        _clientBaselineStart = DateTime.now().subtract(
-                          const Duration(days: 7),
-                        );
-                      });
-                    },
-                  ),
-                _buildExportButton(
-                  icon: const Icon(Icons.download),
-                  label: 'Export PDF',
-                  loadingLabel: 'Exporting...',
-                  onTap: () => widget.viewModel.exportTimelineReport(),
-                ),
-                _buildExportButton(
-                  icon: const Icon(Icons.folder_zip),
-                  label: 'Export ZIP',
-                  loadingLabel: 'Archiving...',
-                  onTap: () => widget.viewModel.exportTimelineAsZip(),
-                ),
-                Search(viewModel: widget.viewModel),
-              ],
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12, bottom: 18),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: EventFilterActionBar(
+              categories: {'All', ...widget.viewModel.categories}.toList(),
+              selectedCategory: widget.viewModel.selectedCategory,
+              searchQuery: widget.viewModel.searchQuery,
+              startDate: widget.viewModel.filterStartDate,
+              endDate: widget.viewModel.filterEndDate,
+              showCategoryDropdown: true,
+              showDateFilter: true,
+              showSearch: true,
+              showExportPdf: true,
+              showExportZip: true,
+              showAddEvent: true,
+              isExporting: widget.viewModel.isExporting,
+              embeddedInPage: true,
+              onCategoryChanged: (newValue) {
+                widget.viewModel.setCategoryFilter(newValue);
+                _filterController?.setCategory(newValue);
+              },
+              onDateRangePicked: _pickDateRange,
+              onClearDateFilter: () {
+                widget.viewModel.setDateRangeFilter(null, null);
+                _filterController?.clearDateRange();
+              },
+              onSearchChanged: (query) {
+                widget.viewModel.setSearchQuery(query);
+                _filterController?.setSearchQuery(query);
+              },
+              onExportPdf: () =>
+                  _showExportResult(widget.viewModel.exportTimelineReport),
+              onExportZip: () =>
+                  _showExportResult(widget.viewModel.exportTimelineAsZip),
+              onExportDateRangePdf: _exportDateRangePdf,
+              onExportDateRangeZip: _exportDateRangeZip,
+              onAddEvent: widget.onAddEvent ??
+                  () => showAddEventDialog(context, widget.viewModel, const []),
             ),
           ),
-          IconButton(
-            color: Colors.blue,
-            icon: const Icon(Icons.add),
-            onPressed: () => showAddEventDialog(
-              context,
-              widget.viewModel,
-              widget.viewModel.userGroups,
-            ),
-          ),
-        ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildExportButton({
-    required Widget icon,
-    required String label,
-    required String loadingLabel,
-    required Future<String?> Function() onTap,
-  }) {
-    final messenger = ScaffoldMessenger.of(context);
-    return TextButton.icon(
-      onPressed: widget.viewModel.isExporting
-          ? null
-          : () async {
-              final exportPath = await onTap();
-              if (!mounted) return;
-
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    exportPath != null
-                        ? '$label Complete: $exportPath'
-                        : (widget.viewModel.exportErrorMessage ??
-                              'Action execution dropped.'),
-                  ),
-                ),
-              );
-            },
-      icon: widget.viewModel.isExporting
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : icon,
-      label: Text(widget.viewModel.isExporting ? loadingLabel : label),
     );
   }
 
@@ -287,8 +316,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
-      onReorder: (old, current) =>
-          widget.viewModel.reorderCategories(old, current),
+      onReorder: (old, current) => widget.viewModel.reorderCategories(old, current),
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       itemCount: lanes.length,
       itemBuilder: (context, index) {
@@ -328,7 +356,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
             ? fullWidgetHeight
             : definedRowHeight;
 
-        // overlapping?
         bool showVerticalScrollIndicators = false;
         if (!isMinimized && genericTasks.length > 1) {
           for (int i = 0; i < genericTasks.length; i++) {
@@ -339,10 +366,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
               final taskB = genericTasks[j];
               final endB = taskB.end;
 
+              if (endA == null || endB == null) continue;
+
               final bool overlapsInTime = taskA.start.isBefore(endB) && taskB.start.isBefore(endA);
 
               if (overlapsInTime) {
-                // Verify the collision happens 
                 if (taskA.start.isAfter(totalStart) && taskA.start.isBefore(totalEnd)) {
                   showVerticalScrollIndicators = true;
                   break;
@@ -375,19 +403,12 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   },
                 ),
               ),
-              
-              // overlay arrow
               if (showVerticalScrollIndicators) ...[
-                // Down Arrow
                 Positioned(
                   bottom: 4,
                   left: (totalCanvasWidth / 2) - 12,
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      
-                      child: const Icon(Icons.keyboard_arrow_down, color: Colors.blueAccent, size: 20),
-                    ),
+                  child: const IgnorePointer(
+                    child: Icon(Icons.keyboard_arrow_down, color: Colors.blueAccent, size: 20),
                   ),
                 ),
               ],
@@ -488,8 +509,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
       (e) => e.eventId.toString() == eventId,
     );
 
-    final String duration;
-    final String endString;
+    final String duration = event.endDt != null
+        ? "${event.endDt!.difference(event.startDt).inHours} hrs"
+        : "Ongoing";
+
+    final String endString = event.endDt != null
+        ? event.endDt.toString()
+        : '...';
+
     final String startStringTime = event.startDt
         .toLocal()
         .toString()
@@ -500,13 +527,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
         ? event.endDt!.toLocal().toString().split(' ')[1].substring(0, 5)
         : '';
 
-    if (event.endDt != null) {
-      duration = "${event.endDt!.difference(event.startDt).inHours} hrs";
-      endString = event.endDt.toString();
-    } else {
-      duration = "Ongoing";
-      endString = '...';
-    }
     final Color itemColor = widget.viewModel
         .getTimelineTasksForCategory(event.category.trim())
         .firstWhere((t) => t.id == eventId)
@@ -517,11 +537,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
       child: GestureDetector(
         onTap: () => _toggleEventDetails(event),
         child: Tooltip(
-          message:
-              "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
+          message: "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
           child: event.endDt == null
               ? OverflowBox(
-                  minWidth: 24.0,
                   maxWidth: 24.0,
                   minHeight: 24.0,
                   maxHeight: 24.0,
@@ -544,11 +562,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 )
               : Container(
                   alignment: Alignment.topLeft,
-                  height: 45.0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6.0,
-                    vertical: 4.0,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
                   decoration: BoxDecoration(
                     color: itemColor,
                     border: _selectedEvent?.eventId == event.eventId
@@ -570,7 +584,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Row(
-                        spacing: 8.0,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             '$startStringTime - $endStringTime',
@@ -579,6 +593,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                               fontSize: 9,
                             ),
                           ),
+                          const SizedBox(width: 8.0),
                           Text(
                             duration,
                             style: const TextStyle(

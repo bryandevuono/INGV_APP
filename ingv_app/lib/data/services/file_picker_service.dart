@@ -5,6 +5,9 @@ abstract class IFilePickerService {
   Future<File?> pickImage();
   Future<File?> pickVideo();
   Future<File?> pickFile();
+  Future<List<File>> pickImages();
+  Future<List<File>> pickVideos();
+  Future<List<File>> pickFiles();
   Future<List<File>> pickMultipleFiles();
 }
 
@@ -26,6 +29,22 @@ class FilePickerService implements IFilePickerService {
   }
 
   @override
+  Future<List<File>> pickImages() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        return result.files.map((f) => File(f.path!)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
   Future<File?> pickVideo() async {
     try {
       final result = await FilePicker.pickFiles(
@@ -42,6 +61,22 @@ class FilePickerService implements IFilePickerService {
   }
 
   @override
+  Future<List<File>> pickVideos() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.video,
+        allowMultiple: true,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        return result.files.map((f) => File(f.path!)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
   Future<File?> pickFile() async {
     try {
       final result = await FilePicker.pickFiles(
@@ -54,6 +89,22 @@ class FilePickerService implements IFilePickerService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  @override
+  Future<List<File>> pickFiles() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.any,
+        allowMultiple: true,
+      );
+      if (result != null && result.files.isNotEmpty) {
+        return result.files.map((f) => File(f.path!)).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
     }
   }
 

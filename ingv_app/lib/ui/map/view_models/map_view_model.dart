@@ -8,7 +8,7 @@ import 'package:latlong2/latlong.dart' as latlong2;
 import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
-
+import 'package:ingv_app/data/services/export_service.dart';
 
 class MapScreenViewModel extends ChangeNotifier {
   final IEventRepository _eventRepository;
@@ -17,16 +17,11 @@ class MapScreenViewModel extends ChangeNotifier {
   final IAttachmentRepository attachmentRepository;
   final ILocalFileService localFileService;
   final IFileOpenService fileOpenService;
-  EventModel? selectedEvent;
+  final IPdfExportService _pdfExportService;
+  final IZipExportService _zipExportService;
 
-  
-  late final EventDetailViewModel detailViewmodel = EventDetailViewModel(
-                    detailRepository,
-                    attachmentRepository,
-                    localFileService,
-                    fileOpenService,
-                    _eventRepository, 
-                  );
+  late final EventDetailViewModel detailViewmodel;
+  EventModel? selectedEvent;
 
   List<EventModel> events = [];
   List<String> categories = [];
@@ -38,15 +33,16 @@ class MapScreenViewModel extends ChangeNotifier {
   DateTime? filterEndDate;
   MapController mapController = MapController();
   Map<String, Color> _categoryColors = {};
-
-  Color getCategoryColor(String category) {
-    return _categoryColors[category] ??
-        const Color(0xFF9E9E9E); 
-  }
-
+  
+  bool isExporting = false;
+  String? exportErrorMessage;
   int timelineDurationDays = 7;
 
-  // FIXED: All final fields are now required in the constructor
+  Color getCategoryColor(String category) {
+    return _categoryColors[category] ?? const Color(0xFF9E9E9E); 
+  }
+
+  // Unified constructor mapping all final fields
   MapScreenViewModel(
     this._eventRepository, 
     this._searchRepository,
@@ -54,7 +50,17 @@ class MapScreenViewModel extends ChangeNotifier {
     this.attachmentRepository,
     this.localFileService,
     this.fileOpenService,
-  );
+    this._pdfExportService,
+    this._zipExportService,
+  ) {
+    detailViewmodel = EventDetailViewModel(
+      detailRepository,
+      attachmentRepository,
+      localFileService,
+      fileOpenService,
+      _eventRepository, 
+    );
+  }
 
   Future<void> fetchEvents() async {
     final fetchedCategories = await _eventRepository.getEventCategories();
@@ -97,7 +103,6 @@ class MapScreenViewModel extends ChangeNotifier {
   double calculateMarkerDuration(DateTime? start, DateTime? end) {
     if (start == null || end == null) return 0;
     final duration = end.difference(start).inDays.toDouble();
-
     return duration / timelineDurationDays;
   }
 
@@ -119,16 +124,96 @@ class MapScreenViewModel extends ChangeNotifier {
   }
 
   void jumpToLocation({double zoom = 6}) async {
-  try {
-    final foundEvent = await _searchRepository.getClosestMatch(searchQuery);
-    
+    try {
+      final foundEvent = await _searchRepository.getClosestMatch(searchQuery);
       mapController.move(
         latlong2.LatLng(foundEvent.lat, foundEvent.long),
         zoom,
       );
-  } catch (e) {
-    print("Error finding closest match: $e");
+    } catch (e) {
+      print("Error finding closest match: $e");
+    }
   }
-}
 
+  Future<List<EventModel>> _getExportEvents({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final effectiveStart = startDate ?? filterStartDate;
+    final effectiveEnd = endDate ?? filterEndDate;
+    if (effectiveStart == filterStartDate &&
+        effectiveEnd == filterEndDate &&
+        events.isNotEmpty) {
+      return events;
+    }
+
+    return _searchRepository.searchAndFilterEvents(
+      keyword: searchQuery,
+      category: selectedCategory,
+      startDate: effectiveStart,
+      endDate: effectiveEnd,
+    );
+  }
+
+  Future<String?> exportVisibleEventsPdf({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    isExporting = true;
+    exportErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final exportEvents = await _getExportEvents(
+        startDate: startDate,
+        endDate: endDate,
+      );
+      final result = await _pdfExportService.exportTimelineReport(
+        events: exportEvents,
+        orderedCategories: categories
+            .where((category) => category != 'All')
+            .toList(),
+        filterStartDate: startDate ?? filterStartDate,
+        filterEndDate: endDate ?? filterEndDate,
+      );
+      return result.saveLocation;
+    } catch (error) {
+      exportErrorMessage = 'Failed to export map PDF: $error';
+      return null;
+    } destruction: {
+      isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> exportVisibleEventsZip({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    isExporting = true;
+    exportErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final exportEvents = await _getExportEvents(
+        startDate: startDate,
+        endDate: endDate,
+      );
+      final result = await _zipExportService.exportTimelineAsZip(
+        events: exportEvents,
+        orderedCategories: categories
+            .where((category) => category != 'All')
+            .toList(),
+        filterStartDate: startDate ?? filterStartDate,
+        filterEndDate: endDate ?? filterEndDate,
+      );
+      return result.saveLocation;
+    } catch (error) {
+      exportErrorMessage = 'Failed to export map ZIP: $error';
+      return null;
+    } finally {
+      isExporting = false;
+      notifyListeners();
+    }
+  }
 }
