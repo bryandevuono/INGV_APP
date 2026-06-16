@@ -3,6 +3,8 @@ import 'package:ingv_app/data/repositories/attachment_repository_interface.dart'
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
+import 'package:ingv_app/data/repositories/event_search_repository.dart';
+import 'package:ingv_app/data/services/event_search_service.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/groups/widgets/groups_screen.dart';
 import 'package:ingv_app/ui/hybrid_view/widgets/hybrid_view.dart';
@@ -16,6 +18,8 @@ import 'package:ingv_app/ui/timeline/widgets/timeline.dart';
 class TopNavigationBar extends StatefulWidget {
   final Widget mapScreen;
   final EventRepository eventRepository;
+  final IEventSearchRepository searchRepository;
+
   final IEventDetailRepository detailRepository;
   final IAttachmentRepository attachmentRepository;
   final ILocalFileService localFileService;
@@ -25,6 +29,7 @@ class TopNavigationBar extends StatefulWidget {
     super.key,
     required this.mapScreen,
     required this.eventRepository,
+    required this.searchRepository, 
     required this.detailRepository,
     required this.attachmentRepository,
     required this.localFileService,
@@ -44,7 +49,9 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   void initState() {
     super.initState();
     _hybridFilterController = EventFilterController();
-    _hybridTimelineViewModel = TimelineViewModel(widget.eventRepository);
+    _hybridTimelineViewModel = TimelineViewModel(widget.eventRepository, 
+      widget.searchRepository,
+    );
     _hybridDetailViewModel = EventDetailViewModel(
       widget.detailRepository,
       widget.attachmentRepository,
@@ -291,7 +298,9 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
               ),
             ),
             TimelineScreen(
-              viewModel: TimelineViewModel(widget.eventRepository),
+              viewModel: TimelineViewModel(widget.eventRepository, 
+                widget.searchRepository,
+              ),
               detailViewModel: EventDetailViewModel(
                 widget.detailRepository,
                 widget.attachmentRepository,

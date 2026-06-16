@@ -6,6 +6,8 @@ import 'package:sembast/sembast_io.dart';
 import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/data/models/person_model.dart'; 
 import 'group_service_interface.dart';
+import 'package:flutter/material.dart';
+
 
 class GroupServiceSembast implements IGroupService {
   static final GroupServiceSembast _instance = GroupServiceSembast._internal();
@@ -223,5 +225,15 @@ class GroupServiceSembast implements IGroupService {
       return GroupModel.fromJson(record);
     }
     return null;
+  }
+
+  @override
+  dynamic getImageByGroupId(String groupId) {
+    return const Icon(Icons.group, size: 48, color: Colors.white);
+  }
+
+  @override
+  void postImageToGroupId(String groupId, String imagePath) {
+    return;
   }
 }

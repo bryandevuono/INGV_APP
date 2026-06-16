@@ -7,4 +7,5 @@ abstract interface class IEventSearchService {
     DateTime? startDate,
     DateTime? endDate,
   });
+  Future<EventModel> getClosestMatch(String keyword);
 }

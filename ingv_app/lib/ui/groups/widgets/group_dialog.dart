@@ -1,5 +1,7 @@
+import 'dart:io'; 
 import 'package:flutter/material.dart';
 import 'package:ingv_app/ui/groups/view_models/group_view_model.dart';
+import 'package:file_picker/file_picker.dart';
 
 class GroupDialog extends StatefulWidget {
   const GroupDialog({
@@ -22,6 +24,9 @@ class _GroupDialogState extends State<GroupDialog> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
 
+  PlatformFile? _pickedFile;
+  String? _nameError; 
+
   @override
   void initState() {
     super.initState();
@@ -31,15 +36,39 @@ class _GroupDialogState extends State<GroupDialog> {
     _viewModel.selectUsers(widget.mode, widget.groupId, nameController);
 
     searchController.addListener(_onSearchChanged);
+    
+    nameController.addListener(() {
+      if (_nameError != null && nameController.text.isNotEmpty) {
+        setState(() {
+          _nameError = null;
+        });
+      }
+    });
   }
 
   void _onSearchChanged() {
     _viewModel.setSearchQuery(searchController.text);
   }
 
+  Future<void> _pickImageFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _pickedFile = result.files.first;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error picking file: $e");
+    }
+  }
+
   @override
   void dispose() {
-    // reset
     searchController.removeListener(_onSearchChanged);
     nameController.dispose();
     searchController.dispose();
@@ -76,32 +105,34 @@ class _GroupDialogState extends State<GroupDialog> {
 
                 // Name Input Row
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start, // Align top to account for error text height
                   children: [
-                    const SizedBox(
-                      width: 80,
-                      child: Text(
-                        'Name:',
-                        style: TextStyle(fontSize: 16, color: Colors.black),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 10.0), // Align with input text
+                      child: SizedBox(
+                        width: 80,
+                        child: Text(
+                          'Name:',
+                          style: TextStyle(fontSize: 16, color: Colors.black),
+                        ),
                       ),
                     ),
                     Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: TextField(
-                          controller: nameController,
-                          decoration: InputDecoration(
-                            hintText: 'Input field',
-                            hintStyle: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 14,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                      child: TextField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          hintText: 'Input field',
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 14,
+                          ),
+                          errorText: _nameError, // Displays error within the dialog
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ),
@@ -121,7 +152,7 @@ class _GroupDialogState extends State<GroupDialog> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _pickImageFile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF3B82F6),
                         foregroundColor: Colors.white,
@@ -133,8 +164,38 @@ class _GroupDialogState extends State<GroupDialog> {
                           ),
                         ),
                       ),
-                      child: const Text('Add file'),
+                      child: Text(_pickedFile == null ? 'Add image' : 'Change image'),
                     ),
+                    const SizedBox(width: 12),
+                    // UI Feedback showing preview or file name
+                    if (_pickedFile != null)
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.grey),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: Image.file(File(_pickedFile!.path!), fit: BoxFit.cover),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _pickedFile!.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -279,7 +340,7 @@ class _GroupDialogState extends State<GroupDialog> {
                     TextButton(
                       onPressed: () {
                         _viewModel.clearSelectedUsers();
-                        _viewModel.setSearchQuery(''); // reset search on close
+                        _viewModel.setSearchQuery(''); 
                         Navigator.pop(context);
                       },
                       child: const Text(
@@ -290,13 +351,19 @@ class _GroupDialogState extends State<GroupDialog> {
                     const SizedBox(width: 12),
                     ElevatedButton(
                       onPressed: () {
-                        if (nameController.text.isNotEmpty &&
-                            widget.mode == 'create') {
+                        // Check if the input is empty
+                        if (nameController.text.trim().isEmpty) {
+                          setState(() {
+                            _nameError = 'Group name cannot be empty';
+                          });
+                          return;
+                        }
+
+                        if (widget.mode == 'create') {
                           _viewModel.createNewGroup(nameController.text);
                           _viewModel.clearSelectedUsers();
-                          _viewModel.setSearchQuery(
-                            '',
-                          ); // reset search on success
+                          _viewModel.setSearchQuery(''); 
+                          _viewModel.postImageToGroupId(widget.groupId, _pickedFile?.path ?? '');
                           Navigator.pop(context);
                         } else if (widget.mode == 'update') {
                           _viewModel.editGroup(
@@ -304,9 +371,8 @@ class _GroupDialogState extends State<GroupDialog> {
                             nameController.text,
                           );
                           _viewModel.clearSelectedUsers();
-                          _viewModel.setSearchQuery(
-                            '',
-                          ); // reset search on success
+                          _viewModel.setSearchQuery(''); 
+                          _viewModel.postImageToGroupId(widget.groupId, _pickedFile?.path ?? '');
                           Navigator.pop(context);
                         }
                       },

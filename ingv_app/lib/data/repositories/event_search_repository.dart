@@ -8,6 +8,8 @@ abstract interface class IEventSearchRepository {
     DateTime? startDate,
     DateTime? endDate,
   });
+
+  Future<EventModel> getClosestMatch(String keyword);
 }
 
 class EventSearchRepository implements IEventSearchRepository {
@@ -28,5 +30,10 @@ class EventSearchRepository implements IEventSearchRepository {
       startDate: startDate,
       endDate: endDate,
     );
+  }
+
+  @override
+  Future<EventModel> getClosestMatch(String keyword) {
+    return _searchService.getClosestMatch(keyword);
   }
 }

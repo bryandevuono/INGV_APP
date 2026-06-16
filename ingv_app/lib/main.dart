@@ -51,6 +51,9 @@ class MyApp extends StatelessWidget {
           mapService: MapServiceUI(userAgentPackageName: 'ingv_app'),
         ),
         eventRepository: eventRepository,
+        searchRepository: EventSearchRepository(
+          EventSearchService(storageService),
+        ),
         detailRepository: detailRepository,
         attachmentRepository: attachmentRepository,
         localFileService: localFileService,

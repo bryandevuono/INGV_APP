@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+
 import '../models/group_model.dart';
 import '../services/group_service_interface.dart';
 import '../models/person_model.dart';
@@ -28,5 +30,13 @@ class GroupRepository {
 
   Future<List<GroupModel>> getGroupsOfUser(String userId) {
     return _groupService.getGroupsOfUser(userId);
+  }
+
+  dynamic getImagebyGroupId(String groupId) {
+    return _groupService.getImageByGroupId(groupId);
+  }
+
+  void postImageToGroupId(String groupId, String imagePath) {
+    _groupService.postImageToGroupId(groupId, imagePath);
   }
 }

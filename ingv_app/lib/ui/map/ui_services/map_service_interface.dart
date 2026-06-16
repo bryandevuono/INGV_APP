@@ -1,8 +1,5 @@
-// lib/ui/map/interfaces/map_service_interface.dart
 import 'package:flutter/material.dart';
-// interface to add a abstraction layer to flutter maps
-// lib/domain/models/app_marker.dart
-import 'package:flutter/material.dart';
+import 'package:ingv_app/ui/map/view_models/map_view_model.dart';
 
 class AppMarker {
   final double latitude;
@@ -10,10 +7,10 @@ class AppMarker {
   final String title;
   final String author;
   final String category;
-  final String tag;
   final double progress;
+  final DateTime? startDateTime;
+  final DateTime? endDateTime;
   final VoidCallback onTap;
-  final VoidCallback onAction;
   
   final Color categoryColor;
   final Color tagColor;
@@ -27,10 +24,10 @@ class AppMarker {
     required this.title,
     required this.author,
     required this.category,
-    required this.tag,
+    required this.startDateTime,
+    required this.endDateTime,
     this.progress = 0.5,
     required this.onTap,
-    required this.onAction,
     this.categoryColor = const Color(0xFFFFE082), 
     this.tagColor = Colors.red,
     this.fillColor = const Color(0xFF39D353),
@@ -45,6 +42,7 @@ abstract class IMapService {
     required double initialLng,
     required double initialZoom,
     required List<AppMarker> markers,
+    required MapScreenViewModel mapViewModel,
   });
   
   Widget buildPreviewMap({

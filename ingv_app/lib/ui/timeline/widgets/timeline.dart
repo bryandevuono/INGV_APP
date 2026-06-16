@@ -6,6 +6,7 @@ import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dar
 import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 import 'add_event_dialog.dart';
+import 'package:ingv_app/ui/search.dart';
 import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
 import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
 
@@ -31,7 +32,8 @@ class TimelineScreen extends StatefulWidget {
 
 class _TimelineScreenState extends State<TimelineScreen> {
   EventModel? _selectedEvent;
-  final DateTime _clientBaselineStart = DateTime.now().subtract(
+
+  DateTime _clientBaselineStart = DateTime.now().subtract(
     const Duration(days: 1),
   );
 
@@ -43,6 +45,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
     _refreshInitialData();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+  
   Future<void> _refreshInitialData() async {
     await widget.viewModel.getColors();
     await widget.viewModel.fetchEvents();
@@ -174,6 +181,30 @@ class _TimelineScreenState extends State<TimelineScreen> {
     await widget.detailViewModel.loadEventDetails(event);
   }
 
+  void _navigateToPast() {
+    setState(() {
+      _clientBaselineStart = _clientBaselineStart.subtract(
+        const Duration(days: 7),
+      );
+      // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
+      if (widget.viewModel.filterStartDate != null) {
+        widget.viewModel.setDateRangeFilter(null, null);
+        _filterController?.clearDateRange();
+      }
+    });
+  }
+
+  void _navigateToFuture() {
+    setState(() {
+      _clientBaselineStart = _clientBaselineStart.add(const Duration(days: 7));
+      // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
+      if (widget.viewModel.filterStartDate != null) {
+        widget.viewModel.setDateRangeFilter(null, null);
+        _filterController?.clearDateRange();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -195,8 +226,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
             if (_selectedEvent != null)
               EventDetailPanel(
                 viewModel: widget.detailViewModel,
-                groupOptions:
-                    const [], // Map options dynamically from your state as needed
+                groupOptions: widget.viewModel.userGroups,
                 onEventUpdated: (updatedEvent) async {
                   setState(() {
                     _selectedEvent = updatedEvent;
@@ -218,46 +248,64 @@ class _TimelineScreenState extends State<TimelineScreen> {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 18),
+        padding: const EdgeInsets.only(top: 12, bottom: 18, left: 16, right: 16),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1400),
-            child: EventFilterActionBar(
-              categories: {'All', ...widget.viewModel.categories}.toList(),
-              selectedCategory: widget.viewModel.selectedCategory,
-              searchQuery: widget.viewModel.searchQuery,
-              startDate: widget.viewModel.filterStartDate,
-              endDate: widget.viewModel.filterEndDate,
-              showCategoryDropdown: true,
-              showDateFilter: true,
-              showSearch: true,
-              showExportPdf: true,
-              showExportZip: true,
-              showAddEvent: true,
-              isExporting: widget.viewModel.isExporting,
-              embeddedInPage: true,
-              onCategoryChanged: (newValue) {
-                widget.viewModel.setCategoryFilter(newValue);
-                _filterController?.setCategory(newValue);
-              },
-              onDateRangePicked: _pickDateRange,
-              onClearDateFilter: () {
-                widget.viewModel.setDateRangeFilter(null, null);
-                _filterController?.clearDateRange();
-              },
-              onSearchChanged: (query) {
-                widget.viewModel.setSearchQuery(query);
-                _filterController?.setSearchQuery(query);
-              },
-              onExportPdf: () =>
-                  _showExportResult(widget.viewModel.exportTimelineReport),
-              onExportZip: () =>
-                  _showExportResult(widget.viewModel.exportTimelineAsZip),
-              onExportDateRangePdf: _exportDateRangePdf,
-              onExportDateRangeZip: _exportDateRangeZip,
-              onAddEvent:
-                  widget.onAddEvent ??
-                  () => showAddEventDialog(context, widget.viewModel, const []),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                  tooltip: 'Go back 7 days',
+                  onPressed: _navigateToPast,
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                  tooltip: 'Go forward 7 days',
+                  onPressed: _navigateToFuture,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: EventFilterActionBar(
+                    categories: {'All', ...widget.viewModel.categories}.toList(),
+                    selectedCategory: widget.viewModel.selectedCategory,
+                    searchQuery: widget.viewModel.searchQuery,
+                    startDate: widget.viewModel.filterStartDate,
+                    endDate: widget.viewModel.filterEndDate,
+                    showCategoryDropdown: true,
+                    showDateFilter: true,
+                    showSearch: true,
+                    showExportPdf: true,
+                    showExportZip: true,
+                    showAddEvent: true,
+                    isExporting: widget.viewModel.isExporting,
+                    embeddedInPage: true,
+                    onCategoryChanged: (newValue) {
+                      widget.viewModel.setCategoryFilter(newValue);
+                      _filterController?.setCategory(newValue);
+                    },
+                    onDateRangePicked: _pickDateRange,
+                    onClearDateFilter: () {
+                      widget.viewModel.setDateRangeFilter(null, null);
+                      _filterController?.clearDateRange();
+                    },
+                    onSearchChanged: (query) {
+                      widget.viewModel.setSearchQuery(query);
+                      _filterController?.setSearchQuery(query);
+                    },
+                    onExportPdf: () =>
+                        _showExportResult(widget.viewModel.exportTimelineReport),
+                    onExportZip: () =>
+                        _showExportResult(widget.viewModel.exportTimelineAsZip),
+                    onExportDateRangePdf: _exportDateRangePdf,
+                    onExportDateRangeZip: _exportDateRangeZip,
+                    onAddEvent: widget.onAddEvent ??
+                        () => showAddEventDialog(context, widget.viewModel, const []),
+                  ),
+                ),
+                
+              ],
             ),
           ),
         ),
@@ -287,21 +335,24 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const double totalCanvasWidth = 1200.0;
     const double leftHeaderWidth = 160.0;
 
-    final DateTime rangeStart = _clientBaselineStart;
-    final DateTime rangeEnd = rangeStart.add(const Duration(days: 2));
-    final DateTime totalStart = rangeStart.subtract(const Duration(days: 1));
-    final DateTime totalEnd = rangeEnd.add(const Duration(days: 1));
+    final DateTime rangeStart =
+        widget.viewModel.filterStartDate ?? _clientBaselineStart; 
+    final DateTime rangeEnd =
+        widget.viewModel.filterEndDate ?? rangeStart.add(const Duration(days: 7));
+
+    final DateTime totalStart = rangeStart.subtract(const Duration(days: 2));
+    final DateTime totalEnd = rangeEnd.add(const Duration(days: 2));
 
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
-      onReorderItem: (old, current) =>
-          widget.viewModel.reorderCategories(old, current),
+      onReorder: (old, current) => widget.viewModel.reorderCategories(old, current),
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       itemCount: lanes.length,
       itemBuilder: (context, index) {
         final lane = lanes[index];
         final isFirstRow = index == 0;
         final isMinimized = widget.viewModel.isCategoryMinimized(lane.id);
+        
         final double definedRowHeight = isMinimized
             ? minimizedRowHeight
             : expandedRowHeight;
@@ -310,13 +361,20 @@ class _TimelineScreenState extends State<TimelineScreen> {
             .getTimelineTasksForCategory(lane.id);
 
         final packageRows = [LegacyGanttRow(id: lane.id, label: lane.label)];
+
         final packageTasks = genericTasks.map((task) {
+          final DateTime finalEnd;
+          if (task.start == task.end || task.end == null) {
+            finalEnd = task.start.add(const Duration(hours: 1));
+          } else {
+            finalEnd = task.end!;
+          }
           return LegacyGanttTask(
             id: task.id,
             rowId: task.laneId,
             name: task.title,
             start: task.start,
-            end: task.end,
+            end: finalEnd,
             color: task.color,
           );
         }).toList();
@@ -327,23 +385,71 @@ class _TimelineScreenState extends State<TimelineScreen> {
             ? fullWidgetHeight
             : definedRowHeight;
 
+        // overlapping?
+        bool showVerticalScrollIndicators = false;
+        if (!isMinimized && genericTasks.length > 1) {
+          for (int i = 0; i < genericTasks.length; i++) {
+            final taskA = genericTasks[i];
+            final endA = taskA.end;
+
+            for (int j = i + 1; j < genericTasks.length; j++) {
+              final taskB = genericTasks[j];
+              final endB = taskB.end;
+
+              if (endA == null || endB == null) continue;
+
+              final bool overlapsInTime = taskA.start.isBefore(endB) && taskB.start.isBefore(endA);
+
+              if (overlapsInTime) {
+                // Verify the collision happens 
+                if (taskA.start.isAfter(totalStart) && taskA.start.isBefore(totalEnd)) {
+                  showVerticalScrollIndicators = true;
+                  break;
+                }
+              }
+            }
+            if (showVerticalScrollIndicators) break;
+          }
+        }
+
         Widget chartSection = SizedBox(
           width: totalCanvasWidth,
           height: fullWidgetHeight,
-          child: LegacyGanttChartWidget(
-            data: packageTasks,
-            visibleRows: packageRows,
-            rowMaxStackDepth: rowMaxStackDepth,
-            rowHeight: definedRowHeight,
-            axisHeight: baseAxisHeight,
-            gridMin: rangeStart.millisecondsSinceEpoch.toDouble(),
-            gridMax: rangeEnd.millisecondsSinceEpoch.toDouble(),
-            totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
-            totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
-            taskBarBuilder: (task) {
-              if (isMinimized) return const SizedBox.shrink();
-              return _buildEventContainer(task.id);
-            },
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: LegacyGanttChartWidget(
+                  data: packageTasks,
+                  visibleRows: packageRows,
+                  rowMaxStackDepth: rowMaxStackDepth,
+                  rowHeight: definedRowHeight,
+                  axisHeight: baseAxisHeight,
+                  gridMin: rangeStart.millisecondsSinceEpoch.toDouble(),
+                  gridMax: rangeEnd.millisecondsSinceEpoch.toDouble(),
+                  totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
+                  totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
+                  taskBarBuilder: (task) {
+                    if (isMinimized) return const SizedBox.shrink();
+                    return _buildEventContainer(task.id);
+                  },
+                ),
+              ),
+              
+              // overlay arrow
+              if (showVerticalScrollIndicators) ...[
+                // Down Arrow
+                Positioned(
+                  bottom: 4,
+                  left: (totalCanvasWidth / 2) - 12,
+                  child: IgnorePointer(
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      child: const Icon(Icons.keyboard_arrow_down, color: Colors.blueAccent, size: 20),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         );
 
@@ -351,7 +457,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
           chartSection = ClipRect(
             child: SizedBox(
               width: totalCanvasWidth,
-              height: visibleViewportHeight,
+              height: visibleViewportHeight, 
               child: OverflowBox(
                 minHeight: fullWidgetHeight,
                 maxHeight: fullWidgetHeight,
@@ -416,16 +522,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
           key: ValueKey('row_wrapper_${lane.id}'),
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start, 
               children: [
                 leftHeader,
                 Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: totalCanvasWidth,
-                      height: visibleViewportHeight,
-                      child: chartSection,
-                    ),
+                  child: SizedBox(
+                    width: totalCanvasWidth,
+                    height: visibleViewportHeight,
+                    child: chartSection,
                   ),
                 ),
               ],
@@ -442,13 +546,25 @@ class _TimelineScreenState extends State<TimelineScreen> {
       (e) => e.eventId.toString() == eventId,
     );
 
-    final String duration = event.endDt != null
-        ? "${event.endDt!.difference(event.startDt).inHours} hrs"
-        : "Ongoing";
+    final String duration;
+    final String endString;
+    final String startStringTime = event.startDt
+        .toLocal()
+        .toString()
+        .split(' ')[1]
+        .substring(0, 5);
 
-    final String endString = event.endDt != null
-        ? event.endDt.toString()
-        : '...';
+    final String endStringTime = event.endDt != null
+        ? event.endDt!.toLocal().toString().split(' ')[1].substring(0, 5)
+        : '';
+
+    if (event.endDt != null) {
+      duration = "${event.endDt!.difference(event.startDt).inHours} hrs";
+      endString = event.endDt.toString();
+    } else {
+      duration = "Ongoing";
+      endString = '...';
+    }
     final Color itemColor = widget.viewModel
         .getTimelineTasksForCategory(event.category.trim())
         .firstWhere((t) => t.id == eventId)
@@ -461,37 +577,78 @@ class _TimelineScreenState extends State<TimelineScreen> {
         child: Tooltip(
           message:
               "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
-          child: Container(
-            alignment: Alignment.topLeft,
-            height: 45.0,
-            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
-            decoration: BoxDecoration(
-              color: itemColor,
-              border: _selectedEvent?.eventId == event.eventId
-                  ? Border.all(color: Colors.white, width: 2)
-                  : null,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  event.title,
-                  textAlign: TextAlign.left,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+          child: event.endDt == null
+              ? OverflowBox(
+                  minWidth: 24.0,
+                  maxWidth: 24.0,
+                  minHeight: 24.0,
+                  maxHeight: 24.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: itemColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                      border: _selectedEvent?.eventId == event.eventId
+                          ? Border.all(color: Colors.white, width: 2)
+                          : Border.all(color: Colors.white, width: 1),
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
+                )
+              : Container(
+                  alignment: Alignment.topLeft,
+                  height: 45.0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6.0,
+                    vertical: 4.0,
+                  ),
+                  decoration: BoxDecoration(
+                    color: itemColor,
+                    border: _selectedEvent?.eventId == event.eventId
+                        ? Border.all(color: Colors.white, width: 2)
+                        : null,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        event.title,
+                        textAlign: TextAlign.left,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Row(
+                        spacing: 8.0,
+                        children: [
+                          Text(
+                            '$startStringTime - $endStringTime',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            duration,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                Text(
-                  duration,
-                  style: const TextStyle(color: Colors.white70, fontSize: 9),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

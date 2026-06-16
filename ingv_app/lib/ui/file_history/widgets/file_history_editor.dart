@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/ui/file_history/view_models/file_history_view_model.dart';
 import 'package:ingv_app/data/models/file_version.dart';
+import 'diff_match.dart';
 
 class DocumentComparisonScreen extends StatefulWidget {
   const DocumentComparisonScreen({Key? key}) : super(key: key);
@@ -21,6 +22,12 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
     super.initState();
     _viewModel.generateFileHistory();
     _viewModel.addListener(_onViewModelStateChanged);
+
+    _rightScrollController.addListener(() {
+      if (_rightScrollController.position.isScrollingNotifier.value) {
+        _leftScrollController.jumpTo(_rightScrollController.offset);
+      }
+    });
   }
 
   @override
@@ -117,7 +124,7 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // header components: version and select all button
+                // header
                 SizedBox(
                   height: 48,
                   child: Row(
@@ -236,6 +243,29 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
   Widget _buildSectionCard(TextBlock block, bool isLeft) {
     Color cardBg = block.isSelected ? Colors.green.shade50 : Colors.white;
 
+    String originalContent = block.content;
+    String modifiedContent = block.content;
+
+    if (isLeft) {
+      // Find matching block in right side
+      final rightBlock = _viewModel.rightVersion?.blocks.firstWhere(
+        (b) => b.id == block.id,
+        orElse: () => TextBlock(id: '', title: '', content: ''),
+      );
+      if (rightBlock != null && rightBlock.id.isNotEmpty) {
+        modifiedContent = rightBlock.content; 
+      }
+    } else {
+      final leftBlock = _viewModel.leftVersion?.blocks.firstWhere(
+        (b) => b.id == block.id,
+        orElse: () => TextBlock(id: '', title: '', content: ''),
+      );
+      // left side is older 
+      if (leftBlock != null && leftBlock.id.isNotEmpty) {
+        originalContent = leftBlock.content; 
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -322,20 +352,16 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Text(
-              block.content,
-              style: const TextStyle(
-                fontSize: 14,
-                height: 1.4,
-                color: Colors.black87,
-              ),
+            child: DiffText(
+              originalText: originalContent,
+              modifiedText: modifiedContent,
+              isLeftColumn: isLeft,
             ),
           ),
         ],
       ),
     );
   }
-
   Widget _buildSaveToolbar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -348,9 +374,9 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
         children: [
           ElevatedButton.icon(
             onPressed: _viewModel.isSaving
-                ? null // Disable the button while saving
+                ? null 
                 : () async {
-                    // Call the ViewModel method to compile and commit strings
+                    // Call to method to compile and commit
                     bool success = await _viewModel.compileAndSaveChanges();
                     if (success && mounted) {
                       // Show a confirmation banner

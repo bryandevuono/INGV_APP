@@ -12,7 +12,6 @@ import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 import 'package:ingv_app/ui/map/view_models/map_view_model.dart';
 import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
 import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
-
 import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart';
 
 class MapScreen extends StatefulWidget {
@@ -23,8 +22,7 @@ class MapScreen extends StatefulWidget {
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
 
-  IEventSearchRepository get exposedEventSearchRepository =>
-      eventSearchRepository;
+  IEventSearchRepository get exposedEventSearchRepository => eventSearchRepository;
   IMapService get exposedMapService => mapService;
 
   const MapScreen({
@@ -50,27 +48,35 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    // Keeping your original initialization chain exactly as it was:
+
     final detailRepository = EventDetailRepository(EventDetailService());
     final attachmentRepository = LocalAttachmentRepository();
     final localFileService = LocalFileService();
+    
     final pdfExportService = PdfExportService(
       detailRepository,
       attachmentRepository,
       localFileService,
     );
+    
     final zipExportService = ZipExportService(
       pdfExportService: pdfExportService,
       detailRepository: detailRepository,
       attachmentRepository: attachmentRepository,
       localFileService: localFileService,
     );
+
     _viewModel = MapScreenViewModel(
       widget.eventRepository,
       widget.eventSearchRepository,
+      detailRepository,
+      attachmentRepository,
+      localFileService,
+      FileOpenService(),
       pdfExportService,
       zipExportService,
     );
+
     _detailViewModel = EventDetailViewModel(
       detailRepository,
       attachmentRepository,
@@ -86,6 +92,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _loadEvents() async {
+    await _viewModel.getColors();
     await _viewModel.fetchEvents();
   }
 
@@ -94,8 +101,7 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
-      initialDateRange:
-          _viewModel.filterStartDate != null && _viewModel.filterEndDate != null
+      initialDateRange: _viewModel.filterStartDate != null && _viewModel.filterEndDate != null
           ? DateTimeRange(
               start: _viewModel.filterStartDate!,
               end: _viewModel.filterEndDate!,
@@ -113,9 +119,7 @@ class _MapScreenState extends State<MapScreen> {
         ? await _viewModel.exportVisibleEventsZip()
         : await _viewModel.exportVisibleEventsPdf();
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
@@ -123,8 +127,7 @@ class _MapScreenState extends State<MapScreen> {
         content: Text(
           exportPath?.isNotEmpty == true
               ? 'Map export saved: $exportPath'
-              : (_viewModel.exportErrorMessage ??
-                    'Failed to export map events.'),
+              : (_viewModel.exportErrorMessage ?? 'Failed to export map events.'),
         ),
       ),
     );
@@ -132,9 +135,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void _syncFromSharedFilters() {
     final controller = _filterController;
-    if (controller == null) {
-      return;
-    }
+    if (controller == null) return;
 
     if (_viewModel.selectedCategory != controller.selectedCategory) {
       _viewModel.setCategoryFilter(controller.selectedCategory);
@@ -163,7 +164,6 @@ class _MapScreenState extends State<MapScreen> {
     await _detailViewModel.loadEventDetails(event);
   }
 
-  // Maps EventModel to the generic AppMarker structure configuration
   List<AppMarker> _convertEventsToMarkers(List<EventModel> events) {
     return [
       for (var event in events)
@@ -173,10 +173,12 @@ class _MapScreenState extends State<MapScreen> {
           author: 'Author ${event.author}',
           category: event.category,
           title: event.title,
-          tag: event.tag,
-          progress: 0.5,
+          startDateTime: event.startDt,
+          endDateTime: event.endDt,
+          progress: _viewModel.calculateMarkerDuration(event.startDt, event.endDt),
           onTap: () => _toggleEventDetails(event),
-          onAction: () {},
+          categoryColor: _viewModel.getCategoryColor(event.category),
+          fillColor: _viewModel.getCategoryColor(event.category),
         ),
     ];
   }
@@ -185,9 +187,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: Listenable.merge(
-        _filterController == null
-            ? [_viewModel]
-            : [_viewModel, _filterController!],
+        _filterController == null ? [_viewModel] : [_viewModel, _filterController!],
       ),
       builder: (context, _) {
         _syncFromSharedFilters();
@@ -245,6 +245,7 @@ class _MapScreenState extends State<MapScreen> {
                     initialLng: 12.4963,
                     initialZoom: 6,
                     markers: _convertEventsToMarkers(_viewModel.events),
+                    mapViewModel: _viewModel,
                   ),
                 ),
               ],

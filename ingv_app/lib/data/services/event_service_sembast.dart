@@ -155,8 +155,8 @@ class EventServiceSembast implements IEventService {
 
   @override
   Future<List<String>> getEventCategories() async {
-    await _ensureInitialized();
-    return _events.map((event) => event.category).toSet().toList()..sort();
+    List<String> categories = ['Volcanic', 'Earthquake', 'Hydrological', 'Meteorological', 'Geological', 'Atmospheric'];    
+    return categories;
   }
 
   @override
