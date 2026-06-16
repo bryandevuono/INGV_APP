@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/add_note_dialog.dart';
+import 'package:ingv_app/ui/shared/widgets/note_interaction_widget.dart';
 
 class EventNotesSection extends StatelessWidget {
   final EventDetailViewModel viewModel;
@@ -133,6 +134,8 @@ class EventNotesSection extends StatelessWidget {
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 6),
+                              NoteInteractionWidget(noteId: note.noteId),
                             ],
                           ),
                         ),
