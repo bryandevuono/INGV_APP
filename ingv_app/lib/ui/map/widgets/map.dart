@@ -74,6 +74,8 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _loadEvents() async {
+    await _viewModel.getColors();
+
     await _viewModel.fetchEvents();
   }
 

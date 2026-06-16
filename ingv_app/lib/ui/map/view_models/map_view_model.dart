@@ -18,10 +18,8 @@ class MapScreenViewModel extends ChangeNotifier {
   Map<String, Color> _categoryColors = {};
 
   Color getCategoryColor(String category) {
-    final normalizedCategory = category.toLowerCase().trim();
-
-    return _categoryColors[normalizedCategory] ??
-        const Color(0xFF9E9E9E); // Solid Grey
+    return _categoryColors[category] ??
+        const Color(0xFF9E9E9E); 
   }
 
   int timelineDurationDays = 7;
@@ -36,7 +34,6 @@ class MapScreenViewModel extends ChangeNotifier {
         categories.add(category);
       }
     }
-    await getColors();
     await applyFilters();
   }
 

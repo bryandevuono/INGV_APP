@@ -205,4 +205,8 @@ class GroupScreenViewModel extends ChangeNotifier {
       return person.name.toLowerCase().contains(_searchQuery);
     }).toList();
   }
+
+  dynamic getGroupImage(String groupId) {
+    return _groupRepository.getImagebyGroupId(groupId);
+  }
 }
