@@ -1,8 +1,5 @@
-// lib/ui/map/interfaces/map_service_interface.dart
 import 'package:flutter/material.dart';
-// interface to add a abstraction layer to flutter maps
-// lib/domain/models/app_marker.dart
-import 'package:flutter/material.dart';
+import 'package:ingv_app/ui/map/view_models/map_view_model.dart';
 
 class AppMarker {
   final double latitude;
@@ -45,6 +42,7 @@ abstract class IMapService {
     required double initialLng,
     required double initialZoom,
     required List<AppMarker> markers,
+    required MapScreenViewModel mapViewModel,
   });
   
   Widget buildPreviewMap({

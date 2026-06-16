@@ -6,10 +6,11 @@ import 'timeline_interface.dart';
 import 'package:ingv_app/data/repositories/group_repository.dart';
 import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/data/services/group_service_sembast.dart';
+import 'package:ingv_app/data/repositories/event_search_repository.dart';
 
 class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   final IEventRepository _eventRepository;
-
+  IEventSearchRepository _searchRepository;
   List<EventModel> _allEvents = [];
   List<EventModel> _filteredEvents = [];
   List<String> _orderedCategories = [];
@@ -28,7 +29,7 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   // Color configuration map populated from Repository
   Map<String, Color> _categoryColors = {};
 
-  TimelineViewModel(this._eventRepository) {
+  TimelineViewModel(this._eventRepository, this._searchRepository) {
     _init();
   }
 
@@ -199,6 +200,16 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   void setSearchQuery(String query) {
     _searchQuery = query;
     applyFilters();
+    if (query.isNotEmpty) {
+    _searchRepository.getClosestMatch(query).then((event) {
+      if (event != null) {
+        jumpToEvent(event);
+      }
+    });
+    } else {
+      setDateRangeFilter(null, null);
+    }
+    notifyListeners();
   }
 
   @override
@@ -307,5 +318,10 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     _isExporting = false;
     notifyListeners();
     return "exports/archives/bundle.zip";
+  }
+
+  void jumpToEvent(EventModel event) {
+    _filterStartDate = event.startDt;
+    notifyListeners();
   }
 }

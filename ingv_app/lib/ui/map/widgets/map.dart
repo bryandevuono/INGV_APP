@@ -42,9 +42,12 @@ class _MapScreenState extends State<MapScreen> {
     _viewModel = MapScreenViewModel(
       widget.eventRepository,
       widget.eventSearchRepository,
+      EventDetailRepository(EventDetailService()),
+      LocalAttachmentRepository(),
+      LocalFileService(),
+      FileOpenService(),
     );
 
-    // Keeping your original initialization chain exactly as it was:
     final detailRepository = EventDetailRepository(EventDetailService());
     final attachmentRepository = LocalAttachmentRepository();
     final localFileService = LocalFileService();
@@ -94,7 +97,6 @@ class _MapScreenState extends State<MapScreen> {
     await _detailViewModel.loadEventDetails(event);
   }
 
-  // Maps EventModel to the generic AppMarker structure configuration
   List<AppMarker> _convertEventsToMarkers(List<EventModel> events) {
     return [
       for (var event in events)
@@ -175,7 +177,7 @@ class _MapScreenState extends State<MapScreen> {
                       if (_viewModel.filterStartDate != null)
                         IconButton(
                           icon: const Icon(Icons.clear),
-                          tooltip: 'Clear Date Filter',
+                          tooltip: 'Clear Filter',
                           onPressed: () =>
                               _viewModel.setDateRangeFilter(null, null),
                         ),
@@ -189,6 +191,7 @@ class _MapScreenState extends State<MapScreen> {
                     initialLng: 12.4963,
                     initialZoom: 6,
                     markers: _convertEventsToMarkers(_viewModel.events),
+                    mapViewModel: _viewModel,
                   ),
                 ),
               ],

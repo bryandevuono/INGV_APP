@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart' as latlong2;
-
+import 'package:ingv_app/ui/map/view_models/map_view_model.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart';
 import 'package:ingv_app/ui/map/widgets/map_marker.dart';
+import 'package:ingv_app/data/repositories/event_repository.dart';
+import 'package:ingv_app/data/repositories/event_search_repository.dart';
 
 class MapServiceUI implements IMapService {
   final String userAgentPackageName;
@@ -17,6 +19,7 @@ class MapServiceUI implements IMapService {
     required double initialLng,
     required double initialZoom,
     required List<AppMarker> markers,
+    required MapScreenViewModel mapViewModel,
   }) {
     final List<Marker> flutterMarkers = markers.map((m) {
       return Marker(
@@ -28,6 +31,7 @@ class MapServiceUI implements IMapService {
     }).toList();
 
     return FlutterMap(
+      mapController: mapViewModel.mapController,
       options: MapOptions(
         initialCenter: latlong2.LatLng(initialLat, initialLng),
         initialZoom: initialZoom,

@@ -46,4 +46,32 @@ class EventSearchService implements IEventSearchService {
       return matchesKeyword && matchesCategory && matchesTime;
     }).toList();
   }
+
+  @override
+  Future<EventModel> getClosestMatch(String keyword) async {
+    final allEvents = await _eventService.getAllEvents();
+    final lowerKeyword = keyword.toLowerCase();
+
+    EventModel? closestMatch;
+    int highestScore = -1;
+
+    for (final event in allEvents) {
+      int score = 0;
+      if (event.title.toLowerCase().contains(lowerKeyword)) score += 4;
+      if (event.description.toLowerCase().contains(lowerKeyword)) score += 3;
+      if (event.tag.toLowerCase().contains(lowerKeyword)) score += 2;
+      if (event.author.toLowerCase().contains(lowerKeyword)) score += 1;
+
+      if (score > highestScore) {
+        highestScore = score;
+        closestMatch = event;
+      }
+    }
+
+    if (closestMatch != null) {
+      return closestMatch;
+    } else {
+      throw Exception('No matching event found');
+    }
+  }
 }

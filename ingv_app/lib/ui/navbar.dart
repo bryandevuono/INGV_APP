@@ -8,11 +8,14 @@ import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
+import 'package:ingv_app/data/repositories/event_search_repository.dart';
+import 'package:ingv_app/data/services/event_search_service.dart';
 
 class TopNavigationBar extends StatelessWidget {
   final Widget mapScreen;
   final EventRepository eventRepository;
-  
+  final IEventSearchRepository searchRepository;
+
   final IEventDetailRepository detailRepository;
   final IAttachmentRepository attachmentRepository;
   final ILocalFileService localFileService;
@@ -22,6 +25,7 @@ class TopNavigationBar extends StatelessWidget {
     super.key,
     required this.mapScreen,
     required this.eventRepository,
+    required this.searchRepository, 
     required this.detailRepository,
     required this.attachmentRepository,
     required this.localFileService,
@@ -58,7 +62,7 @@ class TopNavigationBar extends StatelessWidget {
               child: ResizableHybridView(
                 topWidget: mapScreen,
                 bottomWidget: TimelineScreen(
-                  viewModel: TimelineViewModel(eventRepository),
+                  viewModel: TimelineViewModel(eventRepository, searchRepository),
                   detailViewModel: EventDetailViewModel(
                     detailRepository,
                     attachmentRepository,
@@ -70,7 +74,7 @@ class TopNavigationBar extends StatelessWidget {
               ),
             ),
             TimelineScreen(
-              viewModel: TimelineViewModel(eventRepository),
+              viewModel: TimelineViewModel(eventRepository, searchRepository),
               detailViewModel: EventDetailViewModel(
                 detailRepository,
                 attachmentRepository,

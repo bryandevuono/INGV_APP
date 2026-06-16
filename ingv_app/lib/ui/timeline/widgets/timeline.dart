@@ -333,11 +333,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
         if (!isMinimized && genericTasks.length > 1) {
           for (int i = 0; i < genericTasks.length; i++) {
             final taskA = genericTasks[i];
-            final endA = taskA.end ?? taskA.start.add(const Duration(hours: 1));
+            final endA = taskA.end;
 
             for (int j = i + 1; j < genericTasks.length; j++) {
               final taskB = genericTasks[j];
-              final endB = taskB.end ?? taskB.start.add(const Duration(hours: 1));
+              final endB = taskB.end;
 
               final bool overlapsInTime = taskA.start.isBefore(endB) && taskB.start.isBefore(endA);
 
