@@ -215,43 +215,52 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   Widget _buildToolbar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: EventFilterActionBar(
-        categories: {'All', ...widget.viewModel.categories}.toList(),
-        selectedCategory: widget.viewModel.selectedCategory,
-        searchQuery: widget.viewModel.searchQuery,
-        startDate: widget.viewModel.filterStartDate,
-        endDate: widget.viewModel.filterEndDate,
-        showCategoryDropdown: true,
-        showDateFilter: true,
-        showSearch: true,
-        showExportPdf: true,
-        showExportZip: true,
-        showAddEvent: true,
-        isExporting: widget.viewModel.isExporting,
-        onCategoryChanged: (newValue) {
-          widget.viewModel.setCategoryFilter(newValue);
-          _filterController?.setCategory(newValue);
-        },
-        onDateRangePicked: _pickDateRange,
-        onClearDateFilter: () {
-          widget.viewModel.setDateRangeFilter(null, null);
-          _filterController?.clearDateRange();
-        },
-        onSearchChanged: (query) {
-          widget.viewModel.setSearchQuery(query);
-          _filterController?.setSearchQuery(query);
-        },
-        onExportPdf: () =>
-            _showExportResult(widget.viewModel.exportTimelineReport),
-        onExportZip: () =>
-            _showExportResult(widget.viewModel.exportTimelineAsZip),
-        onExportDateRangePdf: _exportDateRangePdf,
-        onExportDateRangeZip: _exportDateRangeZip,
-        onAddEvent:
-            widget.onAddEvent ??
-            () => showAddEventDialog(context, widget.viewModel, const []),
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12, bottom: 18),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1400),
+            child: EventFilterActionBar(
+              categories: {'All', ...widget.viewModel.categories}.toList(),
+              selectedCategory: widget.viewModel.selectedCategory,
+              searchQuery: widget.viewModel.searchQuery,
+              startDate: widget.viewModel.filterStartDate,
+              endDate: widget.viewModel.filterEndDate,
+              showCategoryDropdown: true,
+              showDateFilter: true,
+              showSearch: true,
+              showExportPdf: true,
+              showExportZip: true,
+              showAddEvent: true,
+              isExporting: widget.viewModel.isExporting,
+              embeddedInPage: true,
+              onCategoryChanged: (newValue) {
+                widget.viewModel.setCategoryFilter(newValue);
+                _filterController?.setCategory(newValue);
+              },
+              onDateRangePicked: _pickDateRange,
+              onClearDateFilter: () {
+                widget.viewModel.setDateRangeFilter(null, null);
+                _filterController?.clearDateRange();
+              },
+              onSearchChanged: (query) {
+                widget.viewModel.setSearchQuery(query);
+                _filterController?.setSearchQuery(query);
+              },
+              onExportPdf: () =>
+                  _showExportResult(widget.viewModel.exportTimelineReport),
+              onExportZip: () =>
+                  _showExportResult(widget.viewModel.exportTimelineAsZip),
+              onExportDateRangePdf: _exportDateRangePdf,
+              onExportDateRangeZip: _exportDateRangeZip,
+              onAddEvent:
+                  widget.onAddEvent ??
+                  () => showAddEventDialog(context, widget.viewModel, const []),
+            ),
+          ),
+        ),
       ),
     );
   }

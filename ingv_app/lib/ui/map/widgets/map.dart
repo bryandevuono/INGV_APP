@@ -130,93 +130,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Future<void> _exportEventsForRange({required bool zip}) async {
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-      initialDateRange:
-          _viewModel.filterStartDate != null && _viewModel.filterEndDate != null
-          ? DateTimeRange(
-              start: _viewModel.filterStartDate!,
-              end: _viewModel.filterEndDate!,
-            )
-          : null,
-    );
-
-    if (picked == null) {
-      return;
-    }
-
-    final exportPath = zip
-        ? await _viewModel.exportVisibleEventsZip(
-            startDate: picked.start,
-            endDate: picked.end,
-          )
-        : await _viewModel.exportVisibleEventsPdf(
-            startDate: picked.start,
-            endDate: picked.end,
-          );
-
-    if (!mounted) {
-      return;
-    }
-
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          exportPath?.isNotEmpty == true
-              ? 'Range export saved: $exportPath'
-              : (_viewModel.exportErrorMessage ??
-                    'Failed to export the selected range.'),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExportMenu() {
-    return PopupMenuButton<String>(
-      tooltip: 'Export map events',
-      onSelected: (value) async {
-        switch (value) {
-          case 'visible_pdf':
-            await _exportVisibleEvents(zip: false);
-            break;
-          case 'visible_zip':
-            await _exportVisibleEvents(zip: true);
-            break;
-          case 'range_pdf':
-            await _exportEventsForRange(zip: false);
-            break;
-          case 'range_zip':
-            await _exportEventsForRange(zip: true);
-            break;
-        }
-      },
-      itemBuilder: (context) => const [
-        PopupMenuItem(
-          value: 'visible_pdf',
-          child: Text('Export visible events as PDF'),
-        ),
-        PopupMenuItem(
-          value: 'visible_zip',
-          child: Text('Export visible events as ZIP'),
-        ),
-        PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'range_pdf',
-          child: Text('Export date range as PDF'),
-        ),
-        PopupMenuItem(
-          value: 'range_zip',
-          child: Text('Export date range as ZIP'),
-        ),
-      ],
-      icon: const Icon(Icons.download),
-    );
-  }
-
   void _syncFromSharedFilters() {
     final controller = _filterController;
     if (controller == null) {
@@ -283,11 +196,13 @@ class _MapScreenState extends State<MapScreen> {
             Column(
               children: [
                 if (widget.showControlBar)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Expanded(
+                  SizedBox(
+                    width: double.infinity,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12, bottom: 18),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1400),
                           child: EventFilterActionBar(
                             categories: _viewModel.categories.isNotEmpty
                                 ? _viewModel.categories
@@ -299,8 +214,10 @@ class _MapScreenState extends State<MapScreen> {
                             showCategoryDropdown: true,
                             showDateFilter: true,
                             showSearch: true,
-                            showExportPdf: false,
-                            showExportZip: false,
+                            showExportPdf: true,
+                            showExportZip: true,
+                            showAddEvent: widget.onAddEvent != null,
+                            embeddedInPage: true,
                             onCategoryChanged: (newValue) {
                               _viewModel.setCategoryFilter(newValue);
                               _filterController?.setCategory(newValue);
@@ -314,11 +231,12 @@ class _MapScreenState extends State<MapScreen> {
                               _viewModel.setSearchQuery(query);
                               _filterController?.setSearchQuery(query);
                             },
+                            onExportPdf: () => _exportVisibleEvents(zip: false),
+                            onExportZip: () => _exportVisibleEvents(zip: true),
+                            onAddEvent: widget.onAddEvent,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        _buildExportMenu(),
-                      ],
+                      ),
                     ),
                   ),
                 Expanded(

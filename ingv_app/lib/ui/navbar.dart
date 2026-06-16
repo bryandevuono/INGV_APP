@@ -166,88 +166,109 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
             ClipRect(
               child: Column(
                 children: [
-                  ListenableBuilder(
-                    listenable: Listenable.merge([
-                      _hybridTimelineViewModel,
-                      _hybridFilterController,
-                    ]),
-                    builder: (context, _) {
-                      return EventFilterActionBar(
-                        categories: {
-                          'All',
-                          ..._hybridTimelineViewModel.categories,
-                        }.toList(),
-                        selectedCategory:
-                            _hybridTimelineViewModel.selectedCategory,
-                        searchQuery: _hybridTimelineViewModel.searchQuery,
-                        startDate: _hybridTimelineViewModel.filterStartDate,
-                        endDate: _hybridTimelineViewModel.filterEndDate,
-                        showCategoryDropdown: true,
-                        showDateFilter: true,
-                        showSearch: true,
-                        showExportPdf: true,
-                        showExportZip: true,
-                        showAddEvent: true,
-                        isExporting: _hybridTimelineViewModel.isExporting,
-                        onCategoryChanged: (newValue) {
-                          _hybridTimelineViewModel.setCategoryFilter(newValue);
-                          _hybridFilterController.setCategory(newValue);
-                        },
-                        onDateRangePicked: () async {
-                          final picked = await showDateRangePicker(
-                            context: context,
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2101),
-                            initialDateRange:
-                                _hybridTimelineViewModel.filterStartDate !=
-                                        null &&
-                                    _hybridTimelineViewModel.filterEndDate !=
-                                        null
-                                ? DateTimeRange(
-                                    start: _hybridTimelineViewModel
-                                        .filterStartDate!,
-                                    end:
-                                        _hybridTimelineViewModel.filterEndDate!,
-                                  )
-                                : null,
-                          );
-                          if (picked != null) {
-                            _hybridTimelineViewModel.setDateRangeFilter(
-                              picked.start,
-                              picked.end,
-                            );
-                            _hybridFilterController.setDateRange(
-                              picked.start,
-                              picked.end,
-                            );
-                          }
-                        },
-                        onClearDateFilter: () {
-                          _hybridTimelineViewModel.setDateRangeFilter(
-                            null,
-                            null,
-                          );
-                          _hybridFilterController.clearDateRange();
-                        },
-                        onSearchChanged: (query) {
-                          _hybridTimelineViewModel.setSearchQuery(query);
-                          _hybridFilterController.setSearchQuery(query);
-                        },
-                        onExportPdf: () => _showHybridExportResult(
-                          _hybridTimelineViewModel.exportTimelineReport,
+                  SizedBox(
+                    width: double.infinity,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12, bottom: 18),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1400),
+                          child: ListenableBuilder(
+                            listenable: Listenable.merge([
+                              _hybridTimelineViewModel,
+                              _hybridFilterController,
+                            ]),
+                            builder: (context, _) {
+                              return EventFilterActionBar(
+                                categories: {
+                                  'All',
+                                  ..._hybridTimelineViewModel.categories,
+                                }.toList(),
+                                selectedCategory:
+                                    _hybridTimelineViewModel.selectedCategory,
+                                searchQuery:
+                                    _hybridTimelineViewModel.searchQuery,
+                                startDate:
+                                    _hybridTimelineViewModel.filterStartDate,
+                                endDate: _hybridTimelineViewModel.filterEndDate,
+                                showCategoryDropdown: true,
+                                showDateFilter: true,
+                                showSearch: true,
+                                showExportPdf: true,
+                                showExportZip: true,
+                                showAddEvent: true,
+                                isExporting:
+                                    _hybridTimelineViewModel.isExporting,
+                                embeddedInPage: true,
+                                onCategoryChanged: (newValue) {
+                                  _hybridTimelineViewModel.setCategoryFilter(
+                                    newValue,
+                                  );
+                                  _hybridFilterController.setCategory(newValue);
+                                },
+                                onDateRangePicked: () async {
+                                  final picked = await showDateRangePicker(
+                                    context: context,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2101),
+                                    initialDateRange:
+                                        _hybridTimelineViewModel
+                                                    .filterStartDate !=
+                                                null &&
+                                            _hybridTimelineViewModel
+                                                    .filterEndDate !=
+                                                null
+                                        ? DateTimeRange(
+                                            start: _hybridTimelineViewModel
+                                                .filterStartDate!,
+                                            end: _hybridTimelineViewModel
+                                                .filterEndDate!,
+                                          )
+                                        : null,
+                                  );
+                                  if (picked != null) {
+                                    _hybridTimelineViewModel.setDateRangeFilter(
+                                      picked.start,
+                                      picked.end,
+                                    );
+                                    _hybridFilterController.setDateRange(
+                                      picked.start,
+                                      picked.end,
+                                    );
+                                  }
+                                },
+                                onClearDateFilter: () {
+                                  _hybridTimelineViewModel.setDateRangeFilter(
+                                    null,
+                                    null,
+                                  );
+                                  _hybridFilterController.clearDateRange();
+                                },
+                                onSearchChanged: (query) {
+                                  _hybridTimelineViewModel.setSearchQuery(
+                                    query,
+                                  );
+                                  _hybridFilterController.setSearchQuery(query);
+                                },
+                                onExportPdf: () => _showHybridExportResult(
+                                  _hybridTimelineViewModel.exportTimelineReport,
+                                ),
+                                onExportZip: () => _showHybridExportResult(
+                                  _hybridTimelineViewModel.exportTimelineAsZip,
+                                ),
+                                onExportDateRangePdf: _exportHybridDateRangePdf,
+                                onExportDateRangeZip: _exportHybridDateRangeZip,
+                                onAddEvent: () => showAddEventDialog(
+                                  context,
+                                  _hybridTimelineViewModel,
+                                  const [],
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                        onExportZip: () => _showHybridExportResult(
-                          _hybridTimelineViewModel.exportTimelineAsZip,
-                        ),
-                        onExportDateRangePdf: _exportHybridDateRangePdf,
-                        onExportDateRangeZip: _exportHybridDateRangeZip,
-                        onAddEvent: () => showAddEventDialog(
-                          context,
-                          _hybridTimelineViewModel,
-                          const [],
-                        ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                   Expanded(
                     child: ResizableHybridView(
