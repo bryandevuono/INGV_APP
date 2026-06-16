@@ -172,16 +172,16 @@ class LocalAttachmentRepository implements IAttachmentRepository {
       Content of version 1, line 1.
       Content of version 1, line 2.
       Content of version 1, line 3.
-      Content of version 1, line 4.
+      Content of version 1, line 4.sdvs
       ## heading 2
       Content of version 2, line 1.
-      Content of version 2, line 2.
+      Content of version 2, line 2.vdsv
       Content of version 2, line 3.
-      Content of version 2, line 4.
+      Content of version 2, line 4.sdvsdv
       ## heading 3
       Content of version 3, line 1.
       Content of version 3, line 2.
-      Content of version 3, line 3.
+      Content of version 3, line 3.sdv
       Content of version 3, line 4 (changed).
       """,
       FileVersion(
@@ -198,9 +198,9 @@ class LocalAttachmentRepository implements IAttachmentRepository {
       Content of version 1, line 4.
       ## heading 2
       Content of version 2, line 1.
-      Content of version 2, line 2.
+      Content of version 2, line 2. new content here
       Content of version 2, line 3.
-      Content of version 2, line 4.
+      Content of version 2, line 4. new content here
       """,
     ]
   };
