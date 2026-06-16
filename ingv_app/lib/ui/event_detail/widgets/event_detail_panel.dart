@@ -37,8 +37,10 @@ class _EventDetailPanelState extends State<EventDetailPanel>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    
+    // CHANGED: Begin at Offset(0, 1) instead of (0, -1) to start from the bottom
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
           CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
         );
     _animationController.forward();
@@ -51,14 +53,17 @@ class _EventDetailPanelState extends State<EventDetailPanel>
   }
 
   void _handleDragUpdate(DragUpdateDetails details) {
-    setState(() {
-      _dragOffset += details.delta.dy;
-    });
+    // Only allow dragging downwards to dismiss (prevent dragging it higher than its peak height)
+    if (_dragOffset + details.delta.dy >= 0) {
+      setState(() {
+        _dragOffset += details.delta.dy;
+      });
+    }
   }
 
   void _handleDragEnd(DragEndDetails details) {
-    // If dragged up more than 100 pixels, dismiss
-    if (_dragOffset < -100 || details.velocity.pixelsPerSecond.dy < -500) {
+    // CHANGED: If dragged down more than 100 pixels, or flicked downward quickly, dismiss
+    if (_dragOffset > 100 || details.velocity.pixelsPerSecond.dy > 500) {
       _animationController.reverse().then((_) {
         widget.onDismiss();
       });
@@ -108,14 +113,17 @@ class _EventDetailPanelState extends State<EventDetailPanel>
             height: panelHeight,
             decoration: BoxDecoration(
               color: Colors.white,
+              // CHANGED: Put the border and rounded corners on top instead of bottom
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               border: Border(
-                bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                top: BorderSide(color: Colors.grey.shade300, width: 1),
               ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
-                  offset: const Offset(0, 4),
+                  // CHANGED: Cast the shadow upwards (-4) instead of downwards
+                  offset: const Offset(0, -4),
                 ),
               ],
             ),
@@ -128,7 +136,7 @@ class _EventDetailPanelState extends State<EventDetailPanel>
                     });
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
                     child: Container(
                       width: 40,
                       height: 4,

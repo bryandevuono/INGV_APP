@@ -22,7 +22,8 @@ class MapScreen extends StatefulWidget {
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
 
-  IEventSearchRepository get exposedEventSearchRepository => eventSearchRepository;
+  IEventSearchRepository get exposedEventSearchRepository =>
+      eventSearchRepository;
   IMapService get exposedMapService => mapService;
 
   const MapScreen({
@@ -52,13 +53,13 @@ class _MapScreenState extends State<MapScreen> {
     final detailRepository = EventDetailRepository(EventDetailService());
     final attachmentRepository = LocalAttachmentRepository();
     final localFileService = LocalFileService();
-    
+
     final pdfExportService = PdfExportService(
       detailRepository,
       attachmentRepository,
       localFileService,
     );
-    
+
     final zipExportService = ZipExportService(
       pdfExportService: pdfExportService,
       detailRepository: detailRepository,
@@ -101,7 +102,8 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
-      initialDateRange: _viewModel.filterStartDate != null && _viewModel.filterEndDate != null
+      initialDateRange:
+          _viewModel.filterStartDate != null && _viewModel.filterEndDate != null
           ? DateTimeRange(
               start: _viewModel.filterStartDate!,
               end: _viewModel.filterEndDate!,
@@ -127,7 +129,8 @@ class _MapScreenState extends State<MapScreen> {
         content: Text(
           exportPath?.isNotEmpty == true
               ? 'Map export saved: $exportPath'
-              : (_viewModel.exportErrorMessage ?? 'Failed to export map events.'),
+              : (_viewModel.exportErrorMessage ??
+                    'Failed to export map events.'),
         ),
       ),
     );
@@ -175,7 +178,10 @@ class _MapScreenState extends State<MapScreen> {
           title: event.title,
           startDateTime: event.startDt,
           endDateTime: event.endDt,
-          progress: _viewModel.calculateMarkerDuration(event.startDt, event.endDt),
+          progress: _viewModel.calculateMarkerDuration(
+            event.startDt,
+            event.endDt,
+          ),
           onTap: () => _toggleEventDetails(event),
           categoryColor: _viewModel.getCategoryColor(event.category),
           fillColor: _viewModel.getCategoryColor(event.category),
@@ -187,7 +193,9 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: Listenable.merge(
-        _filterController == null ? [_viewModel] : [_viewModel, _filterController!],
+        _filterController == null
+            ? [_viewModel]
+            : [_viewModel, _filterController!],
       ),
       builder: (context, _) {
         _syncFromSharedFilters();
@@ -251,20 +259,24 @@ class _MapScreenState extends State<MapScreen> {
               ],
             ),
             if (_selectedEvent != null)
-              EventDetailPanel(
-                viewModel: _detailViewModel,
-                onEventUpdated: (updatedEvent) async {
-                  setState(() {
-                    _selectedEvent = updatedEvent;
-                  });
-                  await _loadEvents();
-                },
-                onDismiss: () {
-                  setState(() {
-                    _selectedEvent = null;
-                  });
-                  _detailViewModel.clearEventDetails();
-                },
+              Align(
+                alignment: Alignment
+                    .bottomCenter, // <-- Aligns the panel to the bottom
+                child: EventDetailPanel(
+                  viewModel: _detailViewModel,
+                  onEventUpdated: (updatedEvent) async {
+                    setState(() {
+                      _selectedEvent = updatedEvent;
+                    });
+                    await _loadEvents();
+                  },
+                  onDismiss: () {
+                    setState(() {
+                      _selectedEvent = null;
+                    });
+                    _detailViewModel.clearEventDetails();
+                  },
+                ),
               ),
           ],
         );
