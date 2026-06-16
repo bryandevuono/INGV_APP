@@ -10,7 +10,6 @@ import 'package:ingv_app/data/services/export_service.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
-import 'package:ingv_app/data/services/file_operations_service.dart';
 
 class EventDetailViewModel extends ChangeNotifier {
   final IEventDetailRepository _detailRepository;
@@ -62,6 +61,8 @@ class EventDetailViewModel extends ChangeNotifier {
         );
   }
 
+  IEventRepository get eventRepository => _eventRepository;
+
   Future<void> loadEventDetails(EventModel event) async {
     groupName = await _eventRepository.getGroupOfEvent(event.eventId);
     selectedEvent = event;
@@ -87,6 +88,16 @@ class EventDetailViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> updateSelectedEvent(EventModel updatedEvent) async {
+    selectedEvent = updatedEvent;
+    try {
+      groupName = await _eventRepository.getGroupOfEvent(updatedEvent.eventId);
+    } catch (e) {
+      groupName = null;
+    }
+    notifyListeners();
+  }
+
   Future<void> addNote(String noteText, String author) async {
     if (selectedEvent == null) return;
 
@@ -105,6 +116,15 @@ class EventDetailViewModel extends ChangeNotifier {
   Future<void> deleteNote(int noteId) async {
     await _detailRepository.deleteNote(noteId);
     notes.removeWhere((n) => n.noteId == noteId);
+    notifyListeners();
+  }
+
+  Future<void> deleteAttachment(EventAttachment attachment) async {
+    await _attachmentRepository.deleteAttachment(attachment.id);
+    attachments.removeWhere((item) => item.id == attachment.id);
+    if (selectedAttachment?.id == attachment.id) {
+      selectedAttachment = null;
+    }
     notifyListeners();
   }
 
@@ -133,65 +153,73 @@ class EventDetailViewModel extends ChangeNotifier {
     return busyAttachmentIds.contains(attachmentId);
   }
 
-  Future<void> addMediaFromFile(String mediaType, File file) async {
+  Future<void> addMediaFromFiles(String mediaType, List<File> files) async {
     if (selectedEvent == null) return;
 
-    final attachment = EventAttachment(
-      id: 'local_${DateTime.now().microsecondsSinceEpoch}',
-      eventId: selectedEvent!.eventId.toString(),
-      fileName: file.path.split(Platform.pathSeparator).last,
-      localPath: file.path,
-      type: mediaType == 'video' ? AttachmentType.video : AttachmentType.image,
-      sizeBytes: file.existsSync() ? file.lengthSync() : null,
-      mimeType: mediaType == 'video' ? 'video/*' : 'image/*',
-      createdAt: DateTime.now(),
-    );
+    for (final file in files) {
+      final attachment = EventAttachment(
+        id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+        eventId: selectedEvent!.eventId.toString(),
+        fileName: file.path.split(Platform.pathSeparator).last,
+        localPath: file.path,
+        type: mediaType == 'video'
+            ? AttachmentType.video
+            : AttachmentType.image,
+        sizeBytes: file.existsSync() ? file.lengthSync() : null,
+        mimeType: mediaType == 'video' ? 'video/*' : 'image/*',
+        createdAt: DateTime.now(),
+      );
 
-    await _attachmentRepository.addAttachment(attachment);
-    attachments.add(attachment);
+      await _attachmentRepository.addAttachment(attachment);
+      attachments.add(attachment);
+    }
+
     notifyListeners();
   }
 
-  Future<void> addAttachmentFromFile(File file) async {
+  Future<void> addAttachmentFromFiles(List<File> files) async {
     if (selectedEvent == null) return;
 
-    final fileName = file.path.split('/').last;
-    final fileSize = file.lengthSync();
-    final fileExtension = fileName.split('.').last.toLowerCase();
+    for (final file in files) {
+      final fileName = file.path.split('/').last;
+      final fileSize = file.lengthSync();
+      final fileExtension = fileName.split('.').last.toLowerCase();
 
-    final newAttachment = EventAttachment(
-      id: 'local_${DateTime.now().microsecondsSinceEpoch}',
-      eventId: selectedEvent!.eventId.toString(),
-      fileName: fileName,
-      localPath: file.path,
-      type: parseAttachmentTypeFromExtension(fileExtension),
-      sizeBytes: fileSize,
-      mimeType: _guessMimeType(fileExtension),
-      createdAt: DateTime.now(),
-    );
+      final newAttachment = EventAttachment(
+        id: 'local_${DateTime.now().microsecondsSinceEpoch}',
+        eventId: selectedEvent!.eventId.toString(),
+        fileName: fileName,
+        localPath: file.path,
+        type: parseAttachmentTypeFromExtension(fileExtension),
+        sizeBytes: fileSize,
+        mimeType: _guessMimeType(fileExtension),
+        createdAt: DateTime.now(),
+      );
 
-    await _attachmentRepository.addAttachment(newAttachment);
-    attachments.add(newAttachment);
+      await _attachmentRepository.addAttachment(newAttachment);
+      attachments.add(newAttachment);
+    }
+
     notifyListeners();
   }
 
   Future<void> pickAndAddMedia(String mediaType) async {
-    File? file;
+    List<File> files = [];
     if (mediaType == 'image') {
-      file = await _filePickerService.pickImage();
+      files = await _filePickerService.pickImages();
     } else if (mediaType == 'video') {
-      file = await _filePickerService.pickVideo();
+      files = await _filePickerService.pickVideos();
     }
 
-    if (file != null) {
-      await addMediaFromFile(mediaType, file);
+    if (files.isNotEmpty) {
+      await addMediaFromFiles(mediaType, files);
     }
   }
 
   Future<void> pickAndAddAttachment() async {
-    final file = await _filePickerService.pickFile();
-    if (file != null) {
-      await addAttachmentFromFile(file);
+    final files = await _filePickerService.pickFiles();
+    if (files.isNotEmpty) {
+      await addAttachmentFromFiles(files);
     }
   }
 
@@ -216,7 +244,6 @@ class EventDetailViewModel extends ChangeNotifier {
   }
 
   Future<bool> openAttachment(EventAttachment attachment) async {
-
     errorMessage = null;
     busyAttachmentIds.add(attachment.id);
     notifyListeners();
@@ -327,6 +354,7 @@ class EventDetailViewModel extends ChangeNotifier {
     notes = [];
     attachments = [];
     selectedAttachment = null;
+    groupName = null;
     errorMessage = null;
     lastSavedAttachmentPath = null;
     lastExportPath = null;

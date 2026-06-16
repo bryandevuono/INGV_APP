@@ -1109,6 +1109,7 @@ class ZipExportService implements IZipExportService {
 
     final usedPaths = <String>{
       'timeline_report.pdf',
+      'data/events.json',
       'metadata/export_info.json',
     };
     final archiveEntries = <ExportArchiveEntry>[];
@@ -1120,6 +1121,14 @@ class ZipExportService implements IZipExportService {
       archiveEntries,
       'timeline_report.pdf',
       pdfBytes,
+      usedPaths,
+    );
+
+    final eventRecords = events.map((event) => event.toJson()).toList();
+    _addBytesToArchive(
+      archiveEntries,
+      'data/events.json',
+      utf8.encode(JsonEncoder.withIndent('  ').convert(eventRecords)),
       usedPaths,
     );
 
@@ -1155,6 +1164,7 @@ class ZipExportService implements IZipExportService {
         'end': filterEndDate?.toIso8601String(),
       },
       'eventCount': events.length,
+      'eventRecordCount': eventRecords.length,
       'attachmentCount': includedAttachmentCount,
       'eventIds': eventIds,
       'includedAttachmentFileNames': includedAttachmentFileNames,

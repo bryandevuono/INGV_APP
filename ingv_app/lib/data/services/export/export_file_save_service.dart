@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:file_saver/file_saver.dart';
+import 'package:file_picker/file_picker.dart';
 
 abstract class IExportFileSaveService {
   Future<String> savePdf(Uint8List bytes, String fileName);
@@ -10,22 +10,28 @@ abstract class IExportFileSaveService {
 
 class FileSaverExportFileSaveService implements IExportFileSaveService {
   @override
-  Future<String> savePdf(Uint8List bytes, String fileName) {
-    return FileSaver.instance.saveFile(
-      name: fileName,
+  Future<String> savePdf(Uint8List bytes, String fileName) async {
+    final savePath = await FilePicker.saveFile(
+      dialogTitle: 'Save PDF export',
+      fileName: '$fileName.pdf',
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
       bytes: bytes,
-      fileExtension: 'pdf',
-      mimeType: MimeType.pdf,
     );
+
+    return savePath ?? '';
   }
 
   @override
-  Future<String> saveZip(Uint8List bytes, String fileName) {
-    return FileSaver.instance.saveFile(
-      name: fileName,
+  Future<String> saveZip(Uint8List bytes, String fileName) async {
+    final savePath = await FilePicker.saveFile(
+      dialogTitle: 'Save ZIP export',
+      fileName: '$fileName.zip',
+      type: FileType.custom,
+      allowedExtensions: const ['zip'],
       bytes: bytes,
-      fileExtension: 'zip',
-      mimeType: MimeType.other,
     );
+
+    return savePath ?? '';
   }
 }

@@ -25,6 +25,34 @@ class EventModel {
     required this.groupId,
   });
 
+  EventModel copyWith({
+    int? eventId,
+    String? category,
+    DateTime? startDt,
+    DateTime? endDt,
+    String? author,
+    double? lat,
+    double? long,
+    String? title,
+    String? tag,
+    String? description,
+    String? groupId,
+  }) {
+    return EventModel(
+      eventId: eventId ?? this.eventId,
+      category: category ?? this.category,
+      startDt: startDt ?? this.startDt,
+      endDt: endDt ?? this.endDt,
+      author: author ?? this.author,
+      lat: lat ?? this.lat,
+      long: long ?? this.long,
+      title: title ?? this.title,
+      tag: tag ?? this.tag,
+      description: description ?? this.description,
+      groupId: groupId ?? this.groupId,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'event_id': eventId,
@@ -69,7 +97,7 @@ class EventModel {
       title: (map['title'] ?? '') as String,
       tag: (map['tag'] ?? '') as String,
       description: (map['description'] ?? '') as String,
-      groupId: map['group_id'] != null ? map['group_id'].toString() : null,
+      groupId: map['group_id']?.toString(),
     );
   }
 }

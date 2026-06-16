@@ -1,30 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:ingv_app/data/repositories/attachment_repository.dart';
+import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
+import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/timeline_presentation_models.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
+import 'package:ingv_app/data/services/event_detail_service.dart';
+import 'package:ingv_app/data/services/export_service.dart';
+import 'package:ingv_app/data/services/file_operations_service.dart';
+import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'timeline_interface.dart';
 
 class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   final IEventRepository _eventRepository;
+  final IEventDetailRepository _detailRepository;
+  final IAttachmentRepository _attachmentRepository;
+  final ILocalFileService _localFileService;
+  late final IPdfExportService _pdfExportService;
+  late final IZipExportService _zipExportService;
 
   // Internal State
   List<EventModel> _allEvents = [];
   List<EventModel> _filteredEvents = [];
-  List<String> _orderedCategories = [];
+  final List<String> _orderedCategories = [];
   final Set<String> _minimizedCategories = {};
-  
+
   String _selectedCategory = 'All';
   String _searchQuery = '';
   DateTime? _filterStartDate;
   DateTime? _filterEndDate;
-  
+
   bool _isExporting = false;
   String? _exportErrorMessage;
-  
+
   // Color configuration map (populated via getColors)
   Map<String, Color> _categoryColors = {};
 
-  TimelineViewModel(this._eventRepository) {
+  TimelineViewModel(this._eventRepository)
+    : _detailRepository = EventDetailRepository(EventDetailService()),
+      _attachmentRepository = LocalAttachmentRepository(),
+      _localFileService = LocalFileService() {
+    _pdfExportService = PdfExportService(
+      _detailRepository,
+      _attachmentRepository,
+      _localFileService,
+    );
+    _zipExportService = ZipExportService(
+      pdfExportService: _pdfExportService,
+      detailRepository: _detailRepository,
+      attachmentRepository: _attachmentRepository,
+      localFileService: _localFileService,
+    );
     // Initial setup sequence
     _init();
   }
@@ -40,7 +66,8 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   List<EventModel> get events => _filteredEvents;
 
   @override
-  List<String> get categories => _allEvents.map((e) => e.category.trim()).toSet().toList();
+  List<String> get categories =>
+      _allEvents.map((e) => e.category.trim()).toSet().toList();
 
   @override
   List<String> get orderedCategories => _orderedCategories;
@@ -82,8 +109,10 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
   @override
   List<TimelineTaskData> getTimelineTasksForCategory(String category) {
-    final laneEvents = _filteredEvents.where((e) => e.category.trim() == category).toList();
-    
+    final laneEvents = _filteredEvents
+        .where((e) => e.category.trim() == category)
+        .toList();
+
     return laneEvents.map((event) {
       final color = _categoryColors[event.category.trim()] ?? Colors.grey;
 
@@ -105,7 +134,8 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     try {
       // Fetching raw model data through the abstract repository link
       _allEvents = await _eventRepository.getAllEvents();
-      
+      await getColors();
+
       // Re-populate ordered categories if new ones are introduced
       final currentCategories = categories;
       for (var cat in currentCategories) {
@@ -126,22 +156,28 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   @override
   Future<void> applyFilters() async {
     _filteredEvents = _allEvents.where((event) {
-      if (_selectedCategory != 'All' && event.category.trim() != _selectedCategory) {
+      if (_selectedCategory != 'All' &&
+          event.category.trim() != _selectedCategory) {
         return false;
       }
 
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final matchesTitle = event.title.toLowerCase().contains(query);
-        final matchesDescription = event.description?.toLowerCase().contains(query) ?? false;
+        final matchesDescription = event.description.toLowerCase().contains(
+          query,
+        );
         if (!matchesTitle && !matchesDescription) return false;
       }
 
       // 3. Date Frame Filter Match
-      if (_filterStartDate != null && event.startDt.isBefore(_filterStartDate!)) {
+      if (_filterStartDate != null &&
+          event.startDt.isBefore(_filterStartDate!)) {
         return false;
       }
-      if (_filterEndDate != null && event.endDt != null && event.endDt!.isAfter(_filterEndDate!)) {
+      if (_filterEndDate != null &&
+          event.endDt != null &&
+          event.endDt!.isAfter(_filterEndDate!)) {
         return false;
       }
 
@@ -172,7 +208,8 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   }
 
   @override
-  bool isCategoryMinimized(String category) => _minimizedCategories.contains(category);
+  bool isCategoryMinimized(String category) =>
+      _minimizedCategories.contains(category);
 
   @override
   void setSearchQuery(String query) {
@@ -196,7 +233,10 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   @override
   Future<Map<String, DateTime>> getEventDateRange() async {
     if (_allEvents.isEmpty) {
-      return {'start': DateTime.now(), 'end': DateTime.now().add(const Duration(days: 2))};
+      return {
+        'start': DateTime.now(),
+        'end': DateTime.now().add(const Duration(days: 2)),
+      };
     }
     final start = minStart;
     final end = _allEvents
@@ -211,15 +251,122 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     await fetchEvents(); // Reload and re-filter array map downstream
   }
 
+  List<EventModel> _exportEventsForDateRange({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return _allEvents.where((event) {
+      if (_selectedCategory != 'All' &&
+          event.category.trim() != _selectedCategory) {
+        return false;
+      }
+
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final matchesTitle = event.title.toLowerCase().contains(query);
+        final matchesDescription = event.description.toLowerCase().contains(
+          query,
+        );
+        if (!matchesTitle && !matchesDescription) {
+          return false;
+        }
+      }
+
+      if (startDate != null && endDate != null) {
+        final eventEnd = event.endDt ?? event.startDt;
+        final overlapsRange =
+            event.startDt.isBefore(endDate.add(const Duration(days: 1))) &&
+            eventEnd.isAfter(startDate.subtract(const Duration(seconds: 1)));
+        if (!overlapsRange) {
+          return false;
+        }
+      } else if (startDate != null) {
+        final eventEnd = event.endDt ?? event.startDt;
+        if (eventEnd.isBefore(startDate.subtract(const Duration(seconds: 1)))) {
+          return false;
+        }
+      } else if (endDate != null) {
+        if (event.startDt.isAfter(endDate.add(const Duration(days: 1)))) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+  }
+
+  List<String> _orderedCategoriesForExport(List<EventModel> events) {
+    final categorySet = events.map((event) => event.category.trim()).toSet();
+    return _orderedCategories.where(categorySet.contains).toList();
+  }
+
+  Future<String?> _exportTimelinePdf({
+    required List<EventModel> events,
+    DateTime? filterStartDate,
+    DateTime? filterEndDate,
+  }) async {
+    _isExporting = true;
+    _exportErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _pdfExportService.exportTimelineReport(
+        events: events,
+        orderedCategories: _orderedCategoriesForExport(events),
+        filterStartDate: filterStartDate,
+        filterEndDate: filterEndDate,
+      );
+      return result.saveLocation;
+    } catch (error) {
+      _exportErrorMessage = 'Failed to export timeline report: $error';
+      return null;
+    } finally {
+      _isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> _exportTimelineZip({
+    required List<EventModel> events,
+    DateTime? filterStartDate,
+    DateTime? filterEndDate,
+  }) async {
+    _isExporting = true;
+    _exportErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _zipExportService.exportTimelineAsZip(
+        events: events,
+        orderedCategories: _orderedCategoriesForExport(events),
+        filterStartDate: filterStartDate,
+        filterEndDate: filterEndDate,
+      );
+      return result.saveLocation;
+    } catch (error) {
+      _exportErrorMessage = 'Failed to export timeline archive: $error';
+      return null;
+    } finally {
+      _isExporting = false;
+      notifyListeners();
+    }
+  }
+
   @override
   Future<void> getColors() async {
-    // Mimicking a layout color database configuration stream mapping
-    _categoryColors = {
-      'Work': Colors.blue,
-      'Personal': Colors.green,
-      'Urgent': Colors.red,
-      'Education': Colors.purple,
-    };
+    final categoryColors = await _eventRepository.getEventColors();
+    if (categoryColors.isEmpty) {
+      _categoryColors = {
+        'Work': Colors.blue,
+        'Personal': Colors.green,
+        'Urgent': Colors.red,
+        'Education': Colors.purple,
+      };
+    } else {
+      _categoryColors = {
+        for (final entry in categoryColors) entry.key: entry.value,
+      };
+    }
     notifyListeners();
   }
 
@@ -235,31 +382,35 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
   @override
   Future<String?> exportTimelineReport() async {
-    _isExporting = true;
-    _exportErrorMessage = null;
-    notifyListeners();
-
-    try {
-      await Future.delayed(const Duration(seconds: 2)); // Simulate generation
-      _isExporting = false;
-      notifyListeners();
-      return "reports/pdf/timeline_export_${DateTime.now().millisecondsSinceEpoch}.pdf";
-    } catch (e) {
-      _isExporting = false;
-      _exportErrorMessage = e.toString();
-      notifyListeners();
-      return null;
-    }
+    return _exportTimelinePdf(events: _filteredEvents);
   }
 
   @override
   Future<String?> exportTimelineAsZip() async {
-    _isExporting = true;
-    notifyListeners();
-    // Simulate compressed archive bundle building
-    await Future.delayed(const Duration(seconds: 1));
-    _isExporting = false;
-    notifyListeners();
-    return "exports/archives/bundle.zip";
+    return _exportTimelineZip(events: _filteredEvents);
+  }
+
+  @override
+  Future<String?> exportTimelineReportForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) {
+    return _exportTimelinePdf(
+      events: _exportEventsForDateRange(startDate: startDate, endDate: endDate),
+      filterStartDate: startDate,
+      filterEndDate: endDate,
+    );
+  }
+
+  @override
+  Future<String?> exportTimelineAsZipForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) {
+    return _exportTimelineZip(
+      events: _exportEventsForDateRange(startDate: startDate, endDate: endDate),
+      filterStartDate: startDate,
+      filterEndDate: endDate,
+    );
   }
 }

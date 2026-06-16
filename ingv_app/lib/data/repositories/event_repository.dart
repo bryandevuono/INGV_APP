@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 abstract interface class IEventRepository {
   Future<List<EventModel>> getAllEvents();
   Future<void> insertEvent(EventModel event);
+  Future<void> updateEvent(EventModel event);
   Future<Map<String, DateTime>> getEventDateRange();
   Future<List<String>> getEventCategories();
   Future<List<MapEntry<String, Color>>> getEventColors();
@@ -27,6 +28,11 @@ class EventRepository implements IEventRepository {
   }
 
   @override
+  Future<void> updateEvent(EventModel event) {
+    return storageService.updateEvent(event);
+  }
+
+  @override
   Future<Map<String, DateTime>> getEventDateRange() {
     return storageService.getEventDateRange();
   }
@@ -41,6 +47,7 @@ class EventRepository implements IEventRepository {
     return storageService.getEventCategoriesWithColors();
   }
 
+  @override
   Future<String?> getGroupOfEvent(int eventId) {
     return storageService.getGroupOfEvent(eventId);
   }

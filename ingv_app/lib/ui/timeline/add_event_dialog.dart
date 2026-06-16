@@ -5,12 +5,12 @@ import 'package:ingv_app/data/models/event_attachment.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
+import 'package:ingv_app/ui/timeline/view_models/timeline_view_model.dart';
 import 'package:ingv_app/data/models/group_model.dart';
-import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
 
 void showAddEventDialog(
   BuildContext context,
-  ITimelineViewModel viewModel,
+  TimelineViewModel viewModel,
   List<GroupModel> groupOptions,
 ) async {
   final titleController = TextEditingController();
