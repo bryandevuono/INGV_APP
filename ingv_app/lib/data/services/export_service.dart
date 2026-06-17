@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:ingv_app/data/models/event_attachment.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/event_note_model.dart';
-import 'package:ingv_app/ui/shared/widgets/note_interaction_store.dart';
+import 'package:ingv_app/data/models/note_reply_model.dart';
 import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/services/export/export_contracts.dart';
@@ -52,12 +52,19 @@ class PdfExportService implements IPdfExportService {
         await _attachmentRepository.getAttachmentsForEvent(
           event.eventId.toString(),
         );
+    final repliesByNoteId = <int, List<NoteReplyModel>>{};
+    for (final note in effectiveNotes) {
+      repliesByNoteId[note.noteId] = await _detailRepository.getRepliesByNoteId(
+        note.noteId,
+      );
+    }
 
     return _buildEventPdfBytes(
       event: event,
       groupName: groupName,
       notes: effectiveNotes,
       attachments: effectiveAttachments,
+      repliesByNoteId: repliesByNoteId,
     );
   }
 
@@ -74,9 +81,16 @@ class PdfExportService implements IPdfExportService {
         _detailRepository.getNotesByEventId(event.eventId),
         _attachmentRepository.getAttachmentsForEvent(event.eventId.toString()),
       ]);
+      final notes = notesList as List<EventNoteModel>;
+      final repliesByNoteId = <int, List<NoteReplyModel>>{};
+      for (final note in notes) {
+        repliesByNoteId[note.noteId] = await _detailRepository
+            .getRepliesByNoteId(note.noteId);
+      }
       details[event.eventId] = _TimelineEventDetail(
-        notes: notesList as List<EventNoteModel>,
+        notes: notes,
         attachments: attachmentsList as List<EventAttachment>,
+        repliesByNoteId: repliesByNoteId,
       );
     }
 
@@ -164,6 +178,7 @@ class PdfExportService implements IPdfExportService {
     String? groupName,
     required List<EventNoteModel> notes,
     required List<EventAttachment> attachments,
+    required Map<int, List<NoteReplyModel>> repliesByNoteId,
   }) async {
     final resolvedImages = await _resolveAttachments(
       attachments.where((attachment) => attachment.isPreviewable).toList(),
@@ -203,7 +218,7 @@ class PdfExportService implements IPdfExportService {
           pw.SizedBox(height: 16),
           _buildTextSection('Description', _fallback(event.description)),
           pw.SizedBox(height: 16),
-          _buildNotesSection(notes),
+          _buildNotesSection(notes, repliesByNoteId),
           pw.SizedBox(height: 16),
           _buildImageSection(resolvedImages),
           pw.SizedBox(height: 16),
@@ -490,9 +505,10 @@ class PdfExportService implements IPdfExportService {
     );
   }
 
-  pw.Widget _buildNotesSection(List<EventNoteModel> notes) {
-    final store = NoteInteractionStore.instance;
-
+  pw.Widget _buildNotesSection(
+    List<EventNoteModel> notes,
+    Map<int, List<NoteReplyModel>> repliesByNoteId,
+  ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -505,7 +521,7 @@ class PdfExportService implements IPdfExportService {
           )
         else
           ...notes.map((note) {
-            final replies = store.getReplies(note.noteId);
+            final replies = repliesByNoteId[note.noteId] ?? const [];
             return pw.Container(
               width: double.infinity,
               margin: const pw.EdgeInsets.only(bottom: 8),
@@ -898,7 +914,11 @@ class PdfExportService implements IPdfExportService {
           (event) => _buildTimelineEventCard(
             event,
             eventDetails[event.eventId] ??
-                const _TimelineEventDetail(notes: [], attachments: []),
+                const _TimelineEventDetail(
+                  notes: [],
+                  attachments: [],
+                  repliesByNoteId: {},
+                ),
           ),
         ),
       );
@@ -921,10 +941,9 @@ class PdfExportService implements IPdfExportService {
     final fileCount = detail.attachments
         .where((attachment) => attachment.isFile)
         .length;
-    final store = NoteInteractionStore.instance;
     final allReplyTexts = <String>{};
     for (final note in detail.notes.take(3)) {
-      for (final reply in store.getReplies(note.noteId)) {
+      for (final reply in detail.repliesByNoteId[note.noteId] ?? const []) {
         final t = reply.text.trim();
         if (t.isNotEmpty) allReplyTexts.add('↳ $t');
       }
@@ -1397,6 +1416,11 @@ class _ResolvedAttachment {
 class _TimelineEventDetail {
   final List<EventNoteModel> notes;
   final List<EventAttachment> attachments;
+  final Map<int, List<NoteReplyModel>> repliesByNoteId;
 
-  const _TimelineEventDetail({required this.notes, required this.attachments});
+  const _TimelineEventDetail({
+    required this.notes,
+    required this.attachments,
+    required this.repliesByNoteId,
+  });
 }

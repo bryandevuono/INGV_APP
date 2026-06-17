@@ -2,6 +2,7 @@ import '../models/event_model.dart';
 import '../models/event_note_model.dart';
 import '../models/event_media_model.dart';
 import '../models/event_attachment_model.dart';
+import '../models/note_reply_model.dart';
 import 'event_detail_service_interface.dart';
 
 class EventDetailService implements IEventDetailService {
@@ -147,6 +148,7 @@ class EventDetailService implements IEventDetailService {
     for (var notes in _mockNotes.values) {
       notes.removeWhere((n) => n.noteId == noteId);
     }
+    _mockReplies.removeWhere((reply) => reply.noteId == noteId);
   }
 
   @override
@@ -162,5 +164,42 @@ class EventDetailService implements IEventDetailService {
   ) async {
     _mockAttachments.putIfAbsent(eventId, () => []);
     _mockAttachments[eventId]!.add(attachment);
+  }
+
+  // -- Note reply CRUD --
+
+  final List<NoteReplyModel> _mockReplies = [];
+  int _nextReplyId = 1;
+
+  @override
+  Future<List<NoteReplyModel>> getRepliesByNoteId(int noteId) async {
+    return _mockReplies.where((r) => r.noteId == noteId).toList();
+  }
+
+  @override
+  Future<void> addReply(NoteReplyModel reply) async {
+    _mockReplies.add(reply);
+  }
+
+  @override
+  Future<void> deleteReply(int replyId) async {
+    _mockReplies.removeWhere((r) => r.id == replyId);
+  }
+
+  /// Helper: create and save a new reply with an auto-assigned id.
+  Future<NoteReplyModel> createReply({
+    required int noteId,
+    required String author,
+    required String text,
+  }) async {
+    final reply = NoteReplyModel(
+      id: _nextReplyId++,
+      noteId: noteId,
+      author: author,
+      text: text,
+      timestamp: DateTime.now(),
+    );
+    await addReply(reply);
+    return reply;
   }
 }
