@@ -4,11 +4,13 @@ import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
 class ResizableHybridView extends StatefulWidget {
   final Widget topWidget;
   final Widget bottomWidget;
+  final HybridViewModel? viewModel;
 
   const ResizableHybridView({
     super.key,
     required this.topWidget,
     required this.bottomWidget,
+    this.viewModel,
   });
 
   @override
@@ -16,36 +18,37 @@ class ResizableHybridView extends StatefulWidget {
 }
 
 class _ResizableHybridViewState extends State<ResizableHybridView> {
-  late HybridViewModel viewModel;
+  late final HybridViewModel _effectiveViewModel;
 
   @override
   void initState() {
     super.initState();
-    viewModel = HybridViewModel();
+    // Use the passed instance, or safely fallback to a local one
+    _effectiveViewModel = widget.viewModel ?? HybridViewModel();
   }
 
   @override
   void dispose() {
-    viewModel.dispose();
+    // Only dispose if we created it locally to prevent breaking parent scopes
+    if (widget.viewModel == null) {
+      _effectiveViewModel.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: viewModel,
+      listenable: _effectiveViewModel, // No more null-assertion issues
       builder: (context, child) {
         return LayoutBuilder(
           builder: (context, constraints) {
             final totalHeight = constraints.maxHeight;
-
             const double dividerHeight = 12.0;
-
             final availableHeight = totalHeight - dividerHeight;
 
-            final topHeight = availableHeight * viewModel.topHeightRatio;
-            final bottomHeight =
-                availableHeight * (1 - viewModel.topHeightRatio);
+            final topHeight = availableHeight * _effectiveViewModel.topHeightRatio;
+            final bottomHeight = availableHeight * (1 - _effectiveViewModel.topHeightRatio);
 
             return Column(
               children: [
@@ -61,7 +64,7 @@ class _ResizableHybridViewState extends State<ResizableHybridView> {
                 GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onVerticalDragUpdate: (details) {
-                    viewModel.changeRatio(details.delta.dy, availableHeight);
+                    _effectiveViewModel.changeRatio(details.delta.dy, availableHeight);
                   },
                   child: Container(
                     color: Colors.grey[300],
@@ -80,11 +83,13 @@ class _ResizableHybridViewState extends State<ResizableHybridView> {
                   ),
                 ),
 
-                // Bottom 
+                // Bottom Component
                 SizedBox(
                   height: bottomHeight,
                   width: double.infinity,
-                  child: ClipRect(child: widget.bottomWidget),
+                  child: ClipRect(
+                    child: widget.bottomWidget,
+                  ),
                 ),
               ],
             );

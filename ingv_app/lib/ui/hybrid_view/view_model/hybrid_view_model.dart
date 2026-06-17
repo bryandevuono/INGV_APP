@@ -11,4 +11,9 @@ class HybridViewModel extends ChangeNotifier {
     _topHeightRatio = newRatio.clamp(_minSizeRatio, 1.0 - _minSizeRatio);
     notifyListeners(); 
   }
+
+  void updateRatio(double explicitRatio) {
+    _topHeightRatio = explicitRatio.clamp(_minSizeRatio, 1.0 - _minSizeRatio);
+    notifyListeners();
+  }
 }

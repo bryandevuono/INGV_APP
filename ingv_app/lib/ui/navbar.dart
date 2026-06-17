@@ -14,6 +14,7 @@ import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
 import 'package:ingv_app/ui/timeline/view_models/timeline_view_model.dart';
 import 'package:ingv_app/ui/timeline/widgets/add_event_dialog.dart';
 import 'package:ingv_app/ui/timeline/widgets/timeline.dart';
+import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
 
 class TopNavigationBar extends StatefulWidget {
   final Widget mapScreen;
@@ -29,7 +30,7 @@ class TopNavigationBar extends StatefulWidget {
     super.key,
     required this.mapScreen,
     required this.eventRepository,
-    required this.searchRepository, 
+    required this.searchRepository,
     required this.detailRepository,
     required this.attachmentRepository,
     required this.localFileService,
@@ -44,12 +45,15 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   late final EventFilterController _hybridFilterController;
   late final TimelineViewModel _hybridTimelineViewModel;
   late final EventDetailViewModel _hybridDetailViewModel;
+  late final HybridViewModel _hybridViewModel; // 1. Add this variable
 
   @override
   void initState() {
     super.initState();
     _hybridFilterController = EventFilterController();
-    _hybridTimelineViewModel = TimelineViewModel(widget.eventRepository, 
+    _hybridViewModel = HybridViewModel();
+    _hybridTimelineViewModel = TimelineViewModel(
+      widget.eventRepository,
       widget.searchRepository,
     );
     _hybridDetailViewModel = EventDetailViewModel(
@@ -64,6 +68,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   @override
   void dispose() {
     _hybridFilterController.dispose();
+    _hybridViewModel.dispose(); // 3. Dispose it here
     _hybridTimelineViewModel.dispose();
     _hybridDetailViewModel.dispose();
     super.dispose();
@@ -279,18 +284,35 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                   ),
                   Expanded(
                     child: ResizableHybridView(
+                      viewModel:
+                          _hybridViewModel, // 1. Pass down your instantiated view model
                       topWidget: MapScreen(
                         eventRepository: widget.eventRepository,
                         eventSearchRepository: mapScreen.eventSearchRepository,
                         mapService: mapScreen.mapService,
                         showControlBar: false,
                         sharedFilterController: _hybridFilterController,
+                        onPanelToggle: (isPanelOpen) {
+                          if (isPanelOpen) {
+                            // responsiveness when pressing an event
+                            _hybridViewModel.updateRatio(0.85);
+                          } else {
+                            _hybridViewModel.updateRatio(0.50);
+                          }
+                        },
                       ),
                       bottomWidget: TimelineScreen(
                         viewModel: _hybridTimelineViewModel,
                         detailViewModel: _hybridDetailViewModel,
                         showControlBar: false,
                         sharedFilterController: _hybridFilterController,
+                        onPanelToggle: (isPanelOpen) {
+                          if (isPanelOpen) {
+                            _hybridViewModel.updateRatio(0.15);
+                          } else {
+                            _hybridViewModel.updateRatio(0.50);
+                          }
+                        },
                       ),
                     ),
                   ),
@@ -298,7 +320,8 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
               ),
             ),
             TimelineScreen(
-              viewModel: TimelineViewModel(widget.eventRepository, 
+              viewModel: TimelineViewModel(
+                widget.eventRepository,
                 widget.searchRepository,
               ),
               detailViewModel: EventDetailViewModel(
