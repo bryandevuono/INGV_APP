@@ -21,8 +21,10 @@ class MapScreen extends StatefulWidget {
   final bool showControlBar;
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
+  final ValueChanged<bool>? onPanelToggle; 
 
-  IEventSearchRepository get exposedEventSearchRepository => eventSearchRepository;
+  IEventSearchRepository get exposedEventSearchRepository =>
+      eventSearchRepository;
   IMapService get exposedMapService => mapService;
 
   const MapScreen({
@@ -33,6 +35,7 @@ class MapScreen extends StatefulWidget {
     this.showControlBar = true,
     this.sharedFilterController,
     this.onAddEvent,
+    this.onPanelToggle,
   });
 
   @override
@@ -52,13 +55,13 @@ class _MapScreenState extends State<MapScreen> {
     final detailRepository = EventDetailRepository(EventDetailService());
     final attachmentRepository = LocalAttachmentRepository();
     final localFileService = LocalFileService();
-    
+
     final pdfExportService = PdfExportService(
       detailRepository,
       attachmentRepository,
       localFileService,
     );
-    
+
     final zipExportService = ZipExportService(
       pdfExportService: pdfExportService,
       detailRepository: detailRepository,
@@ -101,7 +104,8 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
-      initialDateRange: _viewModel.filterStartDate != null && _viewModel.filterEndDate != null
+      initialDateRange:
+          _viewModel.filterStartDate != null && _viewModel.filterEndDate != null
           ? DateTimeRange(
               start: _viewModel.filterStartDate!,
               end: _viewModel.filterEndDate!,
@@ -127,7 +131,8 @@ class _MapScreenState extends State<MapScreen> {
         content: Text(
           exportPath?.isNotEmpty == true
               ? 'Map export saved: $exportPath'
-              : (_viewModel.exportErrorMessage ?? 'Failed to export map events.'),
+              : (_viewModel.exportErrorMessage ??
+                    'Failed to export map events.'),
         ),
       ),
     );
@@ -155,12 +160,14 @@ class _MapScreenState extends State<MapScreen> {
         _selectedEvent = null;
       });
       _detailViewModel.clearEventDetails();
+      widget.onPanelToggle?.call(false); // Panel closed expand timeline
       return;
     }
 
     setState(() {
       _selectedEvent = event;
     });
+    widget.onPanelToggle?.call(true); // Panel opened shrink timeline
     await _detailViewModel.loadEventDetails(event);
   }
 
@@ -175,7 +182,10 @@ class _MapScreenState extends State<MapScreen> {
           title: event.title,
           startDateTime: event.startDt,
           endDateTime: event.endDt,
-          progress: _viewModel.calculateMarkerDuration(event.startDt, event.endDt),
+          progress: _viewModel.calculateMarkerDuration(
+            event.startDt,
+            event.endDt,
+          ),
           onTap: () => _toggleEventDetails(event),
           categoryColor: _viewModel.getCategoryColor(event.category),
           fillColor: _viewModel.getCategoryColor(event.category),
@@ -187,12 +197,19 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: Listenable.merge(
-        _filterController == null ? [_viewModel] : [_viewModel, _filterController!],
+        _filterController == null
+            ? [_viewModel]
+            : [_viewModel, _filterController!],
       ),
       builder: (context, _) {
         _syncFromSharedFilters();
+
+        // Determine if the panel should be visible
+        final isPanelOpen = _selectedEvent != null;
+
         return Stack(
           children: [
+            // 1. Your Main Map & Controls Column
             Column(
               children: [
                 if (widget.showControlBar)
@@ -250,22 +267,37 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ],
             ),
-            if (_selectedEvent != null)
-              EventDetailPanel(
-                viewModel: _detailViewModel,
-                onEventUpdated: (updatedEvent) async {
-                  setState(() {
-                    _selectedEvent = updatedEvent;
-                  });
-                  await _loadEvents();
-                },
-                onDismiss: () {
-                  setState(() {
-                    _selectedEvent = null;
-                  });
-                  _detailViewModel.clearEventDetails();
-                },
+
+            // 2. Animated Slide-Up Detail Panel
+            AnimatedSlide(
+              // Offset(0, 0) means normal position, Offset(0, 1) slides it 100% downward off-screen
+              offset: isPanelOpen ? Offset.zero : const Offset(0, 1),
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.fastOutSlowIn, // Smooth, modern easing curve
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: isPanelOpen
+                    ? EventDetailPanel(
+                        viewModel: _detailViewModel,
+                        onEventUpdated: (updatedEvent) async {
+                          setState(() {
+                            _selectedEvent = updatedEvent;
+                          });
+                          await _loadEvents();
+                        },
+                        onDismiss: () {
+                          setState(() {
+                            _selectedEvent = null;
+                          });
+                          _detailViewModel.clearEventDetails();
+                          widget.onPanelToggle?.call(
+                            false,
+                          ); // Panel closed expand timeline again
+                        },
+                      )
+                    : const SizedBox.shrink(), // Keeps an empty placeholder when hidden
               ),
+            ),
           ],
         );
       },

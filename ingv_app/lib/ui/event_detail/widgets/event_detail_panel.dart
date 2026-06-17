@@ -38,9 +38,9 @@ class _EventDetailPanelState extends State<EventDetailPanel>
       vsync: this,
     );
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-        );
+        Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
     _animationController.forward();
   }
 
@@ -52,13 +52,12 @@ class _EventDetailPanelState extends State<EventDetailPanel>
 
   void _handleDragUpdate(DragUpdateDetails details) {
     setState(() {
-      _dragOffset += details.delta.dy;
+      _dragOffset = (_dragOffset + details.delta.dy).clamp(0.0, double.infinity);
     });
   }
 
   void _handleDragEnd(DragEndDetails details) {
-    // If dragged up more than 100 pixels, dismiss
-    if (_dragOffset < -100 || details.velocity.pixelsPerSecond.dy < -500) {
+    if (_dragOffset > 100 || details.velocity.pixelsPerSecond.dy > 500) {
       _animationController.reverse().then((_) {
         widget.onDismiss();
       });
@@ -71,9 +70,7 @@ class _EventDetailPanelState extends State<EventDetailPanel>
 
   Future<void> _openEditDialog(BuildContext context) async {
     final selectedEvent = widget.viewModel.selectedEvent;
-    if (selectedEvent == null) {
-      return;
-    }
+    if (selectedEvent == null) return;
 
     final updatedEvent = await showEditEventDialog(
       context,
@@ -82,9 +79,7 @@ class _EventDetailPanelState extends State<EventDetailPanel>
       groupOptions: widget.groupOptions,
     );
 
-    if (!context.mounted || updatedEvent == null) {
-      return;
-    }
+    if (!context.mounted || updatedEvent == null) return;
 
     await widget.viewModel.updateSelectedEvent(updatedEvent);
     if (widget.onEventUpdated != null) {
@@ -95,7 +90,7 @@ class _EventDetailPanelState extends State<EventDetailPanel>
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final panelHeight = screenHeight * 0.65; // Cover 65% of screen
+    final panelHeight = screenHeight * 0.65; 
 
     return SlideTransition(
       position: _slideAnimation,
@@ -108,14 +103,15 @@ class _EventDetailPanelState extends State<EventDetailPanel>
             height: panelHeight,
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
-                  offset: const Offset(0, 4),
+                  offset: const Offset(0, -4), 
                 ),
               ],
             ),
@@ -128,7 +124,7 @@ class _EventDetailPanelState extends State<EventDetailPanel>
                     });
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
                     child: Container(
                       width: 40,
                       height: 4,

@@ -1,6 +1,7 @@
 import '../models/event_note_model.dart';
 import '../models/event_media_model.dart';
 import '../models/event_attachment_model.dart';
+import '../models/note_reply_model.dart';
 import '../services/event_detail_service_interface.dart';
 
 abstract interface class IEventDetailRepository {
@@ -11,6 +12,9 @@ abstract interface class IEventDetailRepository {
   Future<void> deleteNote(int noteId);
   Future<void> addMedia(int eventId, EventMediaModel media);
   Future<void> addAttachment(int eventId, EventAttachmentModel attachment);
+  Future<List<NoteReplyModel>> getRepliesByNoteId(int noteId);
+  Future<void> addReply(NoteReplyModel reply);
+  Future<void> deleteReply(int replyId);
 }
 
 class EventDetailRepository implements IEventDetailRepository {
@@ -51,5 +55,20 @@ class EventDetailRepository implements IEventDetailRepository {
   @override
   Future<void> addAttachment(int eventId, EventAttachmentModel attachment) {
     return _detailService.addAttachment(eventId, attachment);
+  }
+
+  @override
+  Future<List<NoteReplyModel>> getRepliesByNoteId(int noteId) {
+    return _detailService.getRepliesByNoteId(noteId);
+  }
+
+  @override
+  Future<void> addReply(NoteReplyModel reply) {
+    return _detailService.addReply(reply);
+  }
+
+  @override
+  Future<void> deleteReply(int replyId) {
+    return _detailService.deleteReply(replyId);
   }
 }

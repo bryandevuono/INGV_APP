@@ -4,12 +4,13 @@ import 'package:ingv_app/data/models/attachment_type.dart';
 import 'package:ingv_app/data/models/event_attachment.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/event_note_model.dart';
+import 'package:ingv_app/data/models/note_reply_model.dart';
 import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
+import 'package:ingv_app/data/repositories/event_repository.dart';
+import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'package:ingv_app/data/services/export_service.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
-import 'package:ingv_app/data/services/file_operations_interface.dart';
-import 'package:ingv_app/data/repositories/event_repository.dart';
 
 class EventDetailViewModel extends ChangeNotifier {
   final IEventDetailRepository _detailRepository;
@@ -23,6 +24,7 @@ class EventDetailViewModel extends ChangeNotifier {
 
   EventModel? selectedEvent;
   List<EventNoteModel> notes = [];
+  List<NoteReplyModel> replies = [];
   List<EventAttachment> attachments = [];
   EventAttachment? selectedAttachment;
   String? groupName;
@@ -78,10 +80,14 @@ class EventDetailViewModel extends ChangeNotifier {
 
       notes = notesList as List<EventNoteModel>;
       attachments = attachmentsList as List<EventAttachment>;
+
+      // Load replies for all notes
+      await loadRepliesForCurrentNotes();
     } catch (e) {
       errorMessage = 'Failed to load event details.';
       notes = [];
       attachments = [];
+      replies = [];
     } finally {
       isLoading = false;
       notifyListeners();
@@ -114,9 +120,55 @@ class EventDetailViewModel extends ChangeNotifier {
   }
 
   Future<void> deleteNote(int noteId) async {
+    final noteReplies = replies
+        .where((reply) => reply.noteId == noteId)
+        .toList();
+    for (final reply in noteReplies) {
+      await _detailRepository.deleteReply(reply.id);
+    }
+
     await _detailRepository.deleteNote(noteId);
     notes.removeWhere((n) => n.noteId == noteId);
+    replies.removeWhere((reply) => reply.noteId == noteId);
     notifyListeners();
+  }
+
+  /// Load all replies for every note currently in the notes list.
+  Future<void> loadRepliesForCurrentNotes() async {
+    replies = [];
+    try {
+      for (final note in notes) {
+        final noteReplies = await _detailRepository.getRepliesByNoteId(
+          note.noteId,
+        );
+        replies.addAll(noteReplies);
+      }
+    } catch (_) {
+      replies = [];
+    }
+  }
+
+  /// Add a reply to a given note.
+  Future<void> addReply({
+    required int noteId,
+    required String author,
+    required String text,
+  }) async {
+    final reply = NoteReplyModel(
+      id: DateTime.now().microsecondsSinceEpoch,
+      noteId: noteId,
+      author: author,
+      text: text,
+      timestamp: DateTime.now(),
+    );
+    await _detailRepository.addReply(reply);
+    replies.add(reply);
+    notifyListeners();
+  }
+
+  /// Get all replies for a specific note.
+  List<NoteReplyModel> getRepliesForNote(int noteId) {
+    return replies.where((r) => r.noteId == noteId).toList();
   }
 
   Future<void> deleteAttachment(EventAttachment attachment) async {

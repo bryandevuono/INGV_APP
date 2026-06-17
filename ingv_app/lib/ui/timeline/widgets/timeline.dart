@@ -16,6 +16,8 @@ class TimelineScreen extends StatefulWidget {
   final bool showControlBar;
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
+  final ValueChanged<bool>?
+  onPanelToggle; // for resizing hybrid view when event details panel opens/closes
 
   const TimelineScreen({
     super.key,
@@ -24,6 +26,7 @@ class TimelineScreen extends StatefulWidget {
     this.showControlBar = true,
     this.sharedFilterController,
     this.onAddEvent,
+    this.onPanelToggle,
   });
 
   @override
@@ -49,7 +52,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   void dispose() {
     super.dispose();
   }
-  
+
   Future<void> _refreshInitialData() async {
     await widget.viewModel.getColors();
     await widget.viewModel.fetchEvents();
@@ -174,10 +177,13 @@ class _TimelineScreenState extends State<TimelineScreen> {
     if (_selectedEvent != null && _selectedEvent!.eventId == event.eventId) {
       setState(() => _selectedEvent = null);
       widget.detailViewModel.clearEventDetails();
+      widget.onPanelToggle?.call(false);
       return;
     }
 
     setState(() => _selectedEvent = event);
+    // callback for hybrid responsiveness
+    widget.onPanelToggle?.call(true);
     await widget.detailViewModel.loadEventDetails(event);
   }
 
@@ -236,6 +242,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 onDismiss: () {
                   setState(() => _selectedEvent = null);
                   widget.detailViewModel.clearEventDetails();
+                  widget.onPanelToggle?.call(
+                    false,
+                  ); 
                 },
               ),
           ],
@@ -248,7 +257,12 @@ class _TimelineScreenState extends State<TimelineScreen> {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 18, left: 16, right: 16),
+        padding: const EdgeInsets.only(
+          top: 12,
+          bottom: 18,
+          left: 16,
+          right: 16,
+        ),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1400),
@@ -268,7 +282,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: EventFilterActionBar(
-                    categories: {'All', ...widget.viewModel.categories}.toList(),
+                    categories: {
+                      'All',
+                      ...widget.viewModel.categories,
+                    }.toList(),
                     selectedCategory: widget.viewModel.selectedCategory,
                     searchQuery: widget.viewModel.searchQuery,
                     startDate: widget.viewModel.filterStartDate,
@@ -294,17 +311,22 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       widget.viewModel.setSearchQuery(query);
                       _filterController?.setSearchQuery(query);
                     },
-                    onExportPdf: () =>
-                        _showExportResult(widget.viewModel.exportTimelineReport),
+                    onExportPdf: () => _showExportResult(
+                      widget.viewModel.exportTimelineReport,
+                    ),
                     onExportZip: () =>
                         _showExportResult(widget.viewModel.exportTimelineAsZip),
                     onExportDateRangePdf: _exportDateRangePdf,
                     onExportDateRangeZip: _exportDateRangeZip,
-                    onAddEvent: widget.onAddEvent ??
-                        () => showAddEventDialog(context, widget.viewModel, const []),
+                    onAddEvent:
+                        widget.onAddEvent ??
+                        () => showAddEventDialog(
+                          context,
+                          widget.viewModel,
+                          const [],
+                        ),
                   ),
                 ),
-                
               ],
             ),
           ),
@@ -336,23 +358,25 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const double leftHeaderWidth = 160.0;
 
     final DateTime rangeStart =
-        widget.viewModel.filterStartDate ?? _clientBaselineStart; 
+        widget.viewModel.filterStartDate ?? _clientBaselineStart;
     final DateTime rangeEnd =
-        widget.viewModel.filterEndDate ?? rangeStart.add(const Duration(days: 7));
+        widget.viewModel.filterEndDate ??
+        rangeStart.add(const Duration(days: 7));
 
     final DateTime totalStart = rangeStart.subtract(const Duration(days: 2));
     final DateTime totalEnd = rangeEnd.add(const Duration(days: 2));
 
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
-      onReorder: (old, current) => widget.viewModel.reorderCategories(old, current),
+      onReorder: (old, current) =>
+          widget.viewModel.reorderCategories(old, current),
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       itemCount: lanes.length,
       itemBuilder: (context, index) {
         final lane = lanes[index];
         final isFirstRow = index == 0;
         final isMinimized = widget.viewModel.isCategoryMinimized(lane.id);
-        
+
         final double definedRowHeight = isMinimized
             ? minimizedRowHeight
             : expandedRowHeight;
@@ -398,11 +422,13 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
               if (endA == null || endB == null) continue;
 
-              final bool overlapsInTime = taskA.start.isBefore(endB) && taskB.start.isBefore(endA);
+              final bool overlapsInTime =
+                  taskA.start.isBefore(endB) && taskB.start.isBefore(endA);
 
               if (overlapsInTime) {
-                // Verify the collision happens 
-                if (taskA.start.isAfter(totalStart) && taskA.start.isBefore(totalEnd)) {
+                // Verify the collision happens
+                if (taskA.start.isAfter(totalStart) &&
+                    taskA.start.isBefore(totalEnd)) {
                   showVerticalScrollIndicators = true;
                   break;
                 }
@@ -434,7 +460,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   },
                 ),
               ),
-              
+
               // overlay arrow
               if (showVerticalScrollIndicators) ...[
                 // Down Arrow
@@ -444,7 +470,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   child: IgnorePointer(
                     child: Container(
                       padding: const EdgeInsets.all(2),
-                      child: const Icon(Icons.keyboard_arrow_down, color: Colors.blueAccent, size: 20),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.blueAccent,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
@@ -457,7 +487,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
           chartSection = ClipRect(
             child: SizedBox(
               width: totalCanvasWidth,
-              height: visibleViewportHeight, 
+              height: visibleViewportHeight,
               child: OverflowBox(
                 minHeight: fullWidgetHeight,
                 maxHeight: fullWidgetHeight,
@@ -522,7 +552,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
           key: ValueKey('row_wrapper_${lane.id}'),
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start, 
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 leftHeader,
                 Expanded(

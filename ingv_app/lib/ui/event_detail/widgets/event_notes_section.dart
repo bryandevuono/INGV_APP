@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/add_note_dialog.dart';
+import 'package:ingv_app/ui/shared/widgets/note_interaction_widget.dart';
 
 class EventNotesSection extends StatelessWidget {
   final EventDetailViewModel viewModel;
@@ -12,6 +13,52 @@ class EventNotesSection extends StatelessWidget {
     required this.viewModel,
     this.groupOptions = const [],
   });
+
+  Future<void> _showReplyDialog(BuildContext context, int noteId) async {
+    final replyController = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Reply to note'),
+          content: TextField(
+            controller: replyController,
+            autofocus: true,
+            maxLines: 4,
+            minLines: 2,
+            decoration: const InputDecoration(hintText: 'Write a reply...'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final text = replyController.text.trim();
+                if (text.isEmpty) {
+                  return;
+                }
+
+                await viewModel.addReply(
+                  noteId: noteId,
+                  author: 'Local User',
+                  text: text,
+                );
+                if (context.mounted) {
+                  Navigator.of(dialogContext).pop();
+                }
+              },
+              child: const Text('Send'),
+            ),
+          ],
+        );
+      },
+    );
+
+    replyController.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +179,14 @@ class EventNotesSection extends StatelessWidget {
                                     },
                                   ),
                                 ],
+                              ),
+                              const SizedBox(height: 6),
+                              NoteInteractionWidget(
+                                replies: viewModel.getRepliesForNote(
+                                  note.noteId,
+                                ),
+                                onReplyTapped: () =>
+                                    _showReplyDialog(context, note.noteId),
                               ),
                             ],
                           ),
