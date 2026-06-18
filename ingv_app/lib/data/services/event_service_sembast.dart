@@ -155,7 +155,14 @@ class EventServiceSembast implements IEventService {
 
   @override
   Future<List<String>> getEventCategories() async {
-    List<String> categories = ['Volcanic', 'Earthquake', 'Hydrological', 'Meteorological', 'Geological', 'Atmospheric'];    
+    List<String> categories = [
+      'Volcanic',
+      'Earthquake',
+      'Hydrological',
+      'Meteorological',
+      'Geological',
+      'Atmospheric',
+    ];
     return categories;
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class Search extends StatelessWidget {
   final dynamic viewModel;
-  
+
   const Search({super.key, required this.viewModel});
 
   @override

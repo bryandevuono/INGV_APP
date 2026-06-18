@@ -15,12 +15,13 @@ class EventSearchService implements IEventSearchService {
     DateTime? endDate,
   }) async {
     final allEvents = await _eventService.getAllEvents();
-    
+
     return allEvents.where((event) {
       bool matchesKeyword = true;
       if (keyword != null && keyword.isNotEmpty) {
         final lowerKeyword = keyword.toLowerCase();
-        matchesKeyword = event.title.toLowerCase().contains(lowerKeyword) ||
+        matchesKeyword =
+            event.title.toLowerCase().contains(lowerKeyword) ||
             event.description.toLowerCase().contains(lowerKeyword) ||
             event.tag.toLowerCase().contains(lowerKeyword) ||
             event.author.toLowerCase().contains(lowerKeyword);
@@ -34,13 +35,18 @@ class EventSearchService implements IEventSearchService {
       bool matchesTime = true;
       if (startDate != null && endDate != null) {
         final eventEnd = event.endDt ?? event.startDt;
-        matchesTime = event.startDt.isBefore(endDate.add(const Duration(days: 1))) && 
-                      eventEnd.isAfter(startDate.subtract(const Duration(seconds: 1)));
+        matchesTime =
+            event.startDt.isBefore(endDate.add(const Duration(days: 1))) &&
+            eventEnd.isAfter(startDate.subtract(const Duration(seconds: 1)));
       } else if (startDate != null) {
         final eventEnd = event.endDt ?? event.startDt;
-        matchesTime = eventEnd.isAfter(startDate.subtract(const Duration(seconds: 1)));
+        matchesTime = eventEnd.isAfter(
+          startDate.subtract(const Duration(seconds: 1)),
+        );
       } else if (endDate != null) {
-        matchesTime = event.startDt.isBefore(endDate.add(const Duration(days: 1)));
+        matchesTime = event.startDt.isBefore(
+          endDate.add(const Duration(days: 1)),
+        );
       }
 
       return matchesKeyword && matchesCategory && matchesTime;

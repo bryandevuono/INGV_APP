@@ -2,7 +2,7 @@ class TextBlock {
   final String id;
   final String title;
   final String content;
-  bool isSelected; 
+  bool isSelected;
 
   TextBlock({
     required this.id,

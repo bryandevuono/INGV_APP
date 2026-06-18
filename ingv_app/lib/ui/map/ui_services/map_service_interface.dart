@@ -11,7 +11,7 @@ class AppMarker {
   final DateTime? startDateTime;
   final DateTime? endDateTime;
   final VoidCallback onTap;
-  
+
   final Color categoryColor;
   final Color tagColor;
   final Color fillColor;
@@ -28,7 +28,7 @@ class AppMarker {
     required this.endDateTime,
     this.progress = 0.5,
     required this.onTap,
-    this.categoryColor = const Color(0xFFFFE082), 
+    this.categoryColor = const Color(0xFFFFE082),
     this.tagColor = Colors.red,
     this.fillColor = const Color(0xFF39D353),
     this.ringColor = Colors.deepPurple,
@@ -44,7 +44,7 @@ abstract class IMapService {
     required List<AppMarker> markers,
     required MapScreenViewModel mapViewModel,
   });
-  
+
   Widget buildPreviewMap({
     required double latitude,
     required double longitude,

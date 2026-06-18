@@ -7,7 +7,7 @@ class GroupModel {
   final String image;
   final List<String> members;
 
-GroupModel({
+  GroupModel({
     required this.id,
     required this.name,
     required this.description,

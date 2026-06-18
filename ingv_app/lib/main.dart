@@ -14,6 +14,7 @@ import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service.dart';
 
 import 'package:ingv_app/ui/file_history/widgets/file_history_editor.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
@@ -29,8 +30,8 @@ class MyApp extends StatelessWidget {
     final storageService = EventServiceSembast();
     final eventRepository = EventRepository(storageService);
 
-    final detailRepository = EventDetailRepository(EventDetailService()); 
-    final attachmentRepository = LocalAttachmentRepository(); 
+    final detailRepository = EventDetailRepository(EventDetailService());
+    final attachmentRepository = LocalAttachmentRepository();
     final localFileService = LocalFileService();
     final fileOpenService = FileOpenService();
 

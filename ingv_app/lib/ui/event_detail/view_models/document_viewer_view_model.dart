@@ -19,7 +19,7 @@ class DocumentViewerViewModel extends ChangeNotifier {
     filePath = newPath;
     notifyListeners();
   }
-  
+
   void handleZoomIn() => documentRepository.zoomIn();
   void handleZoomOut() => documentRepository.zoomOut();
 }

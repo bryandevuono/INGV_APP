@@ -157,17 +157,17 @@ class LocalAttachmentRepository implements IAttachmentRepository {
     }
   }
 
-  // to mock a file management system: 
+  // to mock a file management system:
   static final Map<String, List<FileVersion>> _mockFileHistories = {
-    'mock_1': [ 
+    'mock_1': [
       FileVersion(
-        versionId: 'v1',
-        versionName: 'Version 1',
-        metaInfo: 'Meta info for version 1',
-        subtitle: 'old version of the file',
-        blocks: [],
-      )
-      ..content = """
+          versionId: 'v1',
+          versionName: 'Version 1',
+          metaInfo: 'Meta info for version 1',
+          subtitle: 'old version of the file',
+          blocks: [],
+        )
+        ..content = """
       ## heading 1
       Content of version 1, line 1.
       Content of version 1, line 2.
@@ -185,12 +185,13 @@ class LocalAttachmentRepository implements IAttachmentRepository {
       Content of version 3, line 4 (changed).
       """,
       FileVersion(
-        versionId: 'v2',
-        versionName: 'Version 2',
-        metaInfo: 'Meta info for version 2',
-        subtitle: 'old version of the file',
-        blocks: [],
-      )..content = """
+          versionId: 'v2',
+          versionName: 'Version 2',
+          metaInfo: 'Meta info for version 2',
+          subtitle: 'old version of the file',
+          blocks: [],
+        )
+        ..content = """
       ## heading 1
       Content of version 1, line 1.
       Content of version 1, line 2.
@@ -202,17 +203,21 @@ class LocalAttachmentRepository implements IAttachmentRepository {
       Content of version 2, line 3.
       Content of version 2, line 4. new content here
       """,
-    ]
+    ],
   };
 
   @override
-  Future<List<FileVersion>> getFileHistoryFromAttachment(String attachmentId) async {
+  Future<List<FileVersion>> getFileHistoryFromAttachment(
+    String attachmentId,
+  ) async {
     return _mockFileHistories[attachmentId] ?? [];
   }
 
   @override
-  Future<void> saveMergedVersion(String attachmentId, String mergedContent) async {
-    
+  Future<void> saveMergedVersion(
+    String attachmentId,
+    String mergedContent,
+  ) async {
     final history = _mockFileHistories[attachmentId];
     if (history != null) {
       final newVersionNumber = history.length + 1;
@@ -226,4 +231,5 @@ class LocalAttachmentRepository implements IAttachmentRepository {
 
       history.add(newVersion);
     }
-  }}
+  }
+}

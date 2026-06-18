@@ -6,9 +6,9 @@ import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dar
 import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 import 'add_event_dialog.dart';
-import 'package:ingv_app/ui/search.dart';
 import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
 import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
+import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
 
 class TimelineScreen extends StatefulWidget {
   final ITimelineViewModel viewModel;
@@ -33,12 +33,55 @@ class TimelineScreen extends StatefulWidget {
   State<TimelineScreen> createState() => _TimelineScreenState();
 }
 
+/// Visual zoom levels for the timeline grid.
+enum TimelineZoomLevel {
+  oneDay, // 1 day
+  oneWeek, // 7 days
+  oneMonth, // 30 days
+  threeMonths, // 90 days
+  fitAll, // auto-fit to all events
+}
+
+extension TimelineZoomLevelExtension on TimelineZoomLevel {
+  String get label {
+    switch (this) {
+      case TimelineZoomLevel.oneDay:
+        return '1 Day';
+      case TimelineZoomLevel.oneWeek:
+        return '1 Week';
+      case TimelineZoomLevel.oneMonth:
+        return '1 Month';
+      case TimelineZoomLevel.threeMonths:
+        return '3 Months';
+      case TimelineZoomLevel.fitAll:
+        return 'Fit All';
+    }
+  }
+
+  int get days {
+    switch (this) {
+      case TimelineZoomLevel.oneDay:
+        return 1;
+      case TimelineZoomLevel.oneWeek:
+        return 7;
+      case TimelineZoomLevel.oneMonth:
+        return 30;
+      case TimelineZoomLevel.threeMonths:
+        return 90;
+      case TimelineZoomLevel.fitAll:
+        return -1;
+    }
+  }
+}
+
 class _TimelineScreenState extends State<TimelineScreen> {
   EventModel? _selectedEvent;
 
   DateTime _clientBaselineStart = DateTime.now().subtract(
     const Duration(days: 1),
   );
+
+  TimelineZoomLevel _zoomLevel = TimelineZoomLevel.fitAll;
 
   EventFilterController? get _filterController => widget.sharedFilterController;
 
@@ -54,9 +97,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   Future<void> _refreshInitialData() async {
-    await widget.viewModel.getColors();
-    await widget.viewModel.fetchEvents();
-    await widget.viewModel.getGroupsOfUser();
+    try {
+      await widget.viewModel.getColors();
+      await widget.viewModel.fetchEvents();
+      await widget.viewModel.getGroupsOfUser();
+    } catch (e) {
+      debugPrint('Timeline initialization error: $e');
+      // Safe to fail silently — fetchEvents already sets errorMessage
+    }
   }
 
   Future<void> _pickDateRange() async {
@@ -188,9 +236,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _navigateToPast() {
+    final span = _zoomLevel.days;
     setState(() {
       _clientBaselineStart = _clientBaselineStart.subtract(
-        const Duration(days: 7),
+        Duration(days: span > 0 ? span : 7),
       );
       // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
@@ -201,8 +250,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _navigateToFuture() {
+    final span = _zoomLevel.days;
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.add(const Duration(days: 7));
+      _clientBaselineStart = _clientBaselineStart.add(
+        Duration(days: span > 0 ? span : 7),
+      );
       // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
@@ -242,14 +294,50 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 onDismiss: () {
                   setState(() => _selectedEvent = null);
                   widget.detailViewModel.clearEventDetails();
-                  widget.onPanelToggle?.call(
-                    false,
-                  ); 
+                  widget.onPanelToggle?.call(false);
                 },
               ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildZoomSelector() {
+    return SizedBox(
+      width: 130,
+      child: DropdownButtonFormField<TimelineZoomLevel>(
+        value: _zoomLevel,
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
+          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade400),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Theme.of(context).primaryColor),
+          ),
+        ),
+        items: TimelineZoomLevel.values
+            .map(
+              (level) => DropdownMenuItem(
+                value: level,
+                child: Text(level.label, style: const TextStyle(fontSize: 13)),
+              ),
+            )
+            .toList(),
+        onChanged: (value) {
+          if (value != null) {
+            setState(() => _zoomLevel = value);
+          }
+        },
+      ),
     );
   }
 
@@ -270,15 +358,26 @@ class _TimelineScreenState extends State<TimelineScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                  tooltip: 'Go back 7 days',
-                  onPressed: _navigateToPast,
+                  tooltip: 'Go back ${_zoomLevel.label}',
+                  onPressed:
+                      widget.viewModel.filterStartDate != null ||
+                          widget.viewModel.filterEndDate != null
+                      ? null
+                      : _navigateToPast,
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.arrow_forward_ios, size: 20),
-                  tooltip: 'Go forward 7 days',
-                  onPressed: _navigateToFuture,
+                  tooltip: 'Go forward ${_zoomLevel.label}',
+                  onPressed:
+                      widget.viewModel.filterStartDate != null ||
+                          widget.viewModel.filterEndDate != null
+                      ? null
+                      : _navigateToFuture,
                 ),
+                const SizedBox(width: 8),
+                // Zoom level selector
+                _buildZoomSelector(),
                 const SizedBox(width: 8),
                 Expanded(
                   child: EventFilterActionBar(
@@ -339,11 +438,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final lanes = widget.viewModel.timelineLanes;
 
     if (eventList.isEmpty || lanes.isEmpty) {
+      bool hasFilter =
+          widget.viewModel.searchQuery.isNotEmpty ||
+          widget.viewModel.selectedCategory != 'All' ||
+          widget.viewModel.filterStartDate != null ||
+          widget.viewModel.filterEndDate != null;
+
       return Center(
         child: Text(
-          widget.viewModel.searchQuery.isNotEmpty ||
-                  widget.viewModel.selectedCategory != 'All' ||
-                  widget.viewModel.filterStartDate != null
+          hasFilter
               ? 'No events match the current filters'
               : 'No events yet. Use + to add the first event.',
           style: const TextStyle(fontSize: 16, color: Colors.black54),
@@ -357,14 +460,63 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const double totalCanvasWidth = 1200.0;
     const double leftHeaderWidth = 160.0;
 
-    final DateTime rangeStart =
-        widget.viewModel.filterStartDate ?? _clientBaselineStart;
-    final DateTime rangeEnd =
-        widget.viewModel.filterEndDate ??
-        rangeStart.add(const Duration(days: 7));
+    final DateTime rangeStart;
+    final DateTime rangeEnd;
 
-    final DateTime totalStart = rangeStart.subtract(const Duration(days: 2));
-    final DateTime totalEnd = rangeEnd.add(const Duration(days: 2));
+    if (widget.viewModel.filterStartDate != null) {
+      rangeStart = widget.viewModel.filterStartDate!;
+      rangeEnd =
+          widget.viewModel.filterEndDate ??
+          widget.viewModel.filterStartDate!.add(const Duration(days: 7));
+    } else if (widget.viewModel.filterEndDate != null) {
+      rangeEnd = widget.viewModel.filterEndDate!;
+      rangeStart = widget.viewModel.filterEndDate!.subtract(
+        const Duration(days: 7),
+      );
+    } else {
+      // No filter active — span all events so "All" timeline shows everything
+      if (eventList.isEmpty) {
+        rangeStart = _clientBaselineStart;
+        rangeEnd = rangeStart.add(const Duration(days: 7));
+      } else {
+        // Compute min/max across ALL events (not just filtered subset)
+        final minDt = eventList
+            .map((e) => e.startDt)
+            .reduce((a, b) => a.isBefore(b) ? a : b);
+        final maxDt = eventList
+            .map((e) => e.endDt ?? e.startDt)
+            .reduce((a, b) => a.isAfter(b) ? a : b);
+        rangeStart = minDt;
+        rangeEnd = maxDt;
+      }
+    }
+
+    // Compute gridMin/gridMax based on zoom level.
+    final Duration rangeSpan = rangeEnd.difference(rangeStart);
+    final DateTime gridMin;
+    final DateTime gridMax;
+
+    if (rangeSpan.inDays < 1) {
+      // All events fit in one day — show a 7-day window centered on the first event
+      gridMin = rangeStart.subtract(const Duration(days: 3));
+      gridMax = rangeStart.add(const Duration(days: 4));
+    } else if (_zoomLevel == TimelineZoomLevel.fitAll) {
+      // Fit All: grid spans the full event range
+      gridMin = rangeStart;
+      gridMax = rangeEnd;
+    } else {
+      // Fixed zoom: center on the anchor (_clientBaselineStart) with selected span
+      final int visibleDays = _zoomLevel.days;
+      final halfSpan = Duration(days: visibleDays ~/ 2);
+      gridMin = _clientBaselineStart.subtract(halfSpan);
+      gridMax = _clientBaselineStart.add(
+        Duration(days: visibleDays - halfSpan.inDays),
+      );
+    }
+
+    // Total scrollable range = grid + buffer so events aren't clipped at edges
+    final DateTime totalStart = gridMin.subtract(const Duration(days: 2));
+    final DateTime totalEnd = gridMax.add(const Duration(days: 2));
 
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
@@ -450,8 +602,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   rowMaxStackDepth: rowMaxStackDepth,
                   rowHeight: definedRowHeight,
                   axisHeight: baseAxisHeight,
-                  gridMin: rangeStart.millisecondsSinceEpoch.toDouble(),
-                  gridMax: rangeEnd.millisecondsSinceEpoch.toDouble(),
+                  gridMin: gridMin.millisecondsSinceEpoch.toDouble(),
+                  gridMax: gridMax.millisecondsSinceEpoch.toDouble(),
                   totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
                   totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
                   taskBarBuilder: (task) {
@@ -576,8 +728,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
       (e) => e.eventId.toString() == eventId,
     );
 
-    final String duration;
-    final String endString;
     final String startStringTime = event.startDt
         .toLocal()
         .toString()
@@ -588,13 +738,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
         ? event.endDt!.toLocal().toString().split(' ')[1].substring(0, 5)
         : '';
 
-    if (event.endDt != null) {
-      duration = "${event.endDt!.difference(event.startDt).inHours} hrs";
-      endString = event.endDt.toString();
-    } else {
-      duration = "Ongoing";
-      endString = '...';
-    }
+    final String duration = formatDuration(event.startDt, event.endDt);
+
+    final String tooltipMessage =
+        '${event.title}\n'
+        'Start: ${formatDateShort(event.startDt)} $startStringTime\n'
+        'End: ${event.endDt != null ? '$endStringTime ${formatDateShort(event.endDt!)}' : 'Ongoing'}\n'
+        'Duration: $duration\n'
+        '${formatLocation(event.lat, event.long)}';
+
     final Color itemColor = widget.viewModel
         .getTimelineTasksForCategory(event.category.trim())
         .firstWhere((t) => t.id == eventId)
@@ -605,8 +757,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
       child: GestureDetector(
         onTap: () => _toggleEventDetails(event),
         child: Tooltip(
-          message:
-              "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
+          message: tooltipMessage,
           child: event.endDt == null
               ? OverflowBox(
                   minWidth: 24.0,
@@ -619,7 +770,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 2,
                           offset: const Offset(0, 1),
                         ),
@@ -630,53 +781,61 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     ),
                   ),
                 )
-              : Container(
-                  alignment: Alignment.topLeft,
-                  height: 45.0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6.0,
-                    vertical: 4.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: itemColor,
-                    border: _selectedEvent?.eventId == event.eventId
-                        ? Border.all(color: Colors.white, width: 2)
-                        : null,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        event.title,
-                        textAlign: TextAlign.left,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+              : ClipRRect(
+                  child: Container(
+                    alignment: Alignment.topLeft,
+                    height: 45.0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6.0,
+                      vertical: 4.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: itemColor,
+                      border: _selectedEvent?.eventId == event.eventId
+                          ? Border.all(color: Colors.white, width: 2)
+                          : null,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                event.title,
+                                textAlign: TextAlign.left,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      '$startStringTime - $endStringTime $duration',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 9,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Row(
-                        spacing: 8.0,
-                        children: [
-                          Text(
-                            '$startStringTime - $endStringTime',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 9,
-                            ),
-                          ),
-                          Text(
-                            duration,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 9,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
         ),

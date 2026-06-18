@@ -33,18 +33,20 @@ class MapScreenViewModel extends ChangeNotifier {
   DateTime? filterEndDate;
   MapController mapController = MapController();
   Map<String, Color> _categoryColors = {};
-  
+
+  bool isLoading = false;
   bool isExporting = false;
+  String? errorMessage;
   String? exportErrorMessage;
   int timelineDurationDays = 7;
 
   Color getCategoryColor(String category) {
-    return _categoryColors[category] ?? const Color(0xFF9E9E9E); 
+    return _categoryColors[category] ?? const Color(0xFF9E9E9E);
   }
 
   // Unified constructor mapping all final fields
   MapScreenViewModel(
-    this._eventRepository, 
+    this._eventRepository,
     this._searchRepository,
     this.detailRepository,
     this.attachmentRepository,
@@ -58,29 +60,48 @@ class MapScreenViewModel extends ChangeNotifier {
       attachmentRepository,
       localFileService,
       fileOpenService,
-      _eventRepository, 
+      _eventRepository,
     );
   }
 
   Future<void> fetchEvents() async {
-    final fetchedCategories = await _eventRepository.getEventCategories();
-    categories = ['All'];
-    for (final category in fetchedCategories) {
-      if (category != 'All' && !categories.contains(category)) {
-        categories.add(category);
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final fetchedCategories = await _eventRepository.getEventCategories();
+      categories = ['All'];
+      for (final category in fetchedCategories) {
+        if (category != 'All' && !categories.contains(category)) {
+          categories.add(category);
+        }
       }
+      await applyFilters();
+    } catch (e) {
+      errorMessage = 'Failed to load events.';
+      debugPrint('Map fetchEvents error: $e');
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
-    await applyFilters();
   }
 
   Future<void> applyFilters() async {
-    events = await _searchRepository.searchAndFilterEvents(
-      keyword: searchQuery,
-      category: selectedCategory,
-      startDate: filterStartDate,
-      endDate: filterEndDate,
-    );
-    notifyListeners();
+    try {
+      events = await _searchRepository.searchAndFilterEvents(
+        keyword: searchQuery,
+        category: selectedCategory,
+        startDate: filterStartDate,
+        endDate: filterEndDate,
+      );
+    } catch (e) {
+      errorMessage = 'Failed to filter events.';
+      events = [];
+      debugPrint('Map applyFilters error: $e');
+    } finally {
+      notifyListeners();
+    }
   }
 
   void setSearchQuery(String query) {
@@ -180,7 +201,7 @@ class MapScreenViewModel extends ChangeNotifier {
     } catch (error) {
       exportErrorMessage = 'Failed to export map PDF: $error';
       return null;
-    } destruction: {
+    } finally {
       isExporting = false;
       notifyListeners();
     }

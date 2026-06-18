@@ -2,7 +2,6 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'media_kit_player_interface.dart';
 
-
 class MediaKitPlayerRepository implements IVideoPlayerRepository {
   late final Player _player;
   late final VideoController _controller;

@@ -11,7 +11,7 @@ abstract interface class ITimelineViewModel implements Listenable {
   String get selectedCategory;
   DateTime? get filterStartDate;
   List<GroupModel> get userGroups;
-  
+
   DateTime? get filterEndDate;
   List<String> get categories;
   String get searchQuery;

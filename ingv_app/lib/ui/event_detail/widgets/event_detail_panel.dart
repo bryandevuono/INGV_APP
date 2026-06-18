@@ -37,10 +37,10 @@ class _EventDetailPanelState extends State<EventDetailPanel>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
     _animationController.forward();
   }
 
@@ -52,7 +52,10 @@ class _EventDetailPanelState extends State<EventDetailPanel>
 
   void _handleDragUpdate(DragUpdateDetails details) {
     setState(() {
-      _dragOffset = (_dragOffset + details.delta.dy).clamp(0.0, double.infinity);
+      _dragOffset = (_dragOffset + details.delta.dy).clamp(
+        0.0,
+        double.infinity,
+      );
     });
   }
 
@@ -90,7 +93,7 @@ class _EventDetailPanelState extends State<EventDetailPanel>
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final panelHeight = screenHeight * 0.65; 
+    final panelHeight = screenHeight * 0.65;
 
     return SlideTransition(
       position: _slideAnimation,
@@ -111,7 +114,7 @@ class _EventDetailPanelState extends State<EventDetailPanel>
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
-                  offset: const Offset(0, -4), 
+                  offset: const Offset(0, -4),
                 ),
               ],
             ),
