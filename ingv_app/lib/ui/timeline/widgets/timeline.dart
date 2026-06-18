@@ -81,7 +81,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const Duration(days: 1),
   );
 
-  TimelineZoomLevel _zoomLevel = TimelineZoomLevel.fitAll;
+  TimelineZoomLevel _zoomLevel = TimelineZoomLevel.oneDay;
+
+  // Horizontal drag state for time panning
+  double _dragDxTotal = 0;
+  bool _isHorizontalPanning = false;
 
   EventFilterController? get _filterController => widget.sharedFilterController;
 
@@ -278,7 +282,43 @@ class _TimelineScreenState extends State<TimelineScreen> {
             Column(
               children: [
                 if (widget.showControlBar) _buildToolbar(context),
-                Expanded(child: _buildTimelineCanvas(widget.viewModel.events)),
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragStart: (_) {
+                      _dragDxTotal = 0;
+                      _isHorizontalPanning = false;
+                    },
+                    onHorizontalDragUpdate: (details) {
+                      _dragDxTotal += details.delta.dx;
+
+                      if (!_isHorizontalPanning && _dragDxTotal.abs() < 10) {
+                        // Still accumulating — tiny movements don't trigger pan
+                        return;
+                      }
+                      _isHorizontalPanning = true;
+
+                      final span = _zoomLevel.days;
+                      final days = span > 0 ? span : 7;
+                      final deltaDays = -details.primaryDelta! / 300.0 * days;
+                      final shift = Duration(
+                        seconds: (days * 86400 * deltaDays).round(),
+                      );
+                      setState(() {
+                        _clientBaselineStart = _clientBaselineStart.add(shift);
+                        if (widget.viewModel.filterStartDate != null ||
+                            widget.viewModel.filterEndDate != null) {
+                          widget.viewModel.setDateRangeFilter(null, null);
+                          _filterController?.clearDateRange();
+                        }
+                      });
+                    },
+                    onHorizontalDragEnd: (_) {
+                      _isHorizontalPanning = false;
+                    },
+                    child: _buildTimelineCanvas(widget.viewModel.events),
+                  ),
+                ),
               ],
             ),
             if (_selectedEvent != null)
