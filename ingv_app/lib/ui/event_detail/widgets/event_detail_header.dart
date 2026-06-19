@@ -200,14 +200,6 @@ class EventDetailHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                tooltip: 'Dismiss event panel',
-                onPressed: onDismiss,
-                icon: const Icon(Icons.close),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-              ),
             ],
           );
 
