@@ -6,9 +6,9 @@ import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dar
 import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
 import 'add_event_dialog.dart';
-import 'package:ingv_app/ui/search.dart';
 import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
 import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
+import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
 
 class TimelineScreen extends StatefulWidget {
   final ITimelineViewModel viewModel;
@@ -40,6 +40,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const Duration(days: 1),
   );
 
+  // Horizontal drag state for time panning
+  double _dragDxTotal = 0;
+  bool _isHorizontalPanning = false;
   static const List<(Duration, String, String)> _timeScaleOptions = [
     (Duration(days: 7), '1w', '1 week'),
     (Duration(days: 1), '1d', '1 day'),
@@ -71,9 +74,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   Future<void> _refreshInitialData() async {
-    await widget.viewModel.getColors();
-    await widget.viewModel.fetchEvents();
-    await widget.viewModel.getGroupsOfUser();
+    try {
+      await widget.viewModel.getColors();
+      await widget.viewModel.fetchEvents();
+      await widget.viewModel.getGroupsOfUser();
+    } catch (e) {
+      debugPrint('Timeline initialization error: $e');
+      // Safe to fail silently — fetchEvents already sets errorMessage
+    }
   }
 
   Future<void> _pickDateRange() async {
@@ -207,7 +215,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   void _navigateToPast() {
     setState(() {
       _clientBaselineStart = _clientBaselineStart.subtract(_timeScale);
-      // clear the filter
+      // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
         _filterController?.clearDateRange();
@@ -218,7 +226,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   void _navigateToFuture() {
     setState(() {
       _clientBaselineStart = _clientBaselineStart.add(_timeScale);
-      // clear filter
+      // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
         _filterController?.clearDateRange();
@@ -253,10 +261,45 @@ class _TimelineScreenState extends State<TimelineScreen> {
             Column(
               children: [
                 if (widget.showControlBar) _buildToolbar(context),
-                Expanded(child: _buildTimelineCanvas(widget.viewModel.events)),
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragStart: (_) {
+                      _dragDxTotal = 0;
+                      _isHorizontalPanning = false;
+                    },
+                    onHorizontalDragUpdate: (details) {
+                      _dragDxTotal += details.delta.dx;
+
+                      if (!_isHorizontalPanning && _dragDxTotal.abs() < 10) {
+                        // Still accumulating — tiny movements don't trigger pan
+                        return;
+                      }
+                      _isHorizontalPanning = true;
+
+                      final double scaleMs = _timeScale.inMilliseconds
+                          .toDouble();
+                      final double deltaMs =
+                          -details.primaryDelta! / 300.0 * scaleMs;
+                      final shift = Duration(milliseconds: deltaMs.round());
+                      setState(() {
+                        _clientBaselineStart = _clientBaselineStart.add(shift);
+                        if (widget.viewModel.filterStartDate != null ||
+                            widget.viewModel.filterEndDate != null) {
+                          widget.viewModel.setDateRangeFilter(null, null);
+                          _filterController?.clearDateRange();
+                        }
+                      });
+                    },
+                    onHorizontalDragEnd: (_) {
+                      _isHorizontalPanning = false;
+                    },
+                    child: _buildTimelineCanvas(widget.viewModel.events),
+                  ),
+                ),
               ],
             ),
-            // FIX: Wrap the panel in Positioned to pin it to the bottom
+            // Pin the detail panel to the bottom of the stack
             if (_selectedEvent != null)
               Positioned(
                 bottom: 0,
@@ -289,96 +332,92 @@ class _TimelineScreenState extends State<TimelineScreen> {
       width: double.infinity,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1400),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Check if we are on a mobile-sized screen
-                final isMobile = constraints.maxWidth < 600;
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Check if we are on a mobile-sized screen
+            final isMobile = constraints.maxWidth < 600;
 
-                // Extract the core navigation elements so we don't duplicate code
-                final navigationWidgets = [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                    tooltip: 'Go back $_currentScaleLabel',
-                    onPressed: _navigateToPast,
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.arrow_forward_ios, size: 20),
-                    tooltip: 'Go forward $_currentScaleLabel',
-                    onPressed: _navigateToFuture,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildTimeScaleSelector(),
-                ];
+            // Extract the core navigation elements so we don't duplicate code
+            final navigationWidgets = [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                tooltip: 'Go back $_currentScaleLabel',
+                onPressed: _navigateToPast,
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                tooltip: 'Go forward $_currentScaleLabel',
+                onPressed: _navigateToFuture,
+              ),
+              const SizedBox(width: 12),
+              _buildTimeScaleSelector(),
+            ];
 
-                final actionFilterBar = EventFilterActionBar(
-                  categories: {'All', ...widget.viewModel.categories}.toList(),
-                  selectedCategory: widget.viewModel.selectedCategory,
-                  searchQuery: widget.viewModel.searchQuery,
-                  startDate: widget.viewModel.filterStartDate,
-                  endDate: widget.viewModel.filterEndDate,
-                  showCategoryDropdown: true,
-                  showDateFilter: true,
-                  showSearch: true,
-                  showExportPdf: true,
-                  showExportZip: true,
-                  showAddEvent: true,
-                  isExporting: widget.viewModel.isExporting,
-                  embeddedInPage: true,
-                  onCategoryChanged: (newValue) {
-                    widget.viewModel.setCategoryFilter(newValue);
-                    _filterController?.setCategory(newValue);
-                  },
-                  onDateRangePicked: _pickDateRange,
-                  onClearDateFilter: () {
-                    widget.viewModel.setDateRangeFilter(null, null);
-                    _filterController?.clearDateRange();
-                  },
-                  onSearchChanged: (query) {
-                    widget.viewModel.setSearchQuery(query);
-                    _filterController?.setSearchQuery(query);
-                  },
-                  onExportPdf: () =>
-                      _showExportResult(widget.viewModel.exportTimelineReport),
-                  onExportZip: () =>
-                      _showExportResult(widget.viewModel.exportTimelineAsZip),
-                  onExportDateRangePdf: _exportDateRangePdf,
-                  onExportDateRangeZip: _exportDateRangeZip,
-                  onAddEvent:
-                      widget.onAddEvent ??
-                      () => showAddEventDialog(
-                        context,
-                        widget.viewModel,
-                        const [],
-                      ),
-                );
-                if (isMobile) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: navigationWidgets,
-                      ),
-                      const SizedBox(height: 12), // Spacer between rows
-                      actionFilterBar,
-                    ],
-                  );
-                }
-
-                return Row(
-                  children: [
-                    ...navigationWidgets,
-                    const SizedBox(width: 12),
-                    Expanded(child: actionFilterBar),
-                  ],
-                );
+            final actionFilterBar = EventFilterActionBar(
+              categories: {'All', ...widget.viewModel.categories}.toList(),
+              selectedCategory: widget.viewModel.selectedCategory,
+              searchQuery: widget.viewModel.searchQuery,
+              startDate: widget.viewModel.filterStartDate,
+              endDate: widget.viewModel.filterEndDate,
+              showCategoryDropdown: true,
+              showDateFilter: true,
+              showSearch: true,
+              showExportPdf: true,
+              showExportZip: true,
+              showAddEvent: true,
+              isExporting: widget.viewModel.isExporting,
+              embeddedInPage: true,
+              onCategoryChanged: (newValue) {
+                widget.viewModel.setCategoryFilter(newValue);
+                _filterController?.setCategory(newValue);
               },
-            ),
-          ),
+              onDateRangePicked: _pickDateRange,
+              onClearDateFilter: () {
+                widget.viewModel.setDateRangeFilter(null, null);
+                _filterController?.clearDateRange();
+              },
+              onSearchChanged: (query) {
+                widget.viewModel.setSearchQuery(query);
+                _filterController?.setSearchQuery(query);
+              },
+              onExportPdf: () =>
+                  _showExportResult(widget.viewModel.exportTimelineReport),
+              onExportZip: () =>
+                  _showExportResult(widget.viewModel.exportTimelineAsZip),
+              onExportDateRangePdf: _exportDateRangePdf,
+              onExportDateRangeZip: _exportDateRangeZip,
+              onAddEvent:
+                  widget.onAddEvent ??
+                  () => showAddEventDialog(
+                    context,
+                    widget.viewModel,
+                    const [],
+                  ),
+            );
+
+            if (isMobile) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: navigationWidgets,
+                  ),
+                  const SizedBox(height: 12), // Spacer between rows
+                  actionFilterBar,
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                ...navigationWidgets,
+                const SizedBox(width: 12),
+                Expanded(child: actionFilterBar),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -408,11 +447,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final lanes = widget.viewModel.timelineLanes;
 
     if (eventList.isEmpty || lanes.isEmpty) {
+      bool hasFilter =
+          widget.viewModel.searchQuery.isNotEmpty ||
+          widget.viewModel.selectedCategory != 'All' ||
+          widget.viewModel.filterStartDate != null ||
+          widget.viewModel.filterEndDate != null;
+
       return Center(
         child: Text(
-          widget.viewModel.searchQuery.isNotEmpty ||
-                  widget.viewModel.selectedCategory != 'All' ||
-                  widget.viewModel.filterStartDate != null
+          hasFilter
               ? 'No events match the current filters'
               : 'No events yet. Use + to add the first event.',
           style: const TextStyle(fontSize: 16, color: Colors.black54),
@@ -431,7 +474,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final DateTime rangeEnd =
         widget.viewModel.filterEndDate ?? rangeStart.add(_timeScale);
 
-    // scrollable range
+    final DateTime gridMin = rangeStart;
+    final DateTime gridMax = rangeEnd;
+
+    // Total scrollable range = grid + buffer so events aren't clipped at edges
     final Duration visibleSpan = rangeEnd.difference(rangeStart);
     final Duration edgePadding = visibleSpan * 0.25;
     final DateTime totalStart = rangeStart.subtract(edgePadding);
@@ -521,8 +567,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   rowMaxStackDepth: rowMaxStackDepth,
                   rowHeight: definedRowHeight,
                   axisHeight: baseAxisHeight,
-                  gridMin: rangeStart.millisecondsSinceEpoch.toDouble(),
-                  gridMax: rangeEnd.millisecondsSinceEpoch.toDouble(),
+                  gridMin: gridMin.millisecondsSinceEpoch.toDouble(),
+                  gridMax: gridMax.millisecondsSinceEpoch.toDouble(),
                   totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
                   totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
                   taskBarBuilder: (task) {
@@ -647,8 +693,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
       (e) => e.eventId.toString() == eventId,
     );
 
-    final String duration;
-    final String endString;
     final String startStringTime = event.startDt
         .toLocal()
         .toString()
@@ -659,13 +703,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
         ? event.endDt!.toLocal().toString().split(' ')[1].substring(0, 5)
         : '';
 
-    if (event.endDt != null) {
-      duration = "${event.endDt!.difference(event.startDt).inHours} hrs";
-      endString = event.endDt.toString();
-    } else {
-      duration = "Ongoing";
-      endString = '...';
-    }
+    final String duration = formatDuration(event.startDt, event.endDt);
+
+    final String tooltipMessage =
+        '${event.title}\n'
+        'Start: ${formatDateShort(event.startDt)} $startStringTime\n'
+        'End: ${event.endDt != null ? '$endStringTime ${formatDateShort(event.endDt!)}' : 'Ongoing'}\n'
+        'Duration: $duration\n'
+        '${formatLocation(event.lat, event.long)}';
+
     final Color itemColor = widget.viewModel
         .getTimelineTasksForCategory(event.category.trim())
         .firstWhere((t) => t.id == eventId)
@@ -676,8 +722,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
       child: GestureDetector(
         onTap: () => _toggleEventDetails(event),
         child: Tooltip(
-          message:
-              "${event.title}\n${event.startDt} - $endString\nDuration: $duration",
+          message: tooltipMessage,
           child: event.endDt == null
               ? OverflowBox(
                   minWidth: 24.0,
@@ -734,8 +779,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       Row(
                         children: [
                           Expanded(
-                            flex:
-                                2, 
+                            flex: 2,
                             child: Text(
                               '$startStringTime - $endStringTime',
                               overflow: TextOverflow.ellipsis,
@@ -748,8 +792,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                           ),
                           const SizedBox(width: 4),
                           Flexible(
-                            flex:
-                                1, 
+                            flex: 1,
                             child: Text(
                               duration,
                               maxLines: 1,

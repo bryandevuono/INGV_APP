@@ -5,11 +5,7 @@ class PersonModel {
   final String name;
   final String image;
 
-PersonModel({
-    required this.id,
-    required this.name,
-    required this.image,
-  });
+  PersonModel({required this.id, required this.name, required this.image});
 
   factory PersonModel.fromJson(Map<String, dynamic> json) {
     return PersonModel(
@@ -20,10 +16,6 @@ PersonModel({
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'image': image,
-    };
+    return {'id': id, 'name': name, 'image': image};
   }
 }

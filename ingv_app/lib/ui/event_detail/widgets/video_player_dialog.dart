@@ -62,7 +62,9 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
                         children: [
                           _buildPoster(),
                           const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
                           ),
                         ],
                       );
@@ -226,7 +228,11 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 48,
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'This local video could not be played in-app.',
@@ -294,7 +300,9 @@ class _VideoPlayerDialogState extends State<VideoPlayerDialog> {
     final hours = twoDigits(duration.inHours);
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return duration.inHours == 0 ? '$minutes:$seconds' : '$hours:$minutes:$seconds';
+    return duration.inHours == 0
+        ? '$minutes:$seconds'
+        : '$hours:$minutes:$seconds';
   }
 }
 

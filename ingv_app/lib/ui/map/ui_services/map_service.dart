@@ -26,7 +26,7 @@ class MapServiceUI implements IMapService {
         point: latlong2.LatLng(m.latitude, m.longitude),
         width: m.size,
         height: m.size,
-        child: AppMapMarkerWidget(marker: m), 
+        child: AppMapMarkerWidget(marker: m),
       );
     }).toList();
 
@@ -102,7 +102,7 @@ class MapServiceUI implements IMapService {
       options: MarkerClusterLayerOptions(
         size: const Size(40, 40),
         maxZoom: 15,
-        markers: markers, 
+        markers: markers,
         builder: (context, combinedMarkers) {
           return Container(
             decoration: BoxDecoration(

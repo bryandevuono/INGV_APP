@@ -21,7 +21,7 @@ class MapScreen extends StatefulWidget {
   final bool showControlBar;
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
-  final ValueChanged<bool>? onPanelToggle; 
+  final ValueChanged<bool>? onPanelToggle;
 
   IEventSearchRepository get exposedEventSearchRepository =>
       eventSearchRepository;

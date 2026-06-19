@@ -24,7 +24,9 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   late final IPdfExportService _pdfExportService;
   late final IZipExportService _zipExportService;
 
-  final GroupRepository? _groupRepository = GroupRepository(GroupServiceSembast());
+  final GroupRepository? _groupRepository = GroupRepository(
+    GroupServiceSembast(),
+  );
 
   // Internal State
   List<EventModel> _allEvents = [];
@@ -45,9 +47,9 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   Map<String, Color> _categoryColors = {};
 
   TimelineViewModel(this._eventRepository, this._searchRepository)
-      : _detailRepository = EventDetailRepository(EventDetailService()),
-        _attachmentRepository = LocalAttachmentRepository(),
-        _localFileService = LocalFileService() {
+    : _detailRepository = EventDetailRepository(EventDetailService()),
+      _attachmentRepository = LocalAttachmentRepository(),
+      _localFileService = LocalFileService() {
     _pdfExportService = PdfExportService(
       _detailRepository,
       _attachmentRepository,
@@ -65,7 +67,7 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
   Future<void> _init() async {
     try {
-      await getColors(); 
+      await getColors();
       await fetchEvents();
       await getGroupsOfUser();
     } catch (e) {
@@ -105,7 +107,7 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   @override
   String get searchQuery => _searchQuery;
 
-  // Calculate the min date 
+  // Calculate the min date
   DateTime get minStart {
     if (_allEvents.isEmpty) return DateTime.now();
     return _allEvents
@@ -185,14 +187,19 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
         if (!matchesTitle && !matchesDescription) return false;
       }
 
-      // Date Frame Filter Match
-      if (_filterStartDate != null &&
-          event.startDt.isBefore(_filterStartDate!)) {
+      // Date Filter — overlap check: show events that overlap the range.
+      // An event whose start is before the range but ends inside should show.
+      // An event whose end is after the range but starts inside should show.
+      final eventEnd = event.endDt ?? event.startDt;
+      final filterDayStart = _filterStartDate ?? event.startDt;
+
+      // Event ends before the filter window starts
+      if (eventEnd.isBefore(filterDayStart)) {
         return false;
       }
+      // Event starts after the filter window ends (end of that day)
       if (_filterEndDate != null &&
-          event.endDt != null &&
-          event.endDt!.isAfter(_filterEndDate!)) {
+          event.startDt.isAfter(_filterEndDate!.add(const Duration(days: 1)))) {
         return false;
       }
 
@@ -281,7 +288,7 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   @override
   Future<void> addEvent(EventModel event) async {
     await _eventRepository.insertEvent(event);
-    await fetchEvents(); 
+    await fetchEvents();
   }
 
   List<EventModel> _exportEventsForDateRange({
@@ -297,7 +304,8 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final matchesTitle = event.title.toLowerCase().contains(query);
-        final matchesDescription = event.description?.toLowerCase().contains(query) ?? false;
+        final matchesDescription =
+            event.description?.toLowerCase().contains(query) ?? false;
         if (!matchesTitle && !matchesDescription) {
           return false;
         }
@@ -423,7 +431,8 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   Future<void> getGroupsOfUser() async {
     try {
       final userId = await getUserId();
-      final List<GroupModel> groups = await (_groupRepository?.getGroupsOfUser(userId)) ?? [];
+      final List<GroupModel> groups =
+          await (_groupRepository?.getGroupsOfUser(userId)) ?? [];
       _userGroups = groups;
       notifyListeners();
     } catch (e) {

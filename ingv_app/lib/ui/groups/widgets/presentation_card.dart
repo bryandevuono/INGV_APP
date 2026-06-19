@@ -15,7 +15,7 @@ class GroupCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context)  {
+  Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: viewModel,
       builder: (context, _) {
@@ -33,7 +33,9 @@ class GroupCard extends StatelessWidget {
                 flex: 3,
                 child: Container(
                   color: Colors.grey[300],
-                  child: viewModel.getGroupImage(groupId) ?? const Icon(Icons.group, size: 48, color: Colors.white),
+                  child:
+                      viewModel.getGroupImage(groupId) ??
+                      const Icon(Icons.group, size: 48, color: Colors.white),
                 ),
               ),
 
@@ -43,8 +45,7 @@ class GroupCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment
-                        .center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Column(

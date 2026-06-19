@@ -17,7 +17,7 @@ class DiffText extends StatelessWidget {
   Widget build(BuildContext context) {
     // 1. Calculate differences between old and new text block contents
     final List<Diff> diffs = diff(originalText, modifiedText);
-    
+
     // 2. Format it cleanly for human readability
     cleanupSemantic(diffs);
 
@@ -25,8 +25,8 @@ class DiffText extends StatelessWidget {
     final List<TextSpan> spans = diffs.map((d) {
       if (d.operation == DIFF_INSERT) {
         // If this is the left column, we don't display what was added to the right column
-        if (isLeftColumn) return const TextSpan(); 
-        
+        if (isLeftColumn) return const TextSpan();
+
         return TextSpan(
           text: d.text,
           style: TextStyle(

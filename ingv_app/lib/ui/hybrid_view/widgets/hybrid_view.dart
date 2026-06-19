@@ -47,8 +47,10 @@ class _ResizableHybridViewState extends State<ResizableHybridView> {
             const double dividerHeight = 12.0;
             final availableHeight = totalHeight - dividerHeight;
 
-            final topHeight = availableHeight * _effectiveViewModel.topHeightRatio;
-            final bottomHeight = availableHeight * (1 - _effectiveViewModel.topHeightRatio);
+            final topHeight =
+                availableHeight * _effectiveViewModel.topHeightRatio;
+            final bottomHeight =
+                availableHeight * (1 - _effectiveViewModel.topHeightRatio);
 
             return Column(
               children: [
@@ -56,15 +58,16 @@ class _ResizableHybridViewState extends State<ResizableHybridView> {
                 SizedBox(
                   height: topHeight,
                   width: double.infinity,
-                  child: ClipRect(
-                    child: widget.topWidget,
-                  ), 
+                  child: ClipRect(child: widget.topWidget),
                 ),
 
                 GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onVerticalDragUpdate: (details) {
-                    _effectiveViewModel.changeRatio(details.delta.dy, availableHeight);
+                    _effectiveViewModel.changeRatio(
+                      details.delta.dy,
+                      availableHeight,
+                    );
                   },
                   child: Container(
                     color: Colors.grey[300],
@@ -87,9 +90,7 @@ class _ResizableHybridViewState extends State<ResizableHybridView> {
                 SizedBox(
                   height: bottomHeight,
                   width: double.infinity,
-                  child: ClipRect(
-                    child: widget.bottomWidget,
-                  ),
+                  child: ClipRect(child: widget.bottomWidget),
                 ),
               ],
             );

@@ -14,6 +14,7 @@ import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service.dart';
 
 import 'package:ingv_app/ui/file_history/widgets/file_history_editor.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
@@ -21,16 +22,86 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Object? _initError;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      // Warm up services to catch any DB/file-system failures early
+      final storageService = EventServiceSembast();
+      EventRepository(storageService);
+      EventDetailRepository(EventDetailService());
+      LocalAttachmentRepository();
+      LocalFileService();
+      FileOpenService();
+      // If we got here, initialization succeeded
+      setState(() => _initError = null);
+    } catch (e) {
+      debugPrint('App initialization error: $e');
+      setState(() => _initError = e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_initError != null) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Failed to start application',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _initError.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        debugShowCheckedModeBanner: false,
+      );
+    }
+
+    return const _MyAppLoaded();
+  }
+}
+
+/// The actual app, built only after services initialized successfully.
+class _MyAppLoaded extends StatelessWidget {
+  const _MyAppLoaded({super.key});
 
   @override
   Widget build(BuildContext context) {
     final storageService = EventServiceSembast();
     final eventRepository = EventRepository(storageService);
 
-    final detailRepository = EventDetailRepository(EventDetailService()); 
-    final attachmentRepository = LocalAttachmentRepository(); 
+    final detailRepository = EventDetailRepository(EventDetailService());
+    final attachmentRepository = LocalAttachmentRepository();
     final localFileService = LocalFileService();
     final fileOpenService = FileOpenService();
 
@@ -60,15 +131,5 @@ class MyApp extends StatelessWidget {
         fileOpenService: fileOpenService,
       ),
     );
-
-    // return MaterialApp(
-    //   debugShowCheckedModeBanner: false,
-    //   theme: ThemeData.dark().copyWith(
-    //     primaryColor: Colors.teal,
-    //     scaffoldBackgroundColor: const Color(0xFF121212),
-    //     cardColor: const Color(0xFF1E1E1E),
-    //   ),
-    //   home: DocumentComparisonScreen(),
-    // );
   }
 }

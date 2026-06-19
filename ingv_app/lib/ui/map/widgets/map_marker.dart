@@ -1,9 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart';
+import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
 
 class AppMapMarkerWidget extends StatelessWidget {
   final AppMarker marker;
   const AppMapMarkerWidget({super.key, required this.marker});
+
+  String _tooltipInfo(AppMarker m) {
+    final start = formatDateShort(m.startDateTime);
+    final end = m.endDateTime != null
+        ? formatDateShort(m.endDateTime!)
+        : 'Ongoing';
+    final duration = formatDuration(
+      m.startDateTime ?? DateTime.now(),
+      m.endDateTime,
+    );
+    final location = formatLocation(m.latitude, m.longitude);
+
+    return 'Author: ${m.author}\n'
+        '$location\n'
+        'Start: $start\n'
+        'End: $end\n'
+        'Duration: $duration';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,27 +55,29 @@ class AppMapMarkerWidget extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              marker.title,
-                              style: const TextStyle(
-                                fontSize: 38,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF444444),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const SizedBox(width: 8),
                                 Text(
-                                  "Author: ${marker.author}\nlat: ${marker.latitude}\nlong: ${marker.longitude}\nstart datetime: ${marker.startDateTime?.toLocal().toString().split(' ')[0] ?? 'Any'}\nend datetime: ${marker.endDateTime?.toLocal().toString().split(' ')[0] ?? 'Any'}",
+                                  marker.title,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                  style: const TextStyle(
+                                    fontSize: 38,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF444444),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _tooltipInfo(marker),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     color: Colors.black54,
@@ -64,42 +85,51 @@ class AppMapMarkerWidget extends StatelessWidget {
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 40),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                          ),
+                          const SizedBox(width: 20),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text(
-                                "Category:",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                color: marker.categoryColor,
-                                child: Text(
-                                  marker.category,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    "Category:",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.black54,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 6),
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 100,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      color: marker.categoryColor,
+                                      child: Text(
+                                        marker.category,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ],
-                      ),
-                    ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
                   Align(
@@ -164,4 +194,3 @@ class AppMapMarkerWidget extends StatelessWidget {
     );
   }
 }
-

@@ -4,10 +4,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_io.dart';
 import 'package:ingv_app/data/models/group_model.dart';
-import 'package:ingv_app/data/models/person_model.dart'; 
+import 'package:ingv_app/data/models/person_model.dart';
 import 'group_service_interface.dart';
 import 'package:flutter/material.dart';
-
 
 class GroupServiceSembast implements IGroupService {
   static final GroupServiceSembast _instance = GroupServiceSembast._internal();
@@ -24,11 +23,11 @@ class GroupServiceSembast implements IGroupService {
 
   Future<Database> get _db async {
     if (_database != null) return _database!;
-    
+
     final directory = await getApplicationDocumentsDirectory();
     await directory.create(recursive: true);
     final dbPath = join(directory.path, 'ingv_database.db');
-    
+
     _database = await databaseFactoryIo.openDatabase(dbPath);
     return _database!;
   }
@@ -63,7 +62,9 @@ class GroupServiceSembast implements IGroupService {
     if (!_initialized) {
       await _initialize();
     }
-    final List<GroupModel> groupsOfUser = groups.where((group) => group.members.contains(userId)).toList();
+    final List<GroupModel> groupsOfUser = groups
+        .where((group) => group.members.contains(userId))
+        .toList();
     return groupsOfUser;
   }
 
@@ -74,7 +75,7 @@ class GroupServiceSembast implements IGroupService {
       groups.clear();
       return true;
     } catch (e) {
-      return false; 
+      return false;
     }
   }
 
@@ -93,7 +94,11 @@ class GroupServiceSembast implements IGroupService {
       final personsCount = await _personsStore.count(db);
       if (personsCount == 0) {
         final List<PersonModel> mockPersons = List.generate(10, (index) {
-          return PersonModel(id: 'p_${index + 1}', name: 'Person ${index + 1}', image: '');
+          return PersonModel(
+            id: 'p_${index + 1}',
+            name: 'Person ${index + 1}',
+            image: '',
+          );
         });
         for (var person in mockPersons) {
           await _personsStore.record(person.id).put(db, person.toJson());
@@ -103,15 +108,16 @@ class GroupServiceSembast implements IGroupService {
       final groupSnapshots = await _groupsStore.find(db);
       groups.clear();
       groups.addAll(
-        groupSnapshots.map((snap) => GroupModel.fromJson(snap.value)).toList()
+        groupSnapshots.map((snap) => GroupModel.fromJson(snap.value)).toList(),
       );
 
       final personSnapshots = await _personsStore.find(db);
       persons.clear();
       persons.addAll(
-        personSnapshots.map((snap) => PersonModel.fromJson(snap.value)).toList()
+        personSnapshots
+            .map((snap) => PersonModel.fromJson(snap.value))
+            .toList(),
       );
-
     } catch (e) {
       groups.clear();
       groups.addAll(_generateMockGroups());
@@ -123,16 +129,20 @@ class GroupServiceSembast implements IGroupService {
   @override
   Future<void> insertGroup(GroupModel group) async {
     if (!_initialized) await _initialize();
-    
+
     final db = await _db;
     await _groupsStore.record(group.id).put(db, group.toJson());
-    
+
     groups.add(group);
   }
 
   List<GroupModel> _generateMockGroups() {
     final List<PersonModel> mockPersons = List.generate(10, (index) {
-      return PersonModel(id: 'p_${index + 1}', name: 'Person ${index + 1}', image: '');
+      return PersonModel(
+        id: 'p_${index + 1}',
+        name: 'Person ${index + 1}',
+        image: '',
+      );
     });
 
     return [
@@ -141,7 +151,12 @@ class GroupServiceSembast implements IGroupService {
         name: 'Tech Enthusiasts',
         description: 'A group for people loving flutter and tech.',
         image: '',
-        members: [mockPersons[0].id, mockPersons[1].id, mockPersons[2].id, mockPersons[3].id],
+        members: [
+          mockPersons[0].id,
+          mockPersons[1].id,
+          mockPersons[2].id,
+          mockPersons[3].id,
+        ],
       ),
       GroupModel(
         id: 'group_2',
@@ -155,19 +170,28 @@ class GroupServiceSembast implements IGroupService {
         name: 'Project Managers',
         description: 'Agile sprints, coordination, and delivery.',
         image: '',
-        members: [mockPersons[7].id, mockPersons[8].id, mockPersons[9].id, mockPersons[0].id],
+        members: [
+          mockPersons[7].id,
+          mockPersons[8].id,
+          mockPersons[9].id,
+          mockPersons[0].id,
+        ],
       ),
     ];
   }
 
   void initPersons() {
     final List<PersonModel> mockPersons = List.generate(10, (index) {
-      return PersonModel(id: 'p_${index + 1}', name: 'Person ${index + 1}', image: '');
+      return PersonModel(
+        id: 'p_${index + 1}',
+        name: 'Person ${index + 1}',
+        image: '',
+      );
     });
     persons.clear();
     persons.addAll(mockPersons);
   }
-  
+
   @override
   Future<List<PersonModel>> getAllPersons() async {
     if (!_initialized) {
@@ -190,10 +214,10 @@ class GroupServiceSembast implements IGroupService {
   @override
   Future<void> updateGroup(GroupModel updatedGroup) async {
     if (!_initialized) await _initialize();
-    
+
     final db = await _db;
     await _groupsStore.record(updatedGroup.id).put(db, updatedGroup.toJson());
-    
+
     final index = groups.indexWhere((g) => g.id == updatedGroup.id);
     if (index != -1) {
       groups[index] = updatedGroup;
@@ -203,22 +227,22 @@ class GroupServiceSembast implements IGroupService {
   @override
   Future<bool> deleteGroup(String groupId) async {
     if (!_initialized) await _initialize();
-    
+
     final db = await _db;
     await _groupsStore.record(groupId).delete(db);
-    
+
     groups.removeWhere((g) => g.id == groupId);
 
     final groupExists = groups.any((g) => g.id == groupId);
     if (groupExists) {
-      return false; 
+      return false;
     }
     return true;
   }
 
   Future<GroupModel?> getGroupById(String groupId) async {
     if (!_initialized) await _initialize();
-    
+
     final db = await _db;
     final record = await _groupsStore.record(groupId).get(db);
     if (record != null) {

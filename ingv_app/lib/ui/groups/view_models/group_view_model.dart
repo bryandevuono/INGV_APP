@@ -175,9 +175,7 @@ class GroupScreenViewModel extends ChangeNotifier {
     } catch (e) {
       errorMessage = "Failed to delete group: $e";
     } finally {
-      _setLoading(
-        false,
-      ); 
+      _setLoading(false);
     }
   }
 
@@ -194,7 +192,7 @@ class GroupScreenViewModel extends ChangeNotifier {
 
   void setSearchQuery(String query) {
     _searchQuery = query.toLowerCase();
-    notifyListeners(); 
+    notifyListeners();
   }
 
   List<PersonModel> get filteredPersons {

@@ -253,16 +253,16 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
         orElse: () => TextBlock(id: '', title: '', content: ''),
       );
       if (rightBlock != null && rightBlock.id.isNotEmpty) {
-        modifiedContent = rightBlock.content; 
+        modifiedContent = rightBlock.content;
       }
     } else {
       final leftBlock = _viewModel.leftVersion?.blocks.firstWhere(
         (b) => b.id == block.id,
         orElse: () => TextBlock(id: '', title: '', content: ''),
       );
-      // left side is older 
+      // left side is older
       if (leftBlock != null && leftBlock.id.isNotEmpty) {
-        originalContent = leftBlock.content; 
+        originalContent = leftBlock.content;
       }
     }
 
@@ -362,6 +362,7 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
       ),
     );
   }
+
   Widget _buildSaveToolbar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -374,7 +375,7 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
         children: [
           ElevatedButton.icon(
             onPressed: _viewModel.isSaving
-                ? null 
+                ? null
                 : () async {
                     // Call to method to compile and commit
                     bool success = await _viewModel.compileAndSaveChanges();

@@ -26,28 +26,38 @@ class VideoPlayerViewModel extends ChangeNotifier {
 
   void _initStreams() {
     final player = videoRepository.player;
-    
-    _subscriptions.add(player.stream.playing.listen((playing) {
-      isPlaying = playing;
-      notifyListeners();
-    }));
-    _subscriptions.add(player.stream.duration.listen((d) {
-      duration = d;
-      notifyListeners();
-    }));
-    _subscriptions.add(player.stream.position.listen((p) {
-      position = p;
-      notifyListeners();
-    }));
-    _subscriptions.add(player.stream.volume.listen((volume) {
-      isMuted = volume == 0;
-      notifyListeners();
-    }));
+
+    _subscriptions.add(
+      player.stream.playing.listen((playing) {
+        isPlaying = playing;
+        notifyListeners();
+      }),
+    );
+    _subscriptions.add(
+      player.stream.duration.listen((d) {
+        duration = d;
+        notifyListeners();
+      }),
+    );
+    _subscriptions.add(
+      player.stream.position.listen((p) {
+        position = p;
+        notifyListeners();
+      }),
+    );
+    _subscriptions.add(
+      player.stream.volume.listen((volume) {
+        isMuted = volume == 0;
+        notifyListeners();
+      }),
+    );
   }
 
   Future<void> initializeVideo() async {
     try {
-      final source = attachment.hasAssetPath ? attachment.assetPath : attachment.localPath;
+      final source = attachment.hasAssetPath
+          ? attachment.assetPath
+          : attachment.localPath;
       if (source == null || source.isEmpty) {
         throw StateError('Missing local video source');
       }

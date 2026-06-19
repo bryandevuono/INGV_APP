@@ -14,6 +14,4 @@ abstract class IAttachmentRepository {
 
   Future<List<FileVersion>> getFileHistoryFromAttachment(String attachmentId);
   Future<void> saveMergedVersion(String attachmentId, String mergedContent);
-
-
 }

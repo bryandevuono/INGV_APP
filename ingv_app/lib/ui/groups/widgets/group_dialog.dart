@@ -1,4 +1,4 @@
-import 'dart:io'; 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ingv_app/ui/groups/view_models/group_view_model.dart';
 import 'package:file_picker/file_picker.dart';
@@ -25,7 +25,7 @@ class _GroupDialogState extends State<GroupDialog> {
   final TextEditingController searchController = TextEditingController();
 
   PlatformFile? _pickedFile;
-  String? _nameError; 
+  String? _nameError;
 
   @override
   void initState() {
@@ -36,7 +36,7 @@ class _GroupDialogState extends State<GroupDialog> {
     _viewModel.selectUsers(widget.mode, widget.groupId, nameController);
 
     searchController.addListener(_onSearchChanged);
-    
+
     nameController.addListener(() {
       if (_nameError != null && nameController.text.isNotEmpty) {
         setState(() {
@@ -105,10 +105,13 @@ class _GroupDialogState extends State<GroupDialog> {
 
                 // Name Input Row
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start, // Align top to account for error text height
+                  crossAxisAlignment: CrossAxisAlignment
+                      .start, // Align top to account for error text height
                   children: [
                     const Padding(
-                      padding: EdgeInsets.only(top: 10.0), // Align with input text
+                      padding: EdgeInsets.only(
+                        top: 10.0,
+                      ), // Align with input text
                       child: SizedBox(
                         width: 80,
                         child: Text(
@@ -126,7 +129,8 @@ class _GroupDialogState extends State<GroupDialog> {
                             color: Colors.grey.shade400,
                             fontSize: 14,
                           ),
-                          errorText: _nameError, // Displays error within the dialog
+                          errorText:
+                              _nameError, // Displays error within the dialog
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 8,
@@ -164,7 +168,9 @@ class _GroupDialogState extends State<GroupDialog> {
                           ),
                         ),
                       ),
-                      child: Text(_pickedFile == null ? 'Add image' : 'Change image'),
+                      child: Text(
+                        _pickedFile == null ? 'Add image' : 'Change image',
+                      ),
                     ),
                     const SizedBox(width: 12),
                     // UI Feedback showing preview or file name
@@ -181,7 +187,10 @@ class _GroupDialogState extends State<GroupDialog> {
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
-                                child: Image.file(File(_pickedFile!.path!), fit: BoxFit.cover),
+                                child: Image.file(
+                                  File(_pickedFile!.path!),
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -190,7 +199,10 @@ class _GroupDialogState extends State<GroupDialog> {
                                 _pickedFile!.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                           ],
@@ -340,7 +352,7 @@ class _GroupDialogState extends State<GroupDialog> {
                     TextButton(
                       onPressed: () {
                         _viewModel.clearSelectedUsers();
-                        _viewModel.setSearchQuery(''); 
+                        _viewModel.setSearchQuery('');
                         Navigator.pop(context);
                       },
                       child: const Text(
@@ -362,8 +374,11 @@ class _GroupDialogState extends State<GroupDialog> {
                         if (widget.mode == 'create') {
                           _viewModel.createNewGroup(nameController.text);
                           _viewModel.clearSelectedUsers();
-                          _viewModel.setSearchQuery(''); 
-                          _viewModel.postImageToGroupId(widget.groupId, _pickedFile?.path ?? '');
+                          _viewModel.setSearchQuery('');
+                          _viewModel.postImageToGroupId(
+                            widget.groupId,
+                            _pickedFile?.path ?? '',
+                          );
                           Navigator.pop(context);
                         } else if (widget.mode == 'update') {
                           _viewModel.editGroup(
@@ -371,8 +386,11 @@ class _GroupDialogState extends State<GroupDialog> {
                             nameController.text,
                           );
                           _viewModel.clearSelectedUsers();
-                          _viewModel.setSearchQuery(''); 
-                          _viewModel.postImageToGroupId(widget.groupId, _pickedFile?.path ?? '');
+                          _viewModel.setSearchQuery('');
+                          _viewModel.postImageToGroupId(
+                            widget.groupId,
+                            _pickedFile?.path ?? '',
+                          );
                           Navigator.pop(context);
                         }
                       },
