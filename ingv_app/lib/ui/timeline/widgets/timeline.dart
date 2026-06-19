@@ -40,7 +40,24 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const Duration(days: 1),
   );
 
+  static const List<(Duration, String, String)> _timeScaleOptions = [
+    (Duration(days: 7), '1w', '1 week'),
+    (Duration(days: 1), '1d', '1 day'),
+    (Duration(hours: 12), '12h', '12 hours'),
+    (Duration(hours: 1), '1h', '1 hour'),
+  ];
+
+  Duration _timeScale = const Duration(days: 7);
+
   EventFilterController? get _filterController => widget.sharedFilterController;
+
+  String get _currentScaleLabel {
+    final match = _timeScaleOptions.firstWhere(
+      (o) => o.$1 == _timeScale,
+      orElse: () => _timeScaleOptions.first,
+    );
+    return match.$3;
+  }
 
   @override
   void initState() {
@@ -182,17 +199,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
     }
 
     setState(() => _selectedEvent = event);
-    // callback for hybrid responsiveness
+    // callback for hybrid
     widget.onPanelToggle?.call(true);
     await widget.detailViewModel.loadEventDetails(event);
   }
 
   void _navigateToPast() {
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.subtract(
-        const Duration(days: 7),
-      );
-      // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
+      _clientBaselineStart = _clientBaselineStart.subtract(_timeScale);
+      // clear the filter
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
         _filterController?.clearDateRange();
@@ -202,12 +217,24 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   void _navigateToFuture() {
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.add(const Duration(days: 7));
-      // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
+      _clientBaselineStart = _clientBaselineStart.add(_timeScale);
+      // clear filter
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
         _filterController?.clearDateRange();
       }
+    });
+  }
+
+  void _setTimeScale(Duration scale) {
+    if (scale == _timeScale) return;
+    setState(() {
+      if (widget.viewModel.filterStartDate != null) {
+        _clientBaselineStart = widget.viewModel.filterStartDate!;
+        widget.viewModel.setDateRangeFilter(null, null);
+        _filterController?.clearDateRange();
+      }
+      _timeScale = scale;
     });
   }
 
@@ -229,23 +256,27 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 Expanded(child: _buildTimelineCanvas(widget.viewModel.events)),
               ],
             ),
+            // FIX: Wrap the panel in Positioned to pin it to the bottom
             if (_selectedEvent != null)
-              EventDetailPanel(
-                viewModel: widget.detailViewModel,
-                groupOptions: widget.viewModel.userGroups,
-                onEventUpdated: (updatedEvent) async {
-                  setState(() {
-                    _selectedEvent = updatedEvent;
-                  });
-                  await widget.viewModel.fetchEvents();
-                },
-                onDismiss: () {
-                  setState(() => _selectedEvent = null);
-                  widget.detailViewModel.clearEventDetails();
-                  widget.onPanelToggle?.call(
-                    false,
-                  ); 
-                },
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: EventDetailPanel(
+                  viewModel: widget.detailViewModel,
+                  groupOptions: widget.viewModel.userGroups,
+                  onEventUpdated: (updatedEvent) async {
+                    setState(() {
+                      _selectedEvent = updatedEvent;
+                    });
+                    await widget.viewModel.fetchEvents();
+                  },
+                  onDismiss: () {
+                    setState(() => _selectedEvent = null);
+                    widget.detailViewModel.clearEventDetails();
+                    widget.onPanelToggle?.call(false);
+                  },
+                ),
               ),
           ],
         );
@@ -257,81 +288,119 @@ class _TimelineScreenState extends State<TimelineScreen> {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.only(
-          top: 12,
-          bottom: 18,
-          left: 16,
-          right: 16,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1400),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                  tooltip: 'Go back 7 days',
-                  onPressed: _navigateToPast,
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward_ios, size: 20),
-                  tooltip: 'Go forward 7 days',
-                  onPressed: _navigateToFuture,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: EventFilterActionBar(
-                    categories: {
-                      'All',
-                      ...widget.viewModel.categories,
-                    }.toList(),
-                    selectedCategory: widget.viewModel.selectedCategory,
-                    searchQuery: widget.viewModel.searchQuery,
-                    startDate: widget.viewModel.filterStartDate,
-                    endDate: widget.viewModel.filterEndDate,
-                    showCategoryDropdown: true,
-                    showDateFilter: true,
-                    showSearch: true,
-                    showExportPdf: true,
-                    showExportZip: true,
-                    showAddEvent: true,
-                    isExporting: widget.viewModel.isExporting,
-                    embeddedInPage: true,
-                    onCategoryChanged: (newValue) {
-                      widget.viewModel.setCategoryFilter(newValue);
-                      _filterController?.setCategory(newValue);
-                    },
-                    onDateRangePicked: _pickDateRange,
-                    onClearDateFilter: () {
-                      widget.viewModel.setDateRangeFilter(null, null);
-                      _filterController?.clearDateRange();
-                    },
-                    onSearchChanged: (query) {
-                      widget.viewModel.setSearchQuery(query);
-                      _filterController?.setSearchQuery(query);
-                    },
-                    onExportPdf: () => _showExportResult(
-                      widget.viewModel.exportTimelineReport,
-                    ),
-                    onExportZip: () =>
-                        _showExportResult(widget.viewModel.exportTimelineAsZip),
-                    onExportDateRangePdf: _exportDateRangePdf,
-                    onExportDateRangeZip: _exportDateRangeZip,
-                    onAddEvent:
-                        widget.onAddEvent ??
-                        () => showAddEventDialog(
-                          context,
-                          widget.viewModel,
-                          const [],
-                        ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Check if we are on a mobile-sized screen
+                final isMobile = constraints.maxWidth < 600;
+
+                // Extract the core navigation elements so we don't duplicate code
+                final navigationWidgets = [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                    tooltip: 'Go back $_currentScaleLabel',
+                    onPressed: _navigateToPast,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                    tooltip: 'Go forward $_currentScaleLabel',
+                    onPressed: _navigateToFuture,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildTimeScaleSelector(),
+                ];
+
+                final actionFilterBar = EventFilterActionBar(
+                  categories: {'All', ...widget.viewModel.categories}.toList(),
+                  selectedCategory: widget.viewModel.selectedCategory,
+                  searchQuery: widget.viewModel.searchQuery,
+                  startDate: widget.viewModel.filterStartDate,
+                  endDate: widget.viewModel.filterEndDate,
+                  showCategoryDropdown: true,
+                  showDateFilter: true,
+                  showSearch: true,
+                  showExportPdf: true,
+                  showExportZip: true,
+                  showAddEvent: true,
+                  isExporting: widget.viewModel.isExporting,
+                  embeddedInPage: true,
+                  onCategoryChanged: (newValue) {
+                    widget.viewModel.setCategoryFilter(newValue);
+                    _filterController?.setCategory(newValue);
+                  },
+                  onDateRangePicked: _pickDateRange,
+                  onClearDateFilter: () {
+                    widget.viewModel.setDateRangeFilter(null, null);
+                    _filterController?.clearDateRange();
+                  },
+                  onSearchChanged: (query) {
+                    widget.viewModel.setSearchQuery(query);
+                    _filterController?.setSearchQuery(query);
+                  },
+                  onExportPdf: () =>
+                      _showExportResult(widget.viewModel.exportTimelineReport),
+                  onExportZip: () =>
+                      _showExportResult(widget.viewModel.exportTimelineAsZip),
+                  onExportDateRangePdf: _exportDateRangePdf,
+                  onExportDateRangeZip: _exportDateRangeZip,
+                  onAddEvent:
+                      widget.onAddEvent ??
+                      () => showAddEventDialog(
+                        context,
+                        widget.viewModel,
+                        const [],
+                      ),
+                );
+                if (isMobile) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: navigationWidgets,
+                      ),
+                      const SizedBox(height: 12), // Spacer between rows
+                      actionFilterBar,
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    ...navigationWidgets,
+                    const SizedBox(width: 12),
+                    Expanded(child: actionFilterBar),
+                  ],
+                );
+              },
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTimeScaleSelector() {
+    return ToggleButtons(
+      isSelected: _timeScaleOptions.map((o) => o.$1 == _timeScale).toList(),
+      borderRadius: BorderRadius.circular(6),
+      constraints: const BoxConstraints(minWidth: 42, minHeight: 32),
+      onPressed: (index) => _setTimeScale(_timeScaleOptions[index].$1),
+      children: _timeScaleOptions
+          .map(
+            (o) => Tooltip(
+              message: o.$3,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(o.$2, style: const TextStyle(fontSize: 12)),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -360,11 +429,13 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final DateTime rangeStart =
         widget.viewModel.filterStartDate ?? _clientBaselineStart;
     final DateTime rangeEnd =
-        widget.viewModel.filterEndDate ??
-        rangeStart.add(const Duration(days: 7));
+        widget.viewModel.filterEndDate ?? rangeStart.add(_timeScale);
 
-    final DateTime totalStart = rangeStart.subtract(const Duration(days: 2));
-    final DateTime totalEnd = rangeEnd.add(const Duration(days: 2));
+    // scrollable range
+    final Duration visibleSpan = rangeEnd.difference(rangeStart);
+    final Duration edgePadding = visibleSpan * 0.25;
+    final DateTime totalStart = rangeStart.subtract(edgePadding);
+    final DateTime totalEnd = rangeEnd.add(edgePadding);
 
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
@@ -619,7 +690,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black26,
                           blurRadius: 2,
                           offset: const Offset(0, 1),
                         ),
@@ -647,31 +718,46 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        event.title,
-                        textAlign: TextAlign.left,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          textAlign: TextAlign.left,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                       Row(
-                        spacing: 8.0,
                         children: [
-                          Text(
-                            '$startStringTime - $endStringTime',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 9,
+                          Expanded(
+                            flex:
+                                2, 
+                            child: Text(
+                              '$startStringTime - $endStringTime',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 9,
+                              ),
                             ),
                           ),
-                          Text(
-                            duration,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 9,
+                          const SizedBox(width: 4),
+                          Flexible(
+                            flex:
+                                1, 
+                            child: Text(
+                              duration,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 9,
+                              ),
                             ),
                           ),
                         ],
