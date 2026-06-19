@@ -144,25 +144,7 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
             tooltip: 'Clear Date Filter',
             onPressed: widget.onClearDateFilter,
           ),
-        if (widget.showSearch)
-          SizedBox(
-            width: 220,
-            child: TextField(
-              controller: _searchController,
-              onChanged: widget.onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Search (keywords, tags)...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 0,
-                ),
-              ),
-            ),
-          ),
+
         if (widget.showExportPdf || widget.showExportZip)
           PopupMenuButton<String>(
             tooltip: 'Download export options',
@@ -226,6 +208,25 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.download),
+          ),
+        if (widget.showSearch)
+          SizedBox(
+            width: 220,
+            child: TextField(
+              controller: _searchController,
+              onChanged: widget.onSearchChanged,
+              decoration: InputDecoration(
+                hintText: 'Search (keywords, tags)...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 0,
+                ),
+              ),
+            ),
           ),
         if (widget.showAddEvent)
           TextButton.icon(

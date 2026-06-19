@@ -33,47 +33,6 @@ class TimelineScreen extends StatefulWidget {
   State<TimelineScreen> createState() => _TimelineScreenState();
 }
 
-/// Visual zoom levels for the timeline grid.
-enum TimelineZoomLevel {
-  oneDay, // 1 day
-  oneWeek, // 7 days
-  oneMonth, // 30 days
-  threeMonths, // 90 days
-  fitAll, // auto-fit to all events
-}
-
-extension TimelineZoomLevelExtension on TimelineZoomLevel {
-  String get label {
-    switch (this) {
-      case TimelineZoomLevel.oneDay:
-        return '1 Day';
-      case TimelineZoomLevel.oneWeek:
-        return '1 Week';
-      case TimelineZoomLevel.oneMonth:
-        return '1 Month';
-      case TimelineZoomLevel.threeMonths:
-        return '3 Months';
-      case TimelineZoomLevel.fitAll:
-        return 'Fit All';
-    }
-  }
-
-  int get days {
-    switch (this) {
-      case TimelineZoomLevel.oneDay:
-        return 1;
-      case TimelineZoomLevel.oneWeek:
-        return 7;
-      case TimelineZoomLevel.oneMonth:
-        return 30;
-      case TimelineZoomLevel.threeMonths:
-        return 90;
-      case TimelineZoomLevel.fitAll:
-        return -1;
-    }
-  }
-}
-
 class _TimelineScreenState extends State<TimelineScreen> {
   EventModel? _selectedEvent;
 
@@ -81,13 +40,27 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const Duration(days: 1),
   );
 
-  TimelineZoomLevel _zoomLevel = TimelineZoomLevel.oneDay;
-
   // Horizontal drag state for time panning
   double _dragDxTotal = 0;
   bool _isHorizontalPanning = false;
+  static const List<(Duration, String, String)> _timeScaleOptions = [
+    (Duration(days: 7), '1w', '1 week'),
+    (Duration(days: 1), '1d', '1 day'),
+    (Duration(hours: 12), '12h', '12 hours'),
+    (Duration(hours: 1), '1h', '1 hour'),
+  ];
+
+  Duration _timeScale = const Duration(days: 7);
 
   EventFilterController? get _filterController => widget.sharedFilterController;
+
+  String get _currentScaleLabel {
+    final match = _timeScaleOptions.firstWhere(
+      (o) => o.$1 == _timeScale,
+      orElse: () => _timeScaleOptions.first,
+    );
+    return match.$3;
+  }
 
   @override
   void initState() {
@@ -234,18 +207,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
     }
 
     setState(() => _selectedEvent = event);
-    // callback for hybrid responsiveness
+    // callback for hybrid
     widget.onPanelToggle?.call(true);
     await widget.detailViewModel.loadEventDetails(event);
   }
 
   void _navigateToPast() {
-    final span = _zoomLevel.days;
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.subtract(
-        Duration(days: span > 0 ? span : 7),
-      );
-      // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
+      _clientBaselineStart = _clientBaselineStart.subtract(_timeScale);
+      // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
         _filterController?.clearDateRange();
@@ -254,16 +224,25 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _navigateToFuture() {
-    final span = _zoomLevel.days;
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.add(
-        Duration(days: span > 0 ? span : 7),
-      );
-      // If a hardcoded filter was explicitly active, clear it so navigation shifts the view instead
+      _clientBaselineStart = _clientBaselineStart.add(_timeScale);
+      // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
         _filterController?.clearDateRange();
       }
+    });
+  }
+
+  void _setTimeScale(Duration scale) {
+    if (scale == _timeScale) return;
+    setState(() {
+      if (widget.viewModel.filterStartDate != null) {
+        _clientBaselineStart = widget.viewModel.filterStartDate!;
+        widget.viewModel.setDateRangeFilter(null, null);
+        _filterController?.clearDateRange();
+      }
+      _timeScale = scale;
     });
   }
 
@@ -298,12 +277,11 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       }
                       _isHorizontalPanning = true;
 
-                      final span = _zoomLevel.days;
-                      final days = span > 0 ? span : 7;
-                      final deltaDays = -details.primaryDelta! / 300.0 * days;
-                      final shift = Duration(
-                        seconds: (days * 86400 * deltaDays).round(),
-                      );
+                      final double scaleMs = _timeScale.inMilliseconds
+                          .toDouble();
+                      final double deltaMs =
+                          -details.primaryDelta! / 300.0 * scaleMs;
+                      final shift = Duration(milliseconds: deltaMs.round());
                       setState(() {
                         _clientBaselineStart = _clientBaselineStart.add(shift);
                         if (widget.viewModel.filterStartDate != null ||
@@ -321,21 +299,27 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 ),
               ],
             ),
+            // Pin the detail panel to the bottom of the stack
             if (_selectedEvent != null)
-              EventDetailPanel(
-                viewModel: widget.detailViewModel,
-                groupOptions: widget.viewModel.userGroups,
-                onEventUpdated: (updatedEvent) async {
-                  setState(() {
-                    _selectedEvent = updatedEvent;
-                  });
-                  await widget.viewModel.fetchEvents();
-                },
-                onDismiss: () {
-                  setState(() => _selectedEvent = null);
-                  widget.detailViewModel.clearEventDetails();
-                  widget.onPanelToggle?.call(false);
-                },
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: EventDetailPanel(
+                  viewModel: widget.detailViewModel,
+                  groupOptions: widget.viewModel.userGroups,
+                  onEventUpdated: (updatedEvent) async {
+                    setState(() {
+                      _selectedEvent = updatedEvent;
+                    });
+                    await widget.viewModel.fetchEvents();
+                  },
+                  onDismiss: () {
+                    setState(() => _selectedEvent = null);
+                    widget.detailViewModel.clearEventDetails();
+                    widget.onPanelToggle?.call(false);
+                  },
+                ),
               ),
           ],
         );
@@ -343,134 +327,119 @@ class _TimelineScreenState extends State<TimelineScreen> {
     );
   }
 
-  Widget _buildZoomSelector() {
-    return SizedBox(
-      width: 130,
-      child: DropdownButtonFormField<TimelineZoomLevel>(
-        value: _zoomLevel,
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 4,
-          ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade400),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Theme.of(context).primaryColor),
-          ),
-        ),
-        items: TimelineZoomLevel.values
-            .map(
-              (level) => DropdownMenuItem(
-                value: level,
-                child: Text(level.label, style: const TextStyle(fontSize: 13)),
-              ),
-            )
-            .toList(),
-        onChanged: (value) {
-          if (value != null) {
-            setState(() => _zoomLevel = value);
-          }
-        },
-      ),
-    );
-  }
-
   Widget _buildToolbar(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.only(
-          top: 12,
-          bottom: 18,
-          left: 16,
-          right: 16,
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1400),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                  tooltip: 'Go back ${_zoomLevel.label}',
-                  onPressed:
-                      widget.viewModel.filterStartDate != null ||
-                          widget.viewModel.filterEndDate != null
-                      ? null
-                      : _navigateToPast,
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward_ios, size: 20),
-                  tooltip: 'Go forward ${_zoomLevel.label}',
-                  onPressed:
-                      widget.viewModel.filterStartDate != null ||
-                          widget.viewModel.filterEndDate != null
-                      ? null
-                      : _navigateToFuture,
-                ),
-                const SizedBox(width: 8),
-                // Zoom level selector
-                _buildZoomSelector(),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: EventFilterActionBar(
-                    categories: {
-                      'All',
-                      ...widget.viewModel.categories,
-                    }.toList(),
-                    selectedCategory: widget.viewModel.selectedCategory,
-                    searchQuery: widget.viewModel.searchQuery,
-                    startDate: widget.viewModel.filterStartDate,
-                    endDate: widget.viewModel.filterEndDate,
-                    showCategoryDropdown: true,
-                    showDateFilter: true,
-                    showSearch: true,
-                    showExportPdf: true,
-                    showExportZip: true,
-                    showAddEvent: true,
-                    isExporting: widget.viewModel.isExporting,
-                    embeddedInPage: true,
-                    onCategoryChanged: (newValue) {
-                      widget.viewModel.setCategoryFilter(newValue);
-                      _filterController?.setCategory(newValue);
-                    },
-                    onDateRangePicked: _pickDateRange,
-                    onClearDateFilter: () {
-                      widget.viewModel.setDateRangeFilter(null, null);
-                      _filterController?.clearDateRange();
-                    },
-                    onSearchChanged: (query) {
-                      widget.viewModel.setSearchQuery(query);
-                      _filterController?.setSearchQuery(query);
-                    },
-                    onExportPdf: () => _showExportResult(
-                      widget.viewModel.exportTimelineReport,
-                    ),
-                    onExportZip: () =>
-                        _showExportResult(widget.viewModel.exportTimelineAsZip),
-                    onExportDateRangePdf: _exportDateRangePdf,
-                    onExportDateRangeZip: _exportDateRangeZip,
-                    onAddEvent:
-                        widget.onAddEvent ??
-                        () => showAddEventDialog(
-                          context,
-                          widget.viewModel,
-                          const [],
-                        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Check if we are on a mobile-sized screen
+            final isMobile = constraints.maxWidth < 600;
+
+            // Extract the core navigation elements so we don't duplicate code
+            final navigationWidgets = [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                tooltip: 'Go back $_currentScaleLabel',
+                onPressed: _navigateToPast,
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                tooltip: 'Go forward $_currentScaleLabel',
+                onPressed: _navigateToFuture,
+              ),
+              const SizedBox(width: 12),
+              _buildTimeScaleSelector(),
+            ];
+
+            final actionFilterBar = EventFilterActionBar(
+              categories: {'All', ...widget.viewModel.categories}.toList(),
+              selectedCategory: widget.viewModel.selectedCategory,
+              searchQuery: widget.viewModel.searchQuery,
+              startDate: widget.viewModel.filterStartDate,
+              endDate: widget.viewModel.filterEndDate,
+              showCategoryDropdown: true,
+              showDateFilter: true,
+              showSearch: true,
+              showExportPdf: true,
+              showExportZip: true,
+              showAddEvent: true,
+              isExporting: widget.viewModel.isExporting,
+              embeddedInPage: true,
+              onCategoryChanged: (newValue) {
+                widget.viewModel.setCategoryFilter(newValue);
+                _filterController?.setCategory(newValue);
+              },
+              onDateRangePicked: _pickDateRange,
+              onClearDateFilter: () {
+                widget.viewModel.setDateRangeFilter(null, null);
+                _filterController?.clearDateRange();
+              },
+              onSearchChanged: (query) {
+                widget.viewModel.setSearchQuery(query);
+                _filterController?.setSearchQuery(query);
+              },
+              onExportPdf: () =>
+                  _showExportResult(widget.viewModel.exportTimelineReport),
+              onExportZip: () =>
+                  _showExportResult(widget.viewModel.exportTimelineAsZip),
+              onExportDateRangePdf: _exportDateRangePdf,
+              onExportDateRangeZip: _exportDateRangeZip,
+              onAddEvent:
+                  widget.onAddEvent ??
+                  () => showAddEventDialog(
+                    context,
+                    widget.viewModel,
+                    const [],
                   ),
-                ),
+            );
+
+            if (isMobile) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: navigationWidgets,
+                  ),
+                  const SizedBox(height: 12), // Spacer between rows
+                  actionFilterBar,
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                ...navigationWidgets,
+                const SizedBox(width: 12),
+                Expanded(child: actionFilterBar),
               ],
-            ),
-          ),
+            );
+          },
         ),
       ),
+    );
+  }
+
+  Widget _buildTimeScaleSelector() {
+    return ToggleButtons(
+      isSelected: _timeScaleOptions.map((o) => o.$1 == _timeScale).toList(),
+      borderRadius: BorderRadius.circular(6),
+      constraints: const BoxConstraints(minWidth: 42, minHeight: 32),
+      onPressed: (index) => _setTimeScale(_timeScaleOptions[index].$1),
+      children: _timeScaleOptions
+          .map(
+            (o) => Tooltip(
+              message: o.$3,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(o.$2, style: const TextStyle(fontSize: 12)),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -500,63 +469,19 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const double totalCanvasWidth = 1200.0;
     const double leftHeaderWidth = 160.0;
 
-    final DateTime rangeStart;
-    final DateTime rangeEnd;
+    final DateTime rangeStart =
+        widget.viewModel.filterStartDate ?? _clientBaselineStart;
+    final DateTime rangeEnd =
+        widget.viewModel.filterEndDate ?? rangeStart.add(_timeScale);
 
-    if (widget.viewModel.filterStartDate != null) {
-      rangeStart = widget.viewModel.filterStartDate!;
-      rangeEnd =
-          widget.viewModel.filterEndDate ??
-          widget.viewModel.filterStartDate!.add(const Duration(days: 7));
-    } else if (widget.viewModel.filterEndDate != null) {
-      rangeEnd = widget.viewModel.filterEndDate!;
-      rangeStart = widget.viewModel.filterEndDate!.subtract(
-        const Duration(days: 7),
-      );
-    } else {
-      // No filter active — span all events so "All" timeline shows everything
-      if (eventList.isEmpty) {
-        rangeStart = _clientBaselineStart;
-        rangeEnd = rangeStart.add(const Duration(days: 7));
-      } else {
-        // Compute min/max across ALL events (not just filtered subset)
-        final minDt = eventList
-            .map((e) => e.startDt)
-            .reduce((a, b) => a.isBefore(b) ? a : b);
-        final maxDt = eventList
-            .map((e) => e.endDt ?? e.startDt)
-            .reduce((a, b) => a.isAfter(b) ? a : b);
-        rangeStart = minDt;
-        rangeEnd = maxDt;
-      }
-    }
-
-    // Compute gridMin/gridMax based on zoom level.
-    final Duration rangeSpan = rangeEnd.difference(rangeStart);
-    final DateTime gridMin;
-    final DateTime gridMax;
-
-    if (rangeSpan.inDays < 1) {
-      // All events fit in one day — show a 7-day window centered on the first event
-      gridMin = rangeStart.subtract(const Duration(days: 3));
-      gridMax = rangeStart.add(const Duration(days: 4));
-    } else if (_zoomLevel == TimelineZoomLevel.fitAll) {
-      // Fit All: grid spans the full event range
-      gridMin = rangeStart;
-      gridMax = rangeEnd;
-    } else {
-      // Fixed zoom: center on the anchor (_clientBaselineStart) with selected span
-      final int visibleDays = _zoomLevel.days;
-      final halfSpan = Duration(days: visibleDays ~/ 2);
-      gridMin = _clientBaselineStart.subtract(halfSpan);
-      gridMax = _clientBaselineStart.add(
-        Duration(days: visibleDays - halfSpan.inDays),
-      );
-    }
+    final DateTime gridMin = rangeStart;
+    final DateTime gridMax = rangeEnd;
 
     // Total scrollable range = grid + buffer so events aren't clipped at edges
-    final DateTime totalStart = gridMin.subtract(const Duration(days: 2));
-    final DateTime totalEnd = gridMax.add(const Duration(days: 2));
+    final Duration visibleSpan = rangeEnd.difference(rangeStart);
+    final Duration edgePadding = visibleSpan * 0.25;
+    final DateTime totalStart = rangeStart.subtract(edgePadding);
+    final DateTime totalEnd = rangeEnd.add(edgePadding);
 
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
@@ -810,7 +735,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
+                          color: Colors.black26,
                           blurRadius: 2,
                           offset: const Offset(0, 1),
                         ),
@@ -821,61 +746,66 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     ),
                   ),
                 )
-              : ClipRRect(
-                  child: Container(
-                    alignment: Alignment.topLeft,
-                    height: 45.0,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6.0,
-                      vertical: 4.0,
-                    ),
-                    decoration: BoxDecoration(
-                      color: itemColor,
-                      border: _selectedEvent?.eventId == event.eventId
-                          ? Border.all(color: Colors.white, width: 2)
-                          : null,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                event.title,
-                                textAlign: TextAlign.left,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      '$startStringTime - $endStringTime $duration',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 9,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+              : Container(
+                  alignment: Alignment.topLeft,
+                  height: 45.0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6.0,
+                    vertical: 4.0,
+                  ),
+                  decoration: BoxDecoration(
+                    color: itemColor,
+                    border: _selectedEvent?.eventId == event.eventId
+                        ? Border.all(color: Colors.white, width: 2)
+                        : null,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          textAlign: TextAlign.left,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              '$startStringTime - $endStringTime',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 9,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            flex: 1,
+                            child: Text(
+                              duration,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 9,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
         ),

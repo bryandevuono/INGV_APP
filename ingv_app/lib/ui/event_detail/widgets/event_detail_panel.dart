@@ -118,51 +118,72 @@ class _EventDetailPanelState extends State<EventDetailPanel>
                 ),
               ],
             ),
-            child: Column(
+            // We change the top-level child to a Stack so we can absolutely position the X button
+            child: Stack(
               children: [
-                GestureDetector(
-                  onTap: () {
-                    _animationController.reverse().then((_) {
-                      widget.onDismiss();
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0),
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade400,
-                        borderRadius: BorderRadius.circular(2),
+                // Main content column
+                Column(
+                  children: [
+                    // Drag handle indicator
+                    GestureDetector(
+                      onTap: () {
+                        _animationController.reverse().then((_) {
+                          widget.onDismiss();
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade400,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: ListenableBuilder(
-                    listenable: widget.viewModel,
-                    builder: (context, _) {
-                      final selectedEvent = widget.viewModel.selectedEvent;
-                      if (selectedEvent == null) {
-                        return const SizedBox.shrink();
-                      }
+                    Expanded(
+                      child: ListenableBuilder(
+                        listenable: widget.viewModel,
+                        builder: (context, _) {
+                          final selectedEvent = widget.viewModel.selectedEvent;
+                          if (selectedEvent == null) {
+                            return const SizedBox.shrink();
+                          }
 
-                      return Column(
-                        children: [
-                          EventDetailHeader(
-                            event: selectedEvent,
-                            viewModel: widget.viewModel,
-                            onDismiss: widget.onDismiss,
-                            onEdit: () => _openEditDialog(context),
-                          ),
-                          Expanded(
-                            child: EventDetailContent(
-                              viewModel: widget.viewModel,
-                              groupOptions: widget.groupOptions,
-                            ),
-                          ),
-                        ],
-                      );
+                          return Column(
+                            children: [
+                              EventDetailHeader(
+                                event: selectedEvent,
+                                viewModel: widget.viewModel,
+                                onDismiss: widget.onDismiss,
+                                onEdit: () => _openEditDialog(context),
+                              ),
+                              Expanded(
+                                child: EventDetailContent(
+                                  viewModel: widget.viewModel,
+                                  groupOptions: widget.groupOptions,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Top Right Close Cross
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.black54),
+                    onPressed: () {
+                      _animationController.reverse().then((_) {
+                        widget.onDismiss();
+                      });
                     },
                   ),
                 ),
