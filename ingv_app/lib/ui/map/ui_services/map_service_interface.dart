@@ -49,5 +49,5 @@ abstract class IMapService {
     required double latitude,
     required double longitude,
     required double initialZoom,
-  });
+  }); 
 }
