@@ -9,6 +9,7 @@ import 'package:ingv_app/data/repositories/attachment_repository_interface.dart'
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'package:ingv_app/data/services/export_service.dart';
+import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart';
 
 class MapScreenViewModel extends ChangeNotifier {
   final IEventRepository _eventRepository;
@@ -125,6 +126,17 @@ class MapScreenViewModel extends ChangeNotifier {
     if (start == null || end == null) return 0;
     final duration = end.difference(start).inDays.toDouble();
     return duration / timelineDurationDays;
+  }
+
+  double calculateAverageDuration(List<AppMarker> markers) {
+    double totalProgress = 0;
+    for (var m in markers) {
+      totalProgress += m.progress;
+    }
+    final double avgProgress = markers.isNotEmpty
+        ? (totalProgress / markers.length).clamp(0.0, 1.0)
+        : 0.0;
+    return avgProgress;
   }
 
   Future<void> getColors() async {
