@@ -9,6 +9,7 @@ class EventServiceSembast implements IEventService {
   static final EventServiceSembast _instance = EventServiceSembast._internal();
   factory EventServiceSembast() => _instance;
   EventServiceSembast._internal();
+  Duration timeScale = const Duration(days: 7); // Default 
 
   static const String _storeName = 'events';
   final Map<String, Color> cellColors = {
@@ -200,5 +201,13 @@ class EventServiceSembast implements IEventService {
       debugPrint('Failed to fetch group for event $eventId: $e');
       return null;
     }
+  }
+
+  void setTimeScale(Duration scale) {
+    timeScale = scale;
+  }
+
+  Duration getTimeScale() {
+    return timeScale;
   }
 }

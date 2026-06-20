@@ -50,13 +50,12 @@ class _TimelineScreenState extends State<TimelineScreen> {
     (Duration(hours: 1), '1h', '1 hour'),
   ];
 
-  Duration _timeScale = const Duration(days: 7);
 
   EventFilterController? get _filterController => widget.sharedFilterController;
 
   String get _currentScaleLabel {
     final match = _timeScaleOptions.firstWhere(
-      (o) => o.$1 == _timeScale,
+      (o) => o.$1 == widget.viewModel.getTimeScale(),
       orElse: () => _timeScaleOptions.first,
     );
     return match.$3;
@@ -214,7 +213,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   void _navigateToPast() {
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.subtract(_timeScale);
+      _clientBaselineStart = _clientBaselineStart.subtract(widget.viewModel.getTimeScale());
       // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
@@ -225,7 +224,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   void _navigateToFuture() {
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.add(_timeScale);
+      _clientBaselineStart = _clientBaselineStart.add(widget.viewModel.getTimeScale());
       // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
@@ -235,14 +234,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _setTimeScale(Duration scale) {
-    if (scale == _timeScale) return;
+    if (scale == widget.viewModel.getTimeScale())  return;
     setState(() {
       if (widget.viewModel.filterStartDate != null) {
         _clientBaselineStart = widget.viewModel.filterStartDate!;
         widget.viewModel.setDateRangeFilter(null, null);
         _filterController?.clearDateRange();
       }
-      _timeScale = scale;
+      widget.viewModel.setTimeScale(scale);
     });
   }
 
@@ -277,8 +276,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       }
                       _isHorizontalPanning = true;
 
-                      final double scaleMs = _timeScale.inMilliseconds
-                          .toDouble();
+                      final double scaleMs = widget.viewModel.getTimeScale().inMilliseconds.toDouble();
                       final double deltaMs =
                           -details.primaryDelta! / 300.0 * scaleMs;
                       final shift = Duration(milliseconds: deltaMs.round());
@@ -425,7 +423,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   Widget _buildTimeScaleSelector() {
     return ToggleButtons(
-      isSelected: _timeScaleOptions.map((o) => o.$1 == _timeScale).toList(),
+      isSelected: _timeScaleOptions.map((o) => o.$1 == widget.viewModel.getTimeScale()).toList(),
       borderRadius: BorderRadius.circular(6),
       constraints: const BoxConstraints(minWidth: 42, minHeight: 32),
       onPressed: (index) => _setTimeScale(_timeScaleOptions[index].$1),
@@ -472,7 +470,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final DateTime rangeStart =
         widget.viewModel.filterStartDate ?? _clientBaselineStart;
     final DateTime rangeEnd =
-        widget.viewModel.filterEndDate ?? rangeStart.add(_timeScale);
+        widget.viewModel.filterEndDate ?? rangeStart.add(widget.viewModel.getTimeScale());
 
     final DateTime gridMin = rangeStart;
     final DateTime gridMax = rangeEnd;

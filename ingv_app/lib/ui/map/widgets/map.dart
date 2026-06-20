@@ -268,7 +268,6 @@ class _MapScreenState extends State<MapScreen> {
               ],
             ),
 
-            // 2. Animated Slide-Up Detail Panel
             AnimatedSlide(
               // Offset(0, 0) means normal position, Offset(0, 1) slides it 100% downward off-screen
               offset: isPanelOpen ? Offset.zero : const Offset(0, 1),

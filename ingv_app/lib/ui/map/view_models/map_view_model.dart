@@ -68,6 +68,7 @@ class MapScreenViewModel extends ChangeNotifier {
   Future<void> fetchEvents() async {
     isLoading = true;
     errorMessage = null;
+    getTimeScale();
     notifyListeners();
 
     try {
@@ -248,5 +249,10 @@ class MapScreenViewModel extends ChangeNotifier {
       isExporting = false;
       notifyListeners();
     }
+  }
+
+  void getTimeScale() {
+    timelineDurationDays = _eventRepository.getTimeScale().inDays;
+    notifyListeners();
   }
 }
