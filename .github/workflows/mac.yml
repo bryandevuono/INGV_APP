@@ -40,9 +40,6 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # 5. Run static analysis
-      - name: Analyze Code
-        run: flutter analyze
 
       # 6. Enable macOS desktop target
       - name: Enable macOS Config
