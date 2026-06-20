@@ -115,7 +115,7 @@ class PdfExportService implements IPdfExportService {
         groupName: groupName,
       );
       final exportDate = DateTime.now();
-      final fileName = _buildFileName('event_export', event.title, exportDate);
+      final fileName = _buildFileName('INGV_report', event.title, exportDate);
       final saveLocation = saveToDisk ? await _savePdf(bytes, fileName) : '';
 
       return ExportResult(
@@ -145,10 +145,10 @@ class PdfExportService implements IPdfExportService {
       );
       final exportDate = DateTime.now();
       final fileName = _buildFileName(
-        'timeline_export',
+        'INGV_report',
         filterStartDate != null || filterEndDate != null
-            ? _buildTimelineDateRange(filterStartDate, filterEndDate)
-            : 'all_events',
+            ? '${_buildTimelineDateRange(filterStartDate, filterEndDate)}_${events.length}events'
+            : '${events.length}events',
         exportDate,
       );
       final saveLocation = saveToDisk ? await _savePdf(bytes, fileName) : '';
@@ -227,8 +227,6 @@ class PdfExportService implements IPdfExportService {
           _buildFileSection(
             attachments.where((attachment) => attachment.isFile).toList(),
           ),
-          pw.SizedBox(height: 16),
-          _buildTodoSection(),
         ],
       ),
     );
@@ -267,8 +265,6 @@ class PdfExportService implements IPdfExportService {
           _buildTimelineOverview(events, eventDetails),
           pw.SizedBox(height: 16),
           ..._buildTimelineGroups(events, orderedCategories, eventDetails),
-          pw.SizedBox(height: 16),
-          _buildTodoSection(),
         ],
       ),
     );
@@ -990,20 +986,6 @@ class PdfExportService implements IPdfExportService {
     );
   }
 
-  pw.Widget _buildTodoSection() {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Future improvement'),
-        pw.SizedBox(height: 6),
-        pw.Text(
-          'TODO: add optional ZIP export with this PDF and all original attachments.',
-          style: const pw.TextStyle(fontSize: 10),
-        ),
-      ],
-    );
-  }
-
   pw.Widget _buildSectionTitle(String title) {
     return pw.Text(
       title,
@@ -1184,13 +1166,14 @@ class ZipExportService implements IZipExportService {
 
     final usedPaths = <String>{
       'timeline_report.pdf',
-      'data/events.json',
+      'data/event_index.json',
       'metadata/export_info.json',
     };
     final archiveEntries = <ExportArchiveEntry>[];
     final includedAttachmentFileNames = <String>[];
     final missingAttachmentFileNames = <String>[];
     final eventIds = events.map((event) => event.eventId).toList();
+    final eventJsonFileNames = <String>[];
 
     _addBytesToArchive(
       archiveEntries,
@@ -1200,10 +1183,27 @@ class ZipExportService implements IZipExportService {
     );
 
     final eventRecords = events.map((event) => event.toJson()).toList();
+    for (int i = 0; i < events.length; i++) {
+      final event = events[i];
+      final jsonPath = 'data/event_${event.eventId}.json';
+      final uniquePath = _uniqueArchivePath(jsonPath, usedPaths);
+      _addBytesToArchive(
+        archiveEntries,
+        uniquePath,
+        utf8.encode(JsonEncoder.withIndent('  ').convert(eventRecords[i])),
+        usedPaths,
+      );
+      eventJsonFileNames.add(uniquePath);
+    }
+
+    final indexData = <String, dynamic>{
+      'eventFiles': eventJsonFileNames,
+      'eventCount': events.length,
+    };
     _addBytesToArchive(
       archiveEntries,
-      'data/events.json',
-      utf8.encode(JsonEncoder.withIndent('  ').convert(eventRecords)),
+      'data/event_index.json',
+      utf8.encode(JsonEncoder.withIndent('  ').convert(indexData)),
       usedPaths,
     );
 
@@ -1239,7 +1239,7 @@ class ZipExportService implements IZipExportService {
         'end': filterEndDate?.toIso8601String(),
       },
       'eventCount': events.length,
-      'eventRecordCount': eventRecords.length,
+      'eventJsonFiles': eventJsonFileNames,
       'attachmentCount': includedAttachmentCount,
       'eventIds': eventIds,
       'includedAttachmentFileNames': includedAttachmentFileNames,
@@ -1367,20 +1367,23 @@ class ZipExportService implements IZipExportService {
     final timestamp = DateTime.now();
     final suffix =
         '${timestamp.year}${_twoDigits(timestamp.month)}${_twoDigits(timestamp.day)}_${_twoDigits(timestamp.hour)}${_twoDigits(timestamp.minute)}';
-    return 'event_export_${event.eventId}_$suffix';
+    return 'INGV_event_${event.eventId}_$suffix';
   }
 
   String _buildTimelineZipFileName({
     DateTime? filterStartDate,
     DateTime? filterEndDate,
   }) {
+    final timestamp = DateTime.now();
+    final dateSuffix =
+        '${timestamp.year}${_twoDigits(timestamp.month)}${_twoDigits(timestamp.day)}';
     final start = filterStartDate == null
         ? 'all_events'
         : _compactDate(filterStartDate);
     final end = filterEndDate == null
         ? 'all_events'
         : _compactDate(filterEndDate);
-    return 'timeline_export_${start}_to_${end}';
+    return 'INGV_report_${start}_to_${end}_$dateSuffix';
   }
 
   String _compactDate(DateTime date) {

@@ -32,9 +32,7 @@ void showAddEventDialog(
   String? selectedGroup;
   List<String> categories = viewModel.orderedCategories;
   String selectedCategory = defaultCategories.first;
-  List<String> categoryOptions = categories.isNotEmpty
-      ? categories
-      : defaultCategories;
+  List<String> categoryOptions = {...defaultCategories, ...categories}.toList();
   List<File> selectedMediaFiles = [];
   DateTime? startDate;
   TimeOfDay? startTime;

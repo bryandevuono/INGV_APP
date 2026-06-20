@@ -187,6 +187,8 @@ class EventNotesSection extends StatelessWidget {
                                 ),
                                 onReplyTapped: () =>
                                     _showReplyDialog(context, note.noteId),
+                                onReplyDeleted: (replyId) =>
+                                    viewModel.deleteReply(replyId),
                               ),
                             ],
                           ),

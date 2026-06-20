@@ -218,6 +218,15 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
               decoration: InputDecoration(
                 hintText: 'Search (keywords, tags)...',
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          widget.onSearchChanged?.call('');
+                        },
+                      )
+                    : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8.0),
                 ),
