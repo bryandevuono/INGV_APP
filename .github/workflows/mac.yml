@@ -8,20 +8,25 @@ on:
 
 jobs:
   test_and_build_macos:
-    # Crucial: macOS builds require a macOS virtual environment
     runs-on: macos-latest
 
+    # This sets the default directory for all 'run' steps in this job
+    defaults:
+      run:
+        working-directory: ingv_app
+
     steps:
-      # 1. Check out your code repository
+      # 1. Check out your code repository (Still runs at the repo root)
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Cache Flutter build dependencies to speed up subsequent runs
+      # 2. Cache Flutter build dependencies
+      # Note: The hashFiles path is adjusted to look inside ingv_app
       - name: Cache Flutter Packages
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-flutter-${{ hashFiles('ingv_app/**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-flutter-
 
@@ -29,21 +34,20 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' # or 'beta' / 'master' depending on your project
-          # Optional: specify exact version, e.g., flutter-version: '3.22.2'
+          channel: 'stable'
 
-      # 4. Get project dependencies
+      # 4. Get project dependencies (Now automatically runs inside ingv_app)
       - name: Install Dependencies
         run: flutter pub get
 
-      # 5. Run static analysis (Optional but highly recommended)
+      # 5. Run static analysis
       - name: Analyze Code
         run: flutter analyze
 
-      # 7. Enable macOS desktop target (just in case)
+      # 6. Enable macOS desktop target
       - name: Enable macOS Config
         run: flutter config --enable-macos-desktop
 
-      # 8. Test if the macOS application compiles successfully
+      # 7. Test if the macOS application compiles successfully
       - name: Build macOS App
         run: flutter build macos --debug
