@@ -1,0 +1,49 @@
+name: Flutter macOS Test & Build
+
+on:
+  push:
+    branches: [ main, mac ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test_and_build_macos:
+    # Crucial: macOS builds require a macOS virtual environment
+    runs-on: macos-latest
+
+    steps:
+      # 1. Check out your code repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Cache Flutter build dependencies to speed up subsequent runs
+      - name: Cache Flutter Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
+
+      # 3. Set up the Flutter environment
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable' # or 'beta' / 'master' depending on your project
+          # Optional: specify exact version, e.g., flutter-version: '3.22.2'
+
+      # 4. Get project dependencies
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # 5. Run static analysis (Optional but highly recommended)
+      - name: Analyze Code
+        run: flutter analyze
+
+      # 7. Enable macOS desktop target (just in case)
+      - name: Enable macOS Config
+        run: flutter config --enable-macos-desktop
+
+      # 8. Test if the macOS application compiles successfully
+      - name: Build macOS App
+        run: flutter build macos --debug
