@@ -41,6 +41,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   double _dragDxTotal = 0;
   bool _isHorizontalPanning = false;
+  bool _isDragging = false;
+  double _scrollOffset = 0.0;
   static const List<(Duration, String, String)> _timeScaleOptions = [
     (Duration(days: 7), '1w', '1 week'),
     (Duration(days: 1), '1d', '1 day'),
@@ -275,41 +277,68 @@ class _TimelineScreenState extends State<TimelineScreen> {
             Column(
               children: [
                 if (widget.showControlBar) _buildToolbar(context),
+                if (widget.viewModel.events.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 168.0),
+                    child: _buildTimelineScrollBar(),
+                  ),
                 Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onHorizontalDragStart: (_) {
-                      _dragDxTotal = 0;
-                      _isHorizontalPanning = false;
-                    },
-                    onHorizontalDragUpdate: (details) {
-                      _dragDxTotal += details.delta.dx;
+                  child: MouseRegion(
+                    cursor: _isDragging
+                        ? SystemMouseCursors.grabbing
+                        : SystemMouseCursors.grab,
+                    child: Stack(
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onHorizontalDragStart: (_) {
+                            _dragDxTotal = 0;
+                            _isHorizontalPanning = false;
+                            setState(() {
+                              _isDragging = true;
+                            });
+                          },
+                          onHorizontalDragUpdate: (details) {
+                            // Track scrubber visual position
+                            _dragDxTotal += details.delta.dx;
+                            setState(() {
+                              _scrollOffset += details.delta.dx;
+                            });
 
-                      if (!_isHorizontalPanning && _dragDxTotal.abs() < 10) {
-                        return;
-                      }
-                      _isHorizontalPanning = true;
+                            if (!_isHorizontalPanning &&
+                                _dragDxTotal.abs() < 10) {
+                              return;
+                            }
+                            _isHorizontalPanning = true;
 
-                      final double scaleMs = widget.viewModel
-                          .getTimeScale()
-                          .inMilliseconds
-                          .toDouble();
-                      final double deltaMs =
-                          -details.primaryDelta! / 300.0 * scaleMs;
-                      final shift = Duration(milliseconds: deltaMs.round());
-                      setState(() {
-                        _clientBaselineStart = _clientBaselineStart.add(shift);
-                        if (widget.viewModel.filterStartDate != null ||
-                            widget.viewModel.filterEndDate != null) {
-                          widget.viewModel.setDateRangeFilter(null, null);
-                          _filterController?.clearDateRange();
-                        }
-                      });
-                    },
-                    onHorizontalDragEnd: (_) {
-                      _isHorizontalPanning = false;
-                    },
-                    child: _buildTimelineCanvas(widget.viewModel.events),
+                            final double scaleMs = widget.viewModel
+                                .getTimeScale()
+                                .inMilliseconds
+                                .toDouble();
+                            final double deltaMs =
+                                -details.primaryDelta! / 300.0 * scaleMs;
+                            final shift = Duration(
+                              milliseconds: deltaMs.round(),
+                            );
+                            setState(() {
+                              _clientBaselineStart = _clientBaselineStart.add(
+                                shift,
+                              );
+                              if (widget.viewModel.filterStartDate != null ||
+                                  widget.viewModel.filterEndDate != null) {
+                                widget.viewModel.setDateRangeFilter(null, null);
+                                _filterController?.clearDateRange();
+                              }
+                            });
+                          },
+                          onHorizontalDragEnd: (_) {
+                            _isHorizontalPanning = false;
+                            setState(() => _isDragging = false);
+                          },
+                          child: _buildTimelineCanvas(widget.viewModel.events),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -455,6 +484,90 @@ class _TimelineScreenState extends State<TimelineScreen> {
             ),
           )
           .toList(),
+    );
+  }
+
+  Widget _buildTimelineScrollBar() {
+    return Tooltip(
+      message: 'Drag to move timeline',
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragStart: (_) {
+          setState(() => _isDragging = true);
+        },
+        onHorizontalDragUpdate: (details) {
+          setState(() {
+            _scrollOffset += details.delta.dx;
+          });
+
+          final double scaleMs = widget.viewModel
+              .getTimeScale()
+              .inMilliseconds
+              .toDouble();
+          final double deltaMs = -details.primaryDelta! / 300.0 * scaleMs;
+          final shift = Duration(milliseconds: deltaMs.round());
+          setState(() {
+            _clientBaselineStart = _clientBaselineStart.add(shift);
+            if (widget.viewModel.filterStartDate != null ||
+                widget.viewModel.filterEndDate != null) {
+              widget.viewModel.setDateRangeFilter(null, null);
+              _filterController?.clearDateRange();
+            }
+          });
+        },
+        onHorizontalDragEnd: (_) {
+          setState(() => _isDragging = false);
+        },
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final availableWidth = constraints.maxWidth;
+            final thumbWidth = 100.0;
+            final maxOffset = availableWidth - thumbWidth;
+            final thumbOffset = _scrollOffset.clamp(
+              -maxOffset * 0.3,
+              maxOffset * 0.3,
+            );
+
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                // Track
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                // Draggable thumb
+                Positioned(
+                  left: (availableWidth / 2) - (thumbWidth / 2) + thumbOffset,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 100),
+                    width: thumbWidth,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: _isDragging
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.drag_handle_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
