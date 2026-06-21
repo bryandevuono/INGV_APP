@@ -267,6 +267,7 @@ class _MapScreenState extends State<MapScreen> {
                             onExportPdf: () => _exportVisibleEvents(zip: false),
                             onExportZip: () => _exportVisibleEvents(zip: true),
                             onAddEvent: widget.onAddEvent,
+                            timelineScaleDuration: _viewModel.timelineDuration,
                           ),
                         ),
                       ),

@@ -12,4 +12,5 @@ abstract interface class IEventService {
   Future<String?> getGroupOfEvent(int eventId);
   void setTimeScale(Duration scale);
   Duration getTimeScale();
+  Future<bool> deleteEvent(int eventId);
 }

@@ -39,7 +39,7 @@ class MapScreenViewModel extends ChangeNotifier {
   bool isExporting = false;
   String? errorMessage;
   String? exportErrorMessage;
-  int timelineDurationDays = 7;
+  Duration timelineDuration = const Duration(days: 7);
 
   Color getCategoryColor(String category) {
     return _categoryColors[category] ?? const Color(0xFF9E9E9E);
@@ -124,8 +124,8 @@ class MapScreenViewModel extends ChangeNotifier {
 
   double calculateMarkerDuration(DateTime? start, DateTime? end) {
     if (start == null || end == null) return 0;
-    final duration = end.difference(start).inDays.toDouble();
-    return duration / timelineDurationDays;
+    final eventDurationMs = end.difference(start).inMilliseconds.toDouble();
+    return (eventDurationMs / timelineDuration.inMilliseconds).clamp(0.0, 1.0);
   }
 
   double calculateAverageDuration(List<AppMarker> markers) {
@@ -265,7 +265,7 @@ class MapScreenViewModel extends ChangeNotifier {
   }
 
   void getTimeScale() {
-    timelineDurationDays = _eventRepository.getTimeScale().inDays;
+    timelineDuration = _eventRepository.getTimeScale();
     notifyListeners();
   }
 }
