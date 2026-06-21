@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/file_version.dart';
 import 'package:ingv_app/data/repositories/attachment_repository.dart';
-
+import 'package:ingv_app/data/services/attachment_service.dart';
 class DocumentMergeViewModel extends ChangeNotifier {
   List<FileVersion> _documentHistory = [];
   FileVersion? _leftVersion;
   FileVersion? _rightVersion;
 
-  final LocalAttachmentRepository _attachmentRepository =
-      LocalAttachmentRepository();
+  final AttachmentRepository _attachmentRepository =
+      AttachmentRepository(AttachmentService());
   bool _isSaving = false;
 
   List<FileVersion> get documentHistory => _documentHistory;

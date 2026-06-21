@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/repositories/attachment_repository.dart';
-import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
+import 'package:ingv_app/data/services/attachment_service.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/timeline_presentation_models.dart';
@@ -19,7 +19,7 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   final IEventRepository _eventRepository;
   final IEventSearchRepository _searchRepository;
   final IEventDetailRepository _detailRepository;
-  final IAttachmentRepository _attachmentRepository;
+  final AttachmentRepository _attachmentRepository;
   final ILocalFileService _localFileService;
   late final IPdfExportService _pdfExportService;
   late final IZipExportService _zipExportService;
@@ -49,7 +49,7 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
   TimelineViewModel(this._eventRepository, this._searchRepository)
     : _detailRepository = EventDetailRepository(EventDetailService()),
-      _attachmentRepository = LocalAttachmentRepository(),
+      _attachmentRepository = AttachmentRepository(AttachmentService()),
       _localFileService = LocalFileService() {
     _pdfExportService = PdfExportService(
       _detailRepository,

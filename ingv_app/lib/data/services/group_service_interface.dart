@@ -9,5 +9,5 @@ abstract class IGroupService {
   Future<bool> deleteGroup(String groupId);
   dynamic getImageByGroupId(String groupId);
   Future<List<GroupModel>> getGroupsOfUser(String userId);
-  void postImageToGroupId(String groupId, String imagePath);
+  Future<void> postImageToGroupId(String groupId, String imagePath);
 }

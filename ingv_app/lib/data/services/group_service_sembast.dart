@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sembast/sembast.dart';
@@ -253,11 +254,50 @@ class GroupServiceSembast implements IGroupService {
 
   @override
   dynamic getImageByGroupId(String groupId) {
+    final group = groups.firstWhere(
+      (g) => g.id == groupId,
+      orElse: () =>
+          GroupModel(id: '', name: '', members: [], description: '', image: ''),
+    );
+    final imagePath = group.image;
+    if (imagePath.isNotEmpty && File(imagePath).existsSync()) {
+      return Image.file(File(imagePath), fit: BoxFit.cover);
+    }
     return const Icon(Icons.group, size: 48, color: Colors.white);
   }
 
   @override
-  void postImageToGroupId(String groupId, String imagePath) {
-    return;
+  Future<void> postImageToGroupId(String groupId, String imagePath) async {
+    if (imagePath.isEmpty || groupId.isEmpty) return;
+
+    try {
+      final db = await _db;
+      final groupIndex = groups.indexWhere((g) => g.id == groupId);
+      if (groupIndex == -1) return;
+
+      final sourceFile = File(imagePath);
+      if (!await sourceFile.exists()) return;
+
+      final appDir = await getApplicationDocumentsDirectory();
+      final imagesDir = Directory('${appDir.path}/group_images');
+      if (!await imagesDir.exists()) await imagesDir.create(recursive: true);
+
+      final ext = sourceFile.path.split('.').last;
+      final safeId = groupId.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final destPath = '${imagesDir.path}/$safeId.$ext';
+      await sourceFile.copy(destPath);
+
+      final updatedGroup = GroupModel(
+        id: groups[groupIndex].id,
+        name: groups[groupIndex].name,
+        members: groups[groupIndex].members,
+        description: groups[groupIndex].description,
+        image: destPath,
+      );
+      await _groupsStore.record(groupId).put(db, updatedGroup.toJson());
+      groups[groupIndex] = updatedGroup;
+    } catch (e) {
+      debugPrint('Error saving group image: $e');
+    }
   }
 }

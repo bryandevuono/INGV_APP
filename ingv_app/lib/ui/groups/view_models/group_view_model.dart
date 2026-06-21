@@ -29,9 +29,11 @@ class GroupScreenViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> createNewGroup(String name) async {
+  Future<String> createNewGroup(String name) async {
     _setLoading(true);
     errorMessage = null;
+
+    String newGroupId = '';
 
     try {
       final newGroup = GroupModel(
@@ -43,6 +45,7 @@ class GroupScreenViewModel extends ChangeNotifier {
       );
       await _groupRepository.insertGroup(newGroup);
       groups.add(newGroup);
+      newGroupId = newGroup.id;
 
       selectedUserIds.clear();
       notifyListeners();
@@ -51,6 +54,7 @@ class GroupScreenViewModel extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+    return newGroupId;
   }
 
   Future<void> editGroup(String groupId, String newName) async {
@@ -208,7 +212,8 @@ class GroupScreenViewModel extends ChangeNotifier {
     return _groupRepository.getImagebyGroupId(groupId);
   }
 
-  void postImageToGroupId(String groupId, String imagePath) {
-    _groupRepository.postImageToGroupId(groupId, imagePath);
+  Future<void> postImageToGroupId(String groupId, String imagePath) async {
+    await _groupRepository.postImageToGroupId(groupId, imagePath);
+    notifyListeners();
   }
 }

@@ -33,9 +33,7 @@ class GroupCard extends StatelessWidget {
                 flex: 3,
                 child: Container(
                   color: Colors.grey[300],
-                  child:
-                      viewModel.getGroupImage(groupId) ??
-                      const Icon(Icons.group, size: 48, color: Colors.white),
+                  child: viewModel.getGroupImage(groupId),
                 ),
               ),
 

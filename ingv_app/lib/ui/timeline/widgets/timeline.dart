@@ -9,23 +9,28 @@ import 'add_event_dialog.dart';
 import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
 import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
 import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
+import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
 
 class TimelineScreen extends StatefulWidget {
   final ITimelineViewModel viewModel;
   final EventDetailViewModel detailViewModel;
   final bool showControlBar;
+  final bool showLocalDetailPanel;
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
   final ValueChanged<bool>? onPanelToggle;
+  final HybridViewModel? hybridViewModel;
 
-  const TimelineScreen({
+  TimelineScreen({
     super.key,
     required this.viewModel,
     required this.detailViewModel,
     this.showControlBar = true,
+    this.showLocalDetailPanel = true,
     this.sharedFilterController,
     this.onAddEvent,
     this.onPanelToggle,
+    this.hybridViewModel,
   });
 
   @override
@@ -69,8 +74,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   @override
   void dispose() {
-    super.dispose();
     widget.detailViewModel.removeListener(_handleDetailViewModelChange);
+    super.dispose();
   }
 
   void _handleDetailViewModelChange() {
@@ -211,6 +216,17 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   Future<void> _toggleEventDetails(EventModel event) async {
+    if (widget.hybridViewModel != null) {
+      if (widget.hybridViewModel!.selectedEvent?.eventId == event.eventId) {
+        widget.hybridViewModel!.clearEvent();
+        widget.onPanelToggle?.call(false);
+        return;
+      }
+      await widget.detailViewModel.loadEventDetails(event);
+      widget.hybridViewModel!.selectEvent(event, fromMap: false);
+      widget.onPanelToggle?.call(true);
+      return;
+    }
     if (_selectedEvent != null && _selectedEvent!.eventId == event.eventId) {
       setState(() => _selectedEvent = null);
       widget.detailViewModel.clearEventDetails();
@@ -219,7 +235,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     }
 
     setState(() => _selectedEvent = event);
-    // callback for hybrid
     widget.onPanelToggle?.call(true);
     await widget.detailViewModel.loadEventDetails(event);
   }
@@ -326,14 +341,16 @@ class _TimelineScreenState extends State<TimelineScreen> {
                               );
                               if (widget.viewModel.filterStartDate != null ||
                                   widget.viewModel.filterEndDate != null) {
-                                widget.viewModel.setDateRangeFilter(null, null);
+                                widget.viewModel.setDateRangeFilter(
+                                  null,
+                                  null,
+                                );
                                 _filterController?.clearDateRange();
                               }
                             });
                           },
                           onHorizontalDragEnd: (_) {
                             _isHorizontalPanning = false;
-                            setState(() => _isDragging = false);
                           },
                           child: _buildTimelineCanvas(widget.viewModel.events),
                         ),
@@ -343,6 +360,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 ),
               ],
             ),
+            // Pin the detail panel to the bottom of the stack
             if (_selectedEvent != null)
               Positioned(
                 bottom: 0,
@@ -434,7 +452,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   () => showAddEventDialog(
                     context,
                     widget.viewModel,
-                    widget.viewModel.userGroups,
+                    const [],
                   ),
             );
 

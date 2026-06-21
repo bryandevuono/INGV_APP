@@ -130,6 +130,7 @@ class EventMediaSection extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: _FileTile(
                     attachment: attachment,
+                    viewModel: viewModel,
                     isBusy: isBusy,
                     onDelete: () =>
                         _confirmDelete(context, viewModel, attachment),
@@ -491,6 +492,7 @@ class _FileTile extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onOpen;
   final VoidCallback onOpenExternally;
+  final EventDetailViewModel viewModel;
 
   const _FileTile({
     required this.attachment,
@@ -498,6 +500,7 @@ class _FileTile extends StatelessWidget {
     required this.onDelete,
     required this.onOpen,
     required this.onOpenExternally,
+    required this.viewModel,
   });
 
   @override
@@ -552,6 +555,13 @@ class _FileTile extends StatelessWidget {
                 TextButton(
                   onPressed: onOpenExternally,
                   child: const Text('Open Externally'),
+                ),
+                TextButton(
+                  onPressed: () => {
+                    viewModel.pickAndAddAttachment(),
+                    viewModel.deleteAttachment(attachment) // mock replacing 
+                  },  
+                  child: const Text('Upload a new version'),
                 ),
                 TextButton(
                   // open merge editor

@@ -137,22 +137,28 @@ class AppMapMarkerWidget extends StatelessWidget {
                     child: SizedBox(
                       width: 150,
                       height: 32,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF76A7FF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                      child: Material(
+                        color: const Color(0xFF76A7FF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        onPressed: () {
-                          marker.onTap();
-                        },
-                        child: const Text(
-                          "See event details",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            height: 1.5,
+                        child: InkWell(
+                          onTap: () {
+                            marker.onTap();
+                          },
+                          child: const SizedBox(
+                            width: double.infinity,
+                            height: double.infinity,
+                            child: Center(
+                              child: Text(
+                                "See event details",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),

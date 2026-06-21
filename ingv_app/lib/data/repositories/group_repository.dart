@@ -37,7 +37,7 @@ class GroupRepository {
     return _groupService.getImageByGroupId(groupId);
   }
 
-  void postImageToGroupId(String groupId, String imagePath) {
-    _groupService.postImageToGroupId(groupId, imagePath);
+  Future<void> postImageToGroupId(String groupId, String imagePath) async {
+    await _groupService.postImageToGroupId(groupId, imagePath);
   }
 }
