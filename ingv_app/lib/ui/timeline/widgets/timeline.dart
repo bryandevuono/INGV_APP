@@ -530,7 +530,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
           );
         }).toList();
 
-        final rowMaxStackDepth = <String, int>{lane.id: 2};
+        final rowMaxStackDepth = <String, int>{lane.id: double.maxFinite.toInt()};
         final double fullWidgetHeight = definedRowHeight + baseAxisHeight;
         final double visibleViewportHeight = isFirstRow
             ? fullWidgetHeight

@@ -141,23 +141,51 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                     ),
                   ),
                 ],
-                TextField(
+                TextFormField(
                   controller: titleController,
                   decoration: const InputDecoration(labelText: 'Title *'),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a title';
+                    }
+                    return null;
+                  },
                 ),
-                TextField(
+                TextFormField(
                   controller: descriptionController,
                   decoration: const InputDecoration(labelText: 'Description'),
                 ),
-                TextField(
+                TextFormField(
                   controller: latController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(labelText: 'Latitude'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return null;
+                    final numValue = double.tryParse(value);
+                    if (numValue == null) {
+                      return 'Must be a valid number';
+                    }
+                    if (numValue < -90 || numValue > 90) {
+                      return 'Must be between -90 and 90';
+                    }
+                    return null;
+                  },
                 ),
-                TextField(
+                TextFormField(
                   controller: longController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(labelText: 'Longitude'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return null;
+                    final numValue = double.tryParse(value);
+                    if (numValue == null) {
+                      return 'Must be a valid number';
+                    }
+                    if (numValue < -180 || numValue > 180) {
+                      return 'Must be between -180 and 180';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
                 InputDecorator(
@@ -221,7 +249,7 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                         startDate == null
                             ? 'No start date *'
                             : 'Start: ${startDate!.toString().split(' ')[0]} ${startTime?.format(context) ?? ''}',
-                        style: TextStyle(fontSize: 14),
+                        style: const TextStyle(fontSize: 14),
                       ),
                     ),
                     TextButton(
@@ -441,10 +469,16 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
   }
 
   void _submitForm() async {
-    if (titleController.text.trim().isEmpty || startDate == null || startTime == null) {
+    // 1. Validate custom configurations like date picker elements first
+    if (startDate == null || startTime == null) {
       setState(() {
         errorMessage = 'Required fields missing: Fill Title, Start Date & Time!';
       });
+      return;
+    }
+
+    // 2. Fire the global form logic (runs validators for Title, Latitude, and Longitude)
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
