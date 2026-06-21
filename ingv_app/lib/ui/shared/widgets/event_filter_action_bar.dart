@@ -23,6 +23,7 @@ class EventFilterActionBar extends StatefulWidget {
   final Future<void> Function()? onExportDateRangeZip;
   final VoidCallback? onAddEvent;
   final bool embeddedInPage;
+  final int? timelineScaleDays;
 
   const EventFilterActionBar({
     super.key,
@@ -48,6 +49,7 @@ class EventFilterActionBar extends StatefulWidget {
     this.onExportDateRangeZip,
     this.onAddEvent,
     this.embeddedInPage = false,
+    this.timelineScaleDays,
   });
 
   @override
@@ -242,6 +244,15 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
             onPressed: widget.onAddEvent,
             icon: const Icon(Icons.add),
             label: const Text('Add event'),
+          ),
+        if (widget.timelineScaleDays != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 255, 255, 255),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text('Timeline scale: ${widget.timelineScaleDays} day(s)'),
           ),
       ],
     );
