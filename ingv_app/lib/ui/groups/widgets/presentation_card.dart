@@ -78,7 +78,6 @@ class GroupCard extends StatelessWidget {
                           showDialog(
                             context: context,
                             builder: (context) {
-                              // Fixed: Added groupId parameter passing here
                               return GroupDialog(
                                 mode: 'update',
                                 groupId: groupId,

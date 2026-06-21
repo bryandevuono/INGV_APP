@@ -195,24 +195,29 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _syncFromSharedFilters() {
-    final controller = _filterController;
-    if (controller == null) {
-      return;
-    }
+    // for the search we need to fix the collision between two searches
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
 
-    if (widget.viewModel.selectedCategory != controller.selectedCategory) {
-      widget.viewModel.setCategoryFilter(controller.selectedCategory);
-    }
-    if (widget.viewModel.searchQuery != controller.searchQuery) {
-      widget.viewModel.setSearchQuery(controller.searchQuery);
-    }
-    if (widget.viewModel.filterStartDate != controller.startDate ||
-        widget.viewModel.filterEndDate != controller.endDate) {
-      widget.viewModel.setDateRangeFilter(
-        controller.startDate,
-        controller.endDate,
-      );
-    }
+      final controller = _filterController;
+      if (controller == null) {
+        return;
+      }
+
+      if (widget.viewModel.selectedCategory != controller.selectedCategory) {
+        widget.viewModel.setCategoryFilter(controller.selectedCategory);
+      }
+      if (widget.viewModel.searchQuery != controller.searchQuery) {
+        widget.viewModel.setSearchQuery(controller.searchQuery);
+      }
+      if (widget.viewModel.filterStartDate != controller.startDate ||
+          widget.viewModel.filterEndDate != controller.endDate) {
+        widget.viewModel.setDateRangeFilter(
+          controller.startDate,
+          controller.endDate,
+        );
+      }
+    });
   }
 
   Future<void> _toggleEventDetails(EventModel event) async {
@@ -341,10 +346,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                               );
                               if (widget.viewModel.filterStartDate != null ||
                                   widget.viewModel.filterEndDate != null) {
-                                widget.viewModel.setDateRangeFilter(
-                                  null,
-                                  null,
-                                );
+                                widget.viewModel.setDateRangeFilter(null, null);
                                 _filterController?.clearDateRange();
                               }
                             });
@@ -449,11 +451,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
               onExportDateRangeZip: _exportDateRangeZip,
               onAddEvent:
                   widget.onAddEvent ??
-                  () => showAddEventDialog(
-                    context,
-                    widget.viewModel,
-                    const [],
-                  ),
+                  () => showAddEventDialog(context, widget.viewModel, const []),
             );
 
             if (isMobile) {

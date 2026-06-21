@@ -106,9 +106,30 @@ class MapScreenViewModel extends ChangeNotifier {
     }
   }
 
-  void setSearchQuery(String query) {
+  List<EventModel> searchSuggestions = [];
+
+  Future<void> setSearchQuery(String query) async {
     searchQuery = query;
-    applyFilters();
+    await applyFilters(); // keeps existing live marker filtering
+    searchSuggestions = events.take(5).toList();
+    notifyListeners();
+  }
+
+  Future<void> selectSuggestion(EventModel event) async {
+    searchQuery = event.title;
+    searchSuggestions = [];
+    notifyListeners(); 
+
+    try {
+      mapController.move(
+        latlong2.LatLng(event.lat, event.long),
+        8.0, // Zoom level
+      );
+    } catch (e) {
+      debugPrint("Error moving map to selected suggestion: $e");
+    }
+
+    await applyFilters();
   }
 
   void setCategoryFilter(String category) {
@@ -159,6 +180,9 @@ class MapScreenViewModel extends ChangeNotifier {
   void jumpToLocation({double zoom = 6}) async {
     try {
       final foundEvent = await _searchRepository.getClosestMatch(searchQuery);
+      print(
+        "Found closest match: ${foundEvent.title} at (${foundEvent.lat}, ${foundEvent.long})",
+      );
       mapController.move(
         latlong2.LatLng(foundEvent.lat, foundEvent.long),
         zoom,

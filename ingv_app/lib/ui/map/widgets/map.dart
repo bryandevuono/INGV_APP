@@ -27,6 +27,7 @@ class MapScreen extends StatefulWidget {
   final ValueChanged<bool>? onPanelToggle;
   final HybridViewModel? hybridViewModel;
   final EventDetailViewModel? detailViewModel;
+  final GlobalKey<MapScreenState>? stateKey;
 
   MapScreen({
     super.key,
@@ -40,17 +41,19 @@ class MapScreen extends StatefulWidget {
     this.onPanelToggle,
     this.hybridViewModel,
     this.detailViewModel,
+    this.stateKey,
   });
-
+  MapScreenViewModel? getViewModel() => stateKey?.currentState?._viewModel;
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  State<MapScreen> createState() => MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class MapScreenState extends State<MapScreen> {
   late final MapScreenViewModel _viewModel;
   late final EventDetailViewModel _detailViewModel;
   EventModel? _selectedEvent;
   EventFilterController? get _filterController => widget.sharedFilterController;
+  MapScreenViewModel getViewModel() => _viewModel;
 
   @override
   void initState() {
@@ -143,6 +146,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _syncFromSharedFilters() {
+    
     final controller = _filterController;
     if (controller == null) return;
 
@@ -269,6 +273,10 @@ class _MapScreenState extends State<MapScreen> {
                             onExportZip: () => _exportVisibleEvents(zip: true),
                             onAddEvent: widget.onAddEvent,
                             timelineScaleDuration: _viewModel.timelineDuration,
+                            searchSuggestions: _viewModel.searchSuggestions,
+                            onSuggestionSelected: (event) {
+                              _viewModel.selectSuggestion(event);
+                            },
                           ),
                         ),
                       ),
