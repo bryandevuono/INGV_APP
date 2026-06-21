@@ -108,7 +108,6 @@ class MapScreenViewModel extends ChangeNotifier {
 
   void setSearchQuery(String query) {
     searchQuery = query;
-    jumpToLocation();
     applyFilters();
   }
 
@@ -147,11 +146,11 @@ class MapScreenViewModel extends ChangeNotifier {
     } catch (e) {
       _categoryColors = {
         'Volcanic': Colors.red,
-        'Earthquake': Colors.orange,
+        'Earthquake': Colors.green,
         'Hydrological': Colors.blue,
-        'Meteorological': Colors.cyan,
+        'Meteorological': Colors.orange,
         'Geological': Colors.brown,
-        'Atmospheric': Colors.green,
+        'Atmospheric': Colors.teal,
       };
     }
     notifyListeners();
@@ -202,6 +201,12 @@ class MapScreenViewModel extends ChangeNotifier {
         startDate: startDate,
         endDate: endDate,
       );
+
+      if (exportEvents.isEmpty) {
+        exportErrorMessage = 'No events to export.';
+        return null;
+      }
+
       final result = await _pdfExportService.exportTimelineReport(
         events: exportEvents,
         orderedCategories: categories
@@ -233,6 +238,12 @@ class MapScreenViewModel extends ChangeNotifier {
         startDate: startDate,
         endDate: endDate,
       );
+
+      if (exportEvents.isEmpty) {
+        exportErrorMessage = 'No events to export.';
+        return null;
+      }
+
       final result = await _zipExportService.exportTimelineAsZip(
         events: exportEvents,
         orderedCategories: categories
@@ -242,6 +253,8 @@ class MapScreenViewModel extends ChangeNotifier {
         filterEndDate: endDate ?? filterEndDate,
       );
       return result.saveLocation;
+    } catch (error) {
+      exportErrorMessage = 'Failed to export map ZIP: $error';
     } catch (error) {
       exportErrorMessage = 'Failed to export map ZIP: $error';
       return null;

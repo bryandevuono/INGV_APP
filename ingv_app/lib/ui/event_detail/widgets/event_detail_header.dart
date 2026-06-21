@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
+import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
 
 class EventDetailHeader extends StatelessWidget {
   final EventModel event;
@@ -15,6 +16,25 @@ class EventDetailHeader extends StatelessWidget {
     required this.onDismiss,
     this.onEdit,
   });
+
+  static IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Volcanic':
+        return Icons.casino;
+      case 'Earthquake':
+        return Icons.festival;
+      case 'Hydrological':
+        return Icons.water_drop;
+      case 'Meteorological':
+        return Icons.cloud;
+      case 'Geological':
+        return Icons.landscape;
+      case 'Atmospheric':
+        return Icons.air;
+      default:
+        return Icons.warning;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +56,14 @@ class EventDetailHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  color: viewModel.categoryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Icon(Icons.terrain, color: Colors.red, size: 18),
+                child: Icon(
+                  _getCategoryIcon(event.category),
+                  color: viewModel.categoryColor,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -60,9 +84,13 @@ class EventDetailHeader extends StatelessWidget {
                         ),
                         _Badge(
                           label: event.category,
-                          background: Colors.red.withValues(alpha: 0.1),
-                          borderColor: Colors.red.withValues(alpha: 0.25),
-                          textColor: Colors.red.shade700,
+                          background: viewModel.categoryColor.withValues(
+                            alpha: 0.1,
+                          ),
+                          borderColor: viewModel.categoryColor.withValues(
+                            alpha: 0.25,
+                          ),
+                          textColor: viewModel.categoryColor,
                         ),
                         _StatusBadge(viewModel: viewModel),
                       ],
@@ -330,7 +358,7 @@ class _OverviewPanel extends StatelessWidget {
                 flex: 2,
                 child: _OverviewPill(
                   label: 'Start',
-                  value: viewModel.selectedEvent?.startDt.toString() ?? 'N/A',
+                  value: formatDateTimeLocal(viewModel.selectedEvent?.startDt),
                 ),
               ),
               const SizedBox(width: 8),
@@ -338,8 +366,9 @@ class _OverviewPanel extends StatelessWidget {
                 flex: 2,
                 child: _OverviewPill(
                   label: 'End',
-                  value:
-                      viewModel.selectedEvent?.endDt?.toString() ?? 'Ongoing',
+                  value: viewModel.selectedEvent?.endDt != null
+                      ? formatDateTimeLocal(viewModel.selectedEvent!.endDt!)
+                      : 'Ongoing',
                 ),
               ),
               const SizedBox(width: 8),

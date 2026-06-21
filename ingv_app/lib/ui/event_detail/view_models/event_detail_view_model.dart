@@ -29,6 +29,23 @@ class EventDetailViewModel extends ChangeNotifier {
   EventAttachment? selectedAttachment;
   String? groupName;
 
+  // Default category colors (consistent with timeview_model.dart)
+  static const Map<String, Color> _defaultCategoryColors = {
+    'Volcanic': Colors.red,
+    'Earthquake': Colors.green,
+    'Hydrological': Colors.blue,
+    'Meteorological': Colors.orange,
+    'Geological': Colors.brown,
+    'Atmospheric': Colors.teal,
+  };
+
+  /// Returns the color for the currently selected event's category.
+  Color get categoryColor {
+    final event = selectedEvent;
+    if (event == null) return Colors.red;
+    return _defaultCategoryColors[event.category] ?? Colors.grey;
+  }
+
   bool isLoading = false;
   bool isExporting = false;
   String? errorMessage;
@@ -119,6 +136,14 @@ class EventDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Delete a single reply from a note.
+  Future<void> deleteReply(int replyId) async {
+    await _detailRepository.deleteReply(replyId);
+    replies.removeWhere((reply) => reply.id == replyId);
+    notifyListeners();
+  }
+
+  /// Delete a note and all of its replies.
   Future<void> deleteNote(int noteId) async {
     final noteReplies = replies
         .where((reply) => reply.noteId == noteId)

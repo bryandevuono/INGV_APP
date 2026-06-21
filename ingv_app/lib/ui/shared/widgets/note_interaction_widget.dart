@@ -15,6 +15,7 @@ typedef ReplyTapCallback = void Function();
 /// NoteInteractionWidget(
 ///   replies: viewModel.getRepliesForNote(note.noteId),
 ///   onReplyTapped: () => showReplyDialog(noteId: note.noteId),
+///   onReplyDeleted: (replyId) => viewModel.deleteReply(replyId),
 /// )
 /// ```
 class NoteInteractionWidget extends StatelessWidget {
@@ -24,10 +25,14 @@ class NoteInteractionWidget extends StatelessWidget {
   /// Called when the user taps the "Reply" button.
   final ReplyTapCallback onReplyTapped;
 
+  /// Called when the user taps the delete button on a specific reply.
+  final void Function(int replyId)? onReplyDeleted;
+
   const NoteInteractionWidget({
     super.key,
     required this.replies,
     required this.onReplyTapped,
+    this.onReplyDeleted,
   });
 
   @override
@@ -67,6 +72,9 @@ class NoteInteractionWidget extends StatelessWidget {
               author: reply.author,
               text: reply.text,
               timestamp: reply.timestamp,
+              onDeleted: onReplyDeleted != null
+                  ? () => onReplyDeleted!(reply.id)
+                  : null,
             ),
           ),
         ],
@@ -81,11 +89,13 @@ class _ReplyTile extends StatelessWidget {
   final String author;
   final String text;
   final DateTime timestamp;
+  final VoidCallback? onDeleted;
 
   const _ReplyTile({
     required this.author,
     required this.text,
     required this.timestamp,
+    this.onDeleted,
   });
 
   String _formatTimestamp(DateTime dt) {
@@ -114,20 +124,32 @@ class _ReplyTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                author,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.blue.shade700,
+              Row(
+                children: [
+                  Text(
+                    author,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatTimestamp(timestamp),
+                    style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+              if (onDeleted != null)
+                IconButton(
+                  icon: const Icon(Icons.close, size: 12, color: Colors.grey),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: onDeleted,
                 ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                _formatTimestamp(timestamp),
-                style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
-              ),
             ],
           ),
           const SizedBox(height: 3),
