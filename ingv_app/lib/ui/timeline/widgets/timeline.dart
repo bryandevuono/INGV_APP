@@ -17,7 +17,7 @@ class TimelineScreen extends StatefulWidget {
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
   final ValueChanged<bool>?
-  onPanelToggle; // for resizing hybrid view when event details panel opens/closes
+  onPanelToggle; 
 
   const TimelineScreen({
     super.key,
@@ -64,14 +64,27 @@ class _TimelineScreenState extends State<TimelineScreen> {
   @override
   void initState() {
     super.initState();
+    widget.detailViewModel.addListener(_handleDetailViewModelChange);
     _refreshInitialData();
   }
 
   @override
   void dispose() {
     super.dispose();
+    widget.detailViewModel.removeListener(_handleDetailViewModelChange);
   }
 
+  void _handleDetailViewModelChange() {
+    if (widget.detailViewModel.selectedEvent == null && _selectedEvent != null) {
+      setState(() {
+        _selectedEvent = null;
+      });
+      
+      widget.onPanelToggle?.call(false);
+      
+      widget.viewModel.fetchEvents();
+    }
+  }
   Future<void> _refreshInitialData() async {
     try {
       await widget.viewModel.getColors();
@@ -79,7 +92,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
       await widget.viewModel.getGroupsOfUser();
     } catch (e) {
       debugPrint('Timeline initialization error: $e');
-      // Safe to fail silently — fetchEvents already sets errorMessage
     }
   }
 

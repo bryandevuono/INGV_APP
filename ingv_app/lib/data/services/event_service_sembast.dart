@@ -210,4 +210,13 @@ class EventServiceSembast implements IEventService {
   Duration getTimeScale() {
     return timeScale;
   }
+
+  @override
+  Future<bool> deleteEvent(int eventId) async {
+    await _ensureInitialized();
+    final db = await _database;
+    await _store.record(eventId).delete(db);
+    _events.removeWhere((event) => event.eventId == eventId);
+    return true;
+  }
 }
