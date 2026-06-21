@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
@@ -13,7 +14,7 @@ class MapServiceUI implements IMapService {
 
   MapServiceUI({required this.userAgentPackageName});
 
- @override
+  @override
   Widget buildMap({
     required double initialLat,
     required double initialLng,
@@ -24,7 +25,7 @@ class MapServiceUI implements IMapService {
     final List<Marker> flutterMarkers = markers.map((m) {
       return Marker(
         // Use an ObjectKey containing the original AppMarker data
-        key: ObjectKey(m), 
+        key: ObjectKey(m),
         point: latlong2.LatLng(m.latitude, m.longitude),
         width: m.size,
         height: m.size,
@@ -48,60 +49,118 @@ class MapServiceUI implements IMapService {
     );
   }
 
-  Widget _buildClusterLayer(List<Marker> markers, MapScreenViewModel mapViewModel) {
+  Widget _buildClusterLayer(
+    List<Marker> markers,
+    MapScreenViewModel mapViewModel,
+  ) {
     return MarkerClusterLayerWidget(
       options: MarkerClusterLayerOptions(
-        size: const Size(50, 50), // Increased slightly to comfortably hold text + progress ring
+        size: const Size(80, 80),
         maxZoom: 15,
         markers: markers,
         builder: (context, combinedMarkers) {
-          // Extract the AppMarker instances back from the ObjectKeys
           final List<AppMarker> appMarkers = combinedMarkers
-          .map((m) => (m.key as ObjectKey).value as AppMarker)
-          .toList();
-          final double avgProgress = mapViewModel.calculateAverageDuration(appMarkers);
+              .map((m) => (m.key as ObjectKey).value as AppMarker)
+              .toList();
+          final double avgProgress = mapViewModel.calculateAverageDuration(
+            appMarkers,
+          );
 
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 39,
-                height: 39,
-                child: CircularProgressIndicator(
-                  value: avgProgress,
-                  strokeWidth: 6,
-                  color: Colors.deepPurple, 
-                  backgroundColor: Colors.white24,
+          final Map<Color, int> categoryCounts = {};
+          for (final m in appMarkers) {
+            categoryCounts[m.categoryColor] =
+                (categoryCounts[m.categoryColor] ?? 0) + 1;
+          }
+
+          return SizedBox(
+            width: 80,
+            height: 80,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: CircularProgressIndicator(
+                    value: avgProgress,
+                    strokeWidth: 5,
+                    color: Colors.deepPurple,
+                    backgroundColor: Colors.white24,
+                  ),
                 ),
-              ),
-              // Inner cluster circle
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color.fromARGB(255, 58, 133, 183),
-                  border: Border.all(color: Colors.white, width: 1.5),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 6,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    combinedMarkers.length.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color.fromARGB(255, 58, 133, 183),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 6,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      combinedMarkers.length.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                if (categoryCounts.isNotEmpty)
+                  ...categoryCounts.entries.map((entry) {
+                    final index = categoryCounts.keys.toList().indexOf(
+                      entry.key,
+                    );
+                    // Diagonal X pattern: top-left, top-right, bottom-right, bottom-left
+                    // Cluster center at (40,40), 40x40 (radius 20).
+                    // Small circles 16x16 (radius 8). Slight overlap so they touch visually.
+                    final offsets = [
+                      const Offset(-17, -17), // Top-left
+                      const Offset(17, -17), // Top-right
+                      const Offset(17, 17), // Bottom-right
+                      const Offset(-17, 17), // Bottom-left
+                    ];
+                    final pos = offsets[index % offsets.length];
+                    return Positioned(
+                      left: 40.0 + pos.dx - 8,
+                      top: 40.0 + pos.dy - 8,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: entry.key,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            entry.value.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 8,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+              ],
+            ),
           );
         },
       ),
@@ -158,8 +217,8 @@ class MapServiceUI implements IMapService {
       ],
     );
   }
-
 }
+
 class MarkerClusterLayerWidget extends StatelessWidget {
   final MarkerClusterLayerOptions options;
   const MarkerClusterLayerWidget({super.key, required this.options});

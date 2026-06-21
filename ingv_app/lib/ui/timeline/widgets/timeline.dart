@@ -9,24 +9,28 @@ import 'add_event_dialog.dart';
 import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
 import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
 import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
+import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
 
 class TimelineScreen extends StatefulWidget {
   final ITimelineViewModel viewModel;
   final EventDetailViewModel detailViewModel;
   final bool showControlBar;
+  final bool showLocalDetailPanel;
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
-  final ValueChanged<bool>?
-  onPanelToggle; // for resizing hybrid view when event details panel opens/closes
+  final ValueChanged<bool>? onPanelToggle;
+  final HybridViewModel? hybridViewModel;
 
-  const TimelineScreen({
+  TimelineScreen({
     super.key,
     required this.viewModel,
     required this.detailViewModel,
     this.showControlBar = true,
+    this.showLocalDetailPanel = true,
     this.sharedFilterController,
     this.onAddEvent,
     this.onPanelToggle,
+    this.hybridViewModel,
   });
 
   @override
@@ -49,7 +53,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     (Duration(hours: 12), '12h', '12 hours'),
     (Duration(hours: 1), '1h', '1 hour'),
   ];
-
 
   EventFilterController? get _filterController => widget.sharedFilterController;
 
@@ -198,6 +201,17 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   Future<void> _toggleEventDetails(EventModel event) async {
+    if (widget.hybridViewModel != null) {
+      if (widget.hybridViewModel!.selectedEvent?.eventId == event.eventId) {
+        widget.hybridViewModel!.clearEvent();
+        widget.onPanelToggle?.call(false);
+        return;
+      }
+      await widget.detailViewModel.loadEventDetails(event);
+      widget.hybridViewModel!.selectEvent(event, fromMap: false);
+      widget.onPanelToggle?.call(true);
+      return;
+    }
     if (_selectedEvent != null && _selectedEvent!.eventId == event.eventId) {
       setState(() => _selectedEvent = null);
       widget.detailViewModel.clearEventDetails();
@@ -206,14 +220,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
     }
 
     setState(() => _selectedEvent = event);
-    // callback for hybrid
     widget.onPanelToggle?.call(true);
     await widget.detailViewModel.loadEventDetails(event);
   }
 
   void _navigateToPast() {
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.subtract(widget.viewModel.getTimeScale());
+      _clientBaselineStart = _clientBaselineStart.subtract(
+        widget.viewModel.getTimeScale(),
+      );
       // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
@@ -224,7 +239,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   void _navigateToFuture() {
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.add(widget.viewModel.getTimeScale());
+      _clientBaselineStart = _clientBaselineStart.add(
+        widget.viewModel.getTimeScale(),
+      );
       // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
@@ -234,7 +251,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _setTimeScale(Duration scale) {
-    if (scale == widget.viewModel.getTimeScale())  return;
+    if (scale == widget.viewModel.getTimeScale()) return;
     setState(() {
       if (widget.viewModel.filterStartDate != null) {
         _clientBaselineStart = widget.viewModel.filterStartDate!;
@@ -276,7 +293,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       }
                       _isHorizontalPanning = true;
 
-                      final double scaleMs = widget.viewModel.getTimeScale().inMilliseconds.toDouble();
+                      final double scaleMs = widget.viewModel
+                          .getTimeScale()
+                          .inMilliseconds
+                          .toDouble();
                       final double deltaMs =
                           -details.primaryDelta! / 300.0 * scaleMs;
                       final shift = Duration(milliseconds: deltaMs.round());
@@ -297,26 +317,32 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 ),
               ],
             ),
-            // Pin the detail panel to the bottom of the stack
-            if (_selectedEvent != null)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: EventDetailPanel(
-                  viewModel: widget.detailViewModel,
-                  groupOptions: widget.viewModel.userGroups,
-                  onEventUpdated: (updatedEvent) async {
-                    setState(() {
-                      _selectedEvent = updatedEvent;
-                    });
-                    await widget.viewModel.fetchEvents();
-                  },
-                  onDismiss: () {
-                    setState(() => _selectedEvent = null);
-                    widget.detailViewModel.clearEventDetails();
-                    widget.onPanelToggle?.call(false);
-                  },
+            // Overlay: dimmed backdrop + detail panel sliding up from bottom
+            if (widget.showLocalDetailPanel && _selectedEvent != null)
+              GestureDetector(
+                onTap: () {
+                  setState(() => _selectedEvent = null);
+                  widget.detailViewModel.clearEventDetails();
+                  widget.onPanelToggle?.call(false);
+                },
+                child: Container(
+                  color: Colors.black54,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: EventDetailPanel(
+                      viewModel: widget.detailViewModel,
+                      groupOptions: widget.viewModel.userGroups,
+                      onEventUpdated: (updatedEvent) async {
+                        setState(() => _selectedEvent = updatedEvent);
+                        await widget.viewModel.fetchEvents();
+                      },
+                      onDismiss: () {
+                        setState(() => _selectedEvent = null);
+                        widget.detailViewModel.clearEventDetails();
+                        widget.onPanelToggle?.call(false);
+                      },
+                    ),
+                  ),
                 ),
               ),
           ],
@@ -387,11 +413,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
               onExportDateRangeZip: _exportDateRangeZip,
               onAddEvent:
                   widget.onAddEvent ??
-                  () => showAddEventDialog(
-                    context,
-                    widget.viewModel,
-                    const [],
-                  ),
+                  () => showAddEventDialog(context, widget.viewModel, const []),
             );
 
             if (isMobile) {
@@ -423,7 +445,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   Widget _buildTimeScaleSelector() {
     return ToggleButtons(
-      isSelected: _timeScaleOptions.map((o) => o.$1 == widget.viewModel.getTimeScale()).toList(),
+      isSelected: _timeScaleOptions
+          .map((o) => o.$1 == widget.viewModel.getTimeScale())
+          .toList(),
       borderRadius: BorderRadius.circular(6),
       constraints: const BoxConstraints(minWidth: 42, minHeight: 32),
       onPressed: (index) => _setTimeScale(_timeScaleOptions[index].$1),
@@ -470,7 +494,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final DateTime rangeStart =
         widget.viewModel.filterStartDate ?? _clientBaselineStart;
     final DateTime rangeEnd =
-        widget.viewModel.filterEndDate ?? rangeStart.add(widget.viewModel.getTimeScale());
+        widget.viewModel.filterEndDate ??
+        rangeStart.add(widget.viewModel.getTimeScale());
 
     final DateTime gridMin = rangeStart;
     final DateTime gridMax = rangeEnd;

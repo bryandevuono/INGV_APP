@@ -38,7 +38,6 @@ class TopNavigationBar extends StatefulWidget {
   });
 
   @override
-  @override
   State<TopNavigationBar> createState() => _TopNavigationBarState();
 }
 
@@ -46,7 +45,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   late final EventFilterController _hybridFilterController;
   late final TimelineViewModel _hybridTimelineViewModel;
   late final EventDetailViewModel _hybridDetailViewModel;
-  late final HybridViewModel _hybridViewModel; // 1. Add this variable
+  late final HybridViewModel _hybridViewModel;
   bool _initFailed = false;
   String? _initErrorMessage;
 
@@ -69,7 +68,6 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
       );
     } catch (e) {
       debugPrint('Navigation bar initialization error: $e');
-      // Fallback: create minimal controllers so the UI stays functional
       _hybridFilterController = EventFilterController();
       _hybridViewModel = HybridViewModel();
       _hybridTimelineViewModel = TimelineViewModel(
@@ -93,7 +91,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   @override
   void dispose() {
     _hybridFilterController.dispose();
-    _hybridViewModel.dispose(); // 3. Dispose it here
+    _hybridViewModel.dispose();
     _hybridTimelineViewModel.dispose();
     _hybridDetailViewModel.dispose();
     super.dispose();
@@ -367,17 +365,27 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                           child: ResizableHybridView(
                             viewModel:
                                 _hybridViewModel, // 1. Pass down your instantiated view model
+                            detailViewModel: _hybridDetailViewModel,
+                            onPanelToggle: (isPanelOpen) {
+                              if (isPanelOpen) {
+                                _hybridViewModel.updateRatio(0.45);
+                              } else {
+                                _hybridViewModel.updateRatio(0.50);
+                              }
+                            },
                             topWidget: MapScreen(
                               eventRepository: widget.eventRepository,
                               eventSearchRepository:
                                   mapScreen.eventSearchRepository,
                               mapService: mapScreen.mapService,
                               showControlBar: false,
+                              showLocalDetailPanel: false,
                               sharedFilterController: _hybridFilterController,
+                              hybridViewModel: _hybridViewModel,
+                              detailViewModel: _hybridDetailViewModel,
                               onPanelToggle: (isPanelOpen) {
                                 if (isPanelOpen) {
-                                  // responsiveness when pressing an event
-                                  _hybridViewModel.updateRatio(0.85);
+                                  _hybridViewModel.updateRatio(0.45);
                                 } else {
                                   _hybridViewModel.updateRatio(0.50);
                                 }
@@ -387,10 +395,12 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                               viewModel: _hybridTimelineViewModel,
                               detailViewModel: _hybridDetailViewModel,
                               showControlBar: false,
+                              showLocalDetailPanel: false,
                               sharedFilterController: _hybridFilterController,
+                              hybridViewModel: _hybridViewModel,
                               onPanelToggle: (isPanelOpen) {
                                 if (isPanelOpen) {
-                                  _hybridViewModel.updateRatio(0.15);
+                                  _hybridViewModel.updateRatio(0.45);
                                 } else {
                                   _hybridViewModel.updateRatio(0.50);
                                 }

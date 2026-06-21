@@ -67,6 +67,13 @@ class _GroupDialogState extends State<GroupDialog> {
     }
   }
 
+  String? get _resolvedPath {
+    final raw = _pickedFile?.path;
+    if (raw == null) return null;
+    if (raw.startsWith('file:///')) return raw.substring(8);
+    return raw;
+  }
+
   @override
   void dispose() {
     searchController.removeListener(_onSearchChanged);
@@ -188,7 +195,7 @@ class _GroupDialogState extends State<GroupDialog> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
                                 child: Image.file(
-                                  File(_pickedFile!.path!),
+                                  File(_resolvedPath!),
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -362,7 +369,7 @@ class _GroupDialogState extends State<GroupDialog> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         // Check if the input is empty
                         if (nameController.text.trim().isEmpty) {
                           setState(() {
@@ -372,13 +379,17 @@ class _GroupDialogState extends State<GroupDialog> {
                         }
 
                         if (widget.mode == 'create') {
-                          _viewModel.createNewGroup(nameController.text);
+                          final newGroupId = await _viewModel.createNewGroup(
+                            nameController.text,
+                          );
                           _viewModel.clearSelectedUsers();
                           _viewModel.setSearchQuery('');
-                          _viewModel.postImageToGroupId(
-                            widget.groupId,
-                            _pickedFile?.path ?? '',
-                          );
+                          if (_pickedFile != null && _resolvedPath != null) {
+                            await _viewModel.postImageToGroupId(
+                              newGroupId,
+                              _resolvedPath!,
+                            );
+                          }
                           Navigator.pop(context);
                         } else if (widget.mode == 'update') {
                           _viewModel.editGroup(
@@ -387,9 +398,9 @@ class _GroupDialogState extends State<GroupDialog> {
                           );
                           _viewModel.clearSelectedUsers();
                           _viewModel.setSearchQuery('');
-                          _viewModel.postImageToGroupId(
+                          await _viewModel.postImageToGroupId(
                             widget.groupId,
-                            _pickedFile?.path ?? '',
+                            _resolvedPath ?? '',
                           );
                           Navigator.pop(context);
                         }

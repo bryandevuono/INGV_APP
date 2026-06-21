@@ -34,7 +34,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
       backgroundColor: Colors.grey[100],
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0), // Reduced slightly from 24 for better mobile screen usage
+          padding: const EdgeInsets.all(
+            16.0,
+          ), // Reduced slightly from 24 for better mobile screen usage
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -75,7 +77,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
                     }
 
                     if (_viewModel.groups.isEmpty) {
-                      return const Center(child: Text('No groups found. Create one!'));
+                      return const Center(
+                        child: Text('No groups found. Create one!'),
+                      );
                     }
 
                     // LayoutBuilder checks the screen width dynamically
@@ -84,9 +88,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
                         // Calculate appropriate column count based on available screen width
                         int crossAxisCount = 1;
                         if (constraints.maxWidth > 700) {
-                          crossAxisCount = 3; // Tablets / Web
+                          crossAxisCount = 4; // Tablets / Web
                         } else if (constraints.maxWidth > 380) {
-                          crossAxisCount = 2; // Mid-to-Large mobile phones
+                          crossAxisCount = 3; // Mid-to-Large mobile phones
                         }
 
                         return GridView.builder(
@@ -96,7 +100,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                             // Adjusting the aspect ratio depending on columns for clear visibility
-                            childAspectRatio: crossAxisCount == 1 ? 1.4 : 0.82,
+                            childAspectRatio: crossAxisCount == 1 ? 1.2 : 1.05,
                           ),
                           itemBuilder: (context, index) {
                             return GroupCard(

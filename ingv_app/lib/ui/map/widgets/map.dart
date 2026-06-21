@@ -13,29 +13,32 @@ import 'package:ingv_app/ui/map/view_models/map_view_model.dart';
 import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
 import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart';
+import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
 
 class MapScreen extends StatefulWidget {
   final IEventRepository eventRepository;
   final IEventSearchRepository eventSearchRepository;
   final IMapService mapService;
   final bool showControlBar;
+  final bool showLocalDetailPanel;
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
   final ValueChanged<bool>? onPanelToggle;
+  final HybridViewModel? hybridViewModel;
+  final EventDetailViewModel? detailViewModel;
 
-  IEventSearchRepository get exposedEventSearchRepository =>
-      eventSearchRepository;
-  IMapService get exposedMapService => mapService;
-
-  const MapScreen({
+  MapScreen({
     super.key,
     required this.eventRepository,
     required this.eventSearchRepository,
     required this.mapService,
     this.showControlBar = true,
+    this.showLocalDetailPanel = true,
     this.sharedFilterController,
     this.onAddEvent,
     this.onPanelToggle,
+    this.hybridViewModel,
+    this.detailViewModel,
   });
 
   @override
@@ -155,19 +158,31 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _toggleEventDetails(EventModel event) async {
+    if (widget.hybridViewModel != null) {
+      if (widget.hybridViewModel!.selectedEvent?.eventId == event.eventId) {
+        widget.hybridViewModel!.clearEvent();
+        widget.onPanelToggle?.call(false);
+        return;
+      }
+      final vm = widget.detailViewModel ?? _detailViewModel;
+      await vm.loadEventDetails(event);
+      widget.hybridViewModel!.selectEvent(event, fromMap: true);
+      widget.onPanelToggle?.call(true);
+      return;
+    }
     if (_selectedEvent != null && _selectedEvent!.eventId == event.eventId) {
       setState(() {
         _selectedEvent = null;
       });
       _detailViewModel.clearEventDetails();
-      widget.onPanelToggle?.call(false); // Panel closed expand timeline
+      widget.onPanelToggle?.call(false);
       return;
     }
 
     setState(() {
       _selectedEvent = event;
     });
-    widget.onPanelToggle?.call(true); // Panel opened shrink timeline
+    widget.onPanelToggle?.call(true);
     await _detailViewModel.loadEventDetails(event);
   }
 
@@ -205,7 +220,8 @@ class _MapScreenState extends State<MapScreen> {
         _syncFromSharedFilters();
 
         // Determine if the panel should be visible
-        final isPanelOpen = _selectedEvent != null;
+        final isPanelOpen =
+            widget.showLocalDetailPanel && _selectedEvent != null;
 
         return Stack(
           children: [
@@ -257,46 +273,59 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                   ),
                 Expanded(
-                  child: widget.mapService.buildMap(
-                    initialLat: 41.9028,
-                    initialLng: 12.4963,
-                    initialZoom: 6,
-                    markers: _convertEventsToMarkers(_viewModel.events),
-                    mapViewModel: _viewModel,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (_selectedEvent != null) {
+                        setState(() {
+                          _selectedEvent = null;
+                        });
+                        _detailViewModel.clearEventDetails();
+                        widget.onPanelToggle?.call(false);
+                      }
+                    },
+                    child: widget.mapService.buildMap(
+                      initialLat: 41.9028,
+                      initialLng: 12.4963,
+                      initialZoom: 6,
+                      markers: _convertEventsToMarkers(_viewModel.events),
+                      mapViewModel: _viewModel,
+                    ),
                   ),
                 ),
               ],
             ),
-
-            AnimatedSlide(
-              // Offset(0, 0) means normal position, Offset(0, 1) slides it 100% downward off-screen
-              offset: isPanelOpen ? Offset.zero : const Offset(0, 1),
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.fastOutSlowIn, // Smooth, modern easing curve
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: isPanelOpen
-                    ? EventDetailPanel(
+            // Overlay: dimmed backdrop + detail panel sliding up from bottom
+            if (isPanelOpen)
+              GestureDetector(
+                onTap: () {
+                  setState(() => _selectedEvent = null);
+                  _detailViewModel.clearEventDetails();
+                  widget.onPanelToggle?.call(false);
+                },
+                child: Container(
+                  color: Colors.black54,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: AnimatedSlide(
+                      offset: isPanelOpen ? Offset.zero : const Offset(0, 1),
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.fastOutSlowIn,
+                      child: EventDetailPanel(
                         viewModel: _detailViewModel,
                         onEventUpdated: (updatedEvent) async {
-                          setState(() {
-                            _selectedEvent = updatedEvent;
-                          });
+                          setState(() => _selectedEvent = updatedEvent);
                           await _loadEvents();
                         },
                         onDismiss: () {
-                          setState(() {
-                            _selectedEvent = null;
-                          });
+                          setState(() => _selectedEvent = null);
                           _detailViewModel.clearEventDetails();
-                          widget.onPanelToggle?.call(
-                            false,
-                          ); // Panel closed expand timeline again
+                          widget.onPanelToggle?.call(false);
                         },
-                      )
-                    : const SizedBox.shrink(), // Keeps an empty placeholder when hidden
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
           ],
         );
       },
