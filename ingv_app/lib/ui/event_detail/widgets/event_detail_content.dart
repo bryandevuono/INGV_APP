@@ -16,6 +16,12 @@ class EventDetailContent extends StatelessWidget {
     this.groupOptions = const [],
   });
 
+  static ValueKey _mapPreviewKey(EventDetailViewModel vm) {
+    final event = vm.selectedEvent;
+    if (event == null) return const ValueKey('map_null');
+    return ValueKey('map_${event.eventId}_${event.lat}_${event.long}');
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -58,6 +64,7 @@ class EventDetailContent extends StatelessWidget {
                           children: [
                             Expanded(
                               child: EventMapPreview(
+                                key: _mapPreviewKey(viewModel),
                                 viewModel: viewModel,
                                 mapService: MapServiceUI(
                                   userAgentPackageName: 'ingv_app',
@@ -82,6 +89,7 @@ class EventDetailContent extends StatelessWidget {
                   EventMediaSection(viewModel: viewModel),
                   const SizedBox(height: 12),
                   EventMapPreview(
+                    key: _mapPreviewKey(viewModel),
                     viewModel: viewModel,
                     mapService: MapServiceUI(userAgentPackageName: 'ingv_app'),
                     height: 280,

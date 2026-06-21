@@ -181,9 +181,10 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
-        final matchesTitle = event.title.toLowerCase().contains(query);
-        final matchesDescription =
-            event.description?.toLowerCase().contains(query) ?? false;
+        final matchesTitle = event.title.toLowerCase().startsWith(query);
+        final matchesDescription = event.description.toLowerCase().contains(
+          query,
+        );
         if (!matchesTitle && !matchesDescription) return false;
       }
 
@@ -303,9 +304,10 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
-        final matchesTitle = event.title.toLowerCase().contains(query);
-        final matchesDescription =
-            event.description?.toLowerCase().contains(query) ?? false;
+        final matchesTitle = event.title.toLowerCase().startsWith(query);
+        final matchesDescription = event.description.toLowerCase().contains(
+          query,
+        );
         if (!matchesTitle && !matchesDescription) {
           return false;
         }
@@ -348,6 +350,13 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     _exportErrorMessage = null;
     notifyListeners();
 
+    if (events.isEmpty) {
+      _exportErrorMessage = 'No events to export.';
+      _isExporting = false;
+      notifyListeners();
+      return null;
+    }
+
     try {
       final result = await _pdfExportService.exportTimelineReport(
         events: events,
@@ -374,6 +383,13 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     _exportErrorMessage = null;
     notifyListeners();
 
+    if (events.isEmpty) {
+      _exportErrorMessage = 'No events to export.';
+      _isExporting = false;
+      notifyListeners();
+      return null;
+    }
+
     try {
       final result = await _zipExportService.exportTimelineAsZip(
         events: events,
@@ -398,11 +414,11 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
       if (categoryColors.isEmpty) {
         _categoryColors = {
           'Volcanic': Colors.red,
-          'Earthquake': Colors.orange,
+          'Earthquake': Colors.green,
           'Hydrological': Colors.blue,
-          'Meteorological': Colors.cyan,
+          'Meteorological': Colors.orange,
           'Geological': Colors.brown,
-          'Atmospheric': Colors.green,
+          'Atmospheric': Colors.teal,
         };
       } else {
         _categoryColors = {
@@ -412,11 +428,11 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     } catch (e) {
       _categoryColors = {
         'Volcanic': Colors.red,
-        'Earthquake': Colors.orange,
+        'Earthquake': Colors.green,
         'Hydrological': Colors.blue,
-        'Meteorological': Colors.cyan,
+        'Meteorological': Colors.orange,
         'Geological': Colors.brown,
-        'Atmospheric': Colors.green,
+        'Atmospheric': Colors.teal,
       };
     }
     notifyListeners();

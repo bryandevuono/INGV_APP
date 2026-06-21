@@ -546,7 +546,8 @@ class _FileTile extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextButton(onPressed: onOpen, child: const Text('Open')),
+                if (_isSupportedInApp(attachment.type))
+                  TextButton(onPressed: onOpen, child: const Text('Open')),
                 TextButton(
                   onPressed: onOpenExternally,
                   child: const Text('Open Externally'),
@@ -600,6 +601,16 @@ class _FileTile extends StatelessWidget {
         return Colors.green.shade700;
       default:
         return Colors.grey;
+    }
+  }
+
+  bool _isSupportedInApp(AttachmentType type) {
+    switch (type) {
+      case AttachmentType.pdf:
+      case AttachmentType.docx:
+        return true;
+      default:
+        return false;
     }
   }
 }
