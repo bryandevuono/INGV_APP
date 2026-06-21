@@ -12,7 +12,7 @@ import 'package:ingv_app/data/services/event_detail_service.dart';
 import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service.dart';
-
+import 'package:ingv_app/data/services/attachment_service.dart';
 import 'package:ingv_app/ui/file_history/widgets/file_history_editor.dart';
 
 void main() {
@@ -44,7 +44,7 @@ class _MyAppState extends State<MyApp> {
       final storageService = EventServiceSembast();
       EventRepository(storageService);
       EventDetailRepository(EventDetailService());
-      LocalAttachmentRepository();
+      AttachmentRepository(AttachmentService());
       LocalFileService();
       FileOpenService();
       // If we got here, initialization succeeded
@@ -101,7 +101,7 @@ class _MyAppLoaded extends StatelessWidget {
     final eventRepository = EventRepository(storageService);
 
     final detailRepository = EventDetailRepository(EventDetailService());
-    final attachmentRepository = LocalAttachmentRepository();
+    final attachmentRepository = AttachmentRepository(AttachmentService());
     final localFileService = LocalFileService();
     final fileOpenService = FileOpenService();
 

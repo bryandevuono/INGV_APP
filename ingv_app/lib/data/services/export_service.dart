@@ -8,7 +8,7 @@ import 'package:ingv_app/data/models/event_attachment.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/event_note_model.dart';
 import 'package:ingv_app/data/models/note_reply_model.dart';
-import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
+import 'package:ingv_app/data/services/attachment_service_interface.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/services/export/export_contracts.dart';
 import 'package:ingv_app/data/services/export/export_file_save_service.dart';
@@ -19,15 +19,16 @@ import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-
+import 'package:ingv_app/data/repositories/attachment_repository.dart';
 export 'package:ingv_app/data/services/export/export_contracts.dart';
 export 'package:ingv_app/data/services/export/export_file_save_service.dart';
 export 'package:ingv_app/data/services/export/export_result.dart';
 export 'package:ingv_app/data/services/export/zip_archive_service.dart';
 
+
 class PdfExportService implements IPdfExportService {
   final IEventDetailRepository _detailRepository;
-  final IAttachmentRepository _attachmentRepository;
+  final AttachmentRepository _attachmentRepository;
   final ILocalFileService _localFileService;
   final IExportFileSaveService _fileSaveService;
 
@@ -1058,7 +1059,7 @@ class PdfExportService implements IPdfExportService {
 class ZipExportService implements IZipExportService {
   final IPdfExportService _pdfExportService;
   final IEventDetailRepository _detailRepository;
-  final IAttachmentRepository _attachmentRepository;
+  final AttachmentRepository _attachmentRepository;
   final ILocalFileService _localFileService;
   final IExportFileSaveService _fileSaveService;
   final IZipArchiveService _zipArchiveService;
@@ -1066,7 +1067,7 @@ class ZipExportService implements IZipExportService {
   ZipExportService({
     required IPdfExportService pdfExportService,
     required IEventDetailRepository detailRepository,
-    required IAttachmentRepository attachmentRepository,
+    required AttachmentRepository attachmentRepository,
     required ILocalFileService localFileService,
     IExportFileSaveService? fileSaveService,
     IZipArchiveService? zipArchiveService,

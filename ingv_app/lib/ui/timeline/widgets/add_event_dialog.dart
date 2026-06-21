@@ -7,6 +7,7 @@ import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/services/file_picker_service.dart';
 import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
+import 'package:ingv_app/data/services/attachment_service.dart';
 
 void showAddEventDialog(
   BuildContext context,
@@ -54,7 +55,7 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
   late final TextEditingController longController;
 
   final filePickerService = FilePickerService();
-  final attachmentRepository = LocalAttachmentRepository();
+  final attachmentRepository = AttachmentRepository(AttachmentService());
   
   final defaultCategories = <String>[
     'Volcanic', 'Earthquake', 'Hydrological', 'Meteorological', 'Geological', 'Atmospheric',

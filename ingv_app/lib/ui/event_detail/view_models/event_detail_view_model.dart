@@ -5,7 +5,7 @@ import 'package:ingv_app/data/models/event_attachment.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/event_note_model.dart';
 import 'package:ingv_app/data/models/note_reply_model.dart';
-import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
+import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
@@ -15,7 +15,7 @@ import 'package:ingv_app/data/services/file_picker_service.dart';
 class EventDetailViewModel extends ChangeNotifier {
   final IEventDetailRepository _detailRepository;
   final IEventRepository _eventRepository;
-  final IAttachmentRepository _attachmentRepository;
+  final AttachmentRepository _attachmentRepository;
   final ILocalFileService _localFileService;
   final IFileOpenService _fileOpenService;
   final IFilePickerService _filePickerService;

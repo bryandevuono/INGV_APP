@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
+import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
@@ -22,7 +22,7 @@ class TopNavigationBar extends StatefulWidget {
   final IEventSearchRepository searchRepository;
 
   final IEventDetailRepository detailRepository;
-  final IAttachmentRepository attachmentRepository;
+  final AttachmentRepository attachmentRepository;
   final ILocalFileService localFileService;
   final IFileOpenService fileOpenService;
 

@@ -14,6 +14,7 @@ import 'package:ingv_app/ui/shared/controllers/event_filter_controller.dart';
 import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart';
 import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
+import 'package:ingv_app/data/services/attachment_service.dart';
 
 class MapScreen extends StatefulWidget {
   final IEventRepository eventRepository;
@@ -56,7 +57,7 @@ class _MapScreenState extends State<MapScreen> {
     super.initState();
 
     final detailRepository = EventDetailRepository(EventDetailService());
-    final attachmentRepository = LocalAttachmentRepository();
+    final attachmentRepository = AttachmentRepository(AttachmentService());
     final localFileService = LocalFileService();
 
     final pdfExportService = PdfExportService(

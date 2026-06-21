@@ -5,7 +5,7 @@ import 'package:ingv_app/data/repositories/event_search_repository.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:latlong2/latlong.dart' as latlong2;
-import 'package:ingv_app/data/repositories/attachment_repository_interface.dart';
+import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'package:ingv_app/data/services/export_service.dart';
@@ -15,7 +15,7 @@ class MapScreenViewModel extends ChangeNotifier {
   final IEventRepository _eventRepository;
   final IEventSearchRepository _searchRepository;
   final IEventDetailRepository detailRepository;
-  final IAttachmentRepository attachmentRepository;
+  final AttachmentRepository attachmentRepository;
   final ILocalFileService localFileService;
   final IFileOpenService fileOpenService;
   final IPdfExportService _pdfExportService;

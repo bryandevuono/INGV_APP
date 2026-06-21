@@ -18,7 +18,7 @@ import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/timeline_presentation_models.dart';
 import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
-
+import 'package:ingv_app/data/services/attachment_service.dart';
 // ── Mock view model for dialog testing ───────────────────────────────────────
 
 class _MockTimelineViewModel extends ChangeNotifier
@@ -104,7 +104,7 @@ TopNavigationBar _buildApp() {
   final storageService = EventServiceSembast();
   final eventRepository = EventRepository(storageService);
   final detailRepository = EventDetailRepository(EventDetailService());
-  final attachmentRepository = LocalAttachmentRepository();
+  final attachmentRepository = AttachmentRepository(AttachmentService());
   final localFileService = LocalFileService();
   final fileOpenService = FileOpenService();
 
