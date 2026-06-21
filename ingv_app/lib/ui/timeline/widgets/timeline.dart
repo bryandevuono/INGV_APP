@@ -16,8 +16,7 @@ class TimelineScreen extends StatefulWidget {
   final bool showControlBar;
   final EventFilterController? sharedFilterController;
   final VoidCallback? onAddEvent;
-  final ValueChanged<bool>?
-  onPanelToggle; 
+  final ValueChanged<bool>? onPanelToggle;
 
   const TimelineScreen({
     super.key,
@@ -40,7 +39,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     const Duration(days: 1),
   );
 
-  // Horizontal drag state for time panning
   double _dragDxTotal = 0;
   bool _isHorizontalPanning = false;
   static const List<(Duration, String, String)> _timeScaleOptions = [
@@ -49,7 +47,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     (Duration(hours: 12), '12h', '12 hours'),
     (Duration(hours: 1), '1h', '1 hour'),
   ];
-
 
   EventFilterController? get _filterController => widget.sharedFilterController;
 
@@ -75,16 +72,18 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _handleDetailViewModelChange() {
-    if (widget.detailViewModel.selectedEvent == null && _selectedEvent != null) {
+    if (widget.detailViewModel.selectedEvent == null &&
+        _selectedEvent != null) {
       setState(() {
         _selectedEvent = null;
       });
-      
+
       widget.onPanelToggle?.call(false);
-      
+
       widget.viewModel.fetchEvents();
     }
   }
+
   Future<void> _refreshInitialData() async {
     try {
       await widget.viewModel.getColors();
@@ -225,7 +224,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   void _navigateToPast() {
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.subtract(widget.viewModel.getTimeScale());
+      _clientBaselineStart = _clientBaselineStart.subtract(
+        widget.viewModel.getTimeScale(),
+      );
       // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
@@ -236,7 +237,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   void _navigateToFuture() {
     setState(() {
-      _clientBaselineStart = _clientBaselineStart.add(widget.viewModel.getTimeScale());
+      _clientBaselineStart = _clientBaselineStart.add(
+        widget.viewModel.getTimeScale(),
+      );
       // clear the filter so navigation shifts the view instead
       if (widget.viewModel.filterStartDate != null) {
         widget.viewModel.setDateRangeFilter(null, null);
@@ -246,7 +249,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _setTimeScale(Duration scale) {
-    if (scale == widget.viewModel.getTimeScale())  return;
+    if (scale == widget.viewModel.getTimeScale()) return;
     setState(() {
       if (widget.viewModel.filterStartDate != null) {
         _clientBaselineStart = widget.viewModel.filterStartDate!;
@@ -283,12 +286,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       _dragDxTotal += details.delta.dx;
 
                       if (!_isHorizontalPanning && _dragDxTotal.abs() < 10) {
-                        // Still accumulating — tiny movements don't trigger pan
                         return;
                       }
                       _isHorizontalPanning = true;
 
-                      final double scaleMs = widget.viewModel.getTimeScale().inMilliseconds.toDouble();
+                      final double scaleMs = widget.viewModel
+                          .getTimeScale()
+                          .inMilliseconds
+                          .toDouble();
                       final double deltaMs =
                           -details.primaryDelta! / 300.0 * scaleMs;
                       final shift = Duration(milliseconds: deltaMs.round());
@@ -309,7 +314,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
                 ),
               ],
             ),
-            // Pin the detail panel to the bottom of the stack
             if (_selectedEvent != null)
               Positioned(
                 bottom: 0,
@@ -347,7 +351,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
             // Check if we are on a mobile-sized screen
             final isMobile = constraints.maxWidth < 600;
 
-            // Extract the core navigation elements so we don't duplicate code
             final navigationWidgets = [
               IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new, size: 20),
@@ -435,7 +438,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
 
   Widget _buildTimeScaleSelector() {
     return ToggleButtons(
-      isSelected: _timeScaleOptions.map((o) => o.$1 == widget.viewModel.getTimeScale()).toList(),
+      isSelected: _timeScaleOptions
+          .map((o) => o.$1 == widget.viewModel.getTimeScale())
+          .toList(),
       borderRadius: BorderRadius.circular(6),
       constraints: const BoxConstraints(minWidth: 42, minHeight: 32),
       onPressed: (index) => _setTimeScale(_timeScaleOptions[index].$1),
@@ -473,226 +478,268 @@ class _TimelineScreenState extends State<TimelineScreen> {
       );
     }
 
-    const double expandedRowHeight = 140.0;
     const double minimizedRowHeight = 35.0;
+    const double minExpandedRowHeight = 40.0;
     const double baseAxisHeight = 27.0;
     const double totalCanvasWidth = 1200.0;
     const double leftHeaderWidth = 160.0;
+    const double dividerHeight = 4.0;
+    const double listVerticalPadding = 16.0; // 8 top + 8 bottom
 
     final DateTime rangeStart =
         widget.viewModel.filterStartDate ?? _clientBaselineStart;
     final DateTime rangeEnd =
-        widget.viewModel.filterEndDate ?? rangeStart.add(widget.viewModel.getTimeScale());
+        widget.viewModel.filterEndDate ??
+        rangeStart.add(widget.viewModel.getTimeScale());
 
     final DateTime gridMin = rangeStart;
     final DateTime gridMax = rangeEnd;
 
-    // Total scrollable range = grid + buffer so events aren't clipped at edges
     final Duration visibleSpan = rangeEnd.difference(rangeStart);
     final Duration edgePadding = visibleSpan * 0.25;
     final DateTime totalStart = rangeStart.subtract(edgePadding);
     final DateTime totalEnd = rangeEnd.add(edgePadding);
 
-    return ReorderableListView.builder(
-      buildDefaultDragHandles: false,
-      onReorder: (old, current) =>
-          widget.viewModel.reorderCategories(old, current),
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      itemCount: lanes.length,
-      itemBuilder: (context, index) {
-        final lane = lanes[index];
-        final isFirstRow = index == 0;
-        final isMinimized = widget.viewModel.isCategoryMinimized(lane.id);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final int totalLanes = lanes.length;
+        final int minimizedCount = lanes
+            .where((l) => widget.viewModel.isCategoryMinimized(l.id))
+            .length;
+        final int expandedCount = totalLanes - minimizedCount;
 
-        final double definedRowHeight = isMinimized
-            ? minimizedRowHeight
-            : expandedRowHeight;
-
-        final List<TimelineTaskData> genericTasks = widget.viewModel
-            .getTimelineTasksForCategory(lane.id);
-
-        final packageRows = [LegacyGanttRow(id: lane.id, label: lane.label)];
-
-        final packageTasks = genericTasks.map((task) {
-          final DateTime finalEnd;
-          if (task.start == task.end || task.end == null) {
-            finalEnd = task.start.add(const Duration(hours: 1));
-          } else {
-            finalEnd = task.end!;
+        double expandedRowHeight = minExpandedRowHeight;
+        if (expandedCount > 0 && constraints.hasBoundedHeight) {
+          final double availableForExpanded =
+              constraints.maxHeight -
+              listVerticalPadding -
+              baseAxisHeight -
+              (minimizedCount * minimizedRowHeight) -
+              (totalLanes * dividerHeight);
+          final double computedHeight = availableForExpanded / expandedCount;
+          if (computedHeight > minExpandedRowHeight) {
+            expandedRowHeight = computedHeight;
           }
-          return LegacyGanttTask(
-            id: task.id,
-            rowId: task.laneId,
-            name: task.title,
-            start: task.start,
-            end: finalEnd,
-            color: task.color,
-          );
-        }).toList();
+        }
 
-        final rowMaxStackDepth = <String, int>{lane.id: double.maxFinite.toInt()};
-        final double fullWidgetHeight = definedRowHeight + baseAxisHeight;
-        final double visibleViewportHeight = isFirstRow
-            ? fullWidgetHeight
-            : definedRowHeight;
+        return ReorderableListView.builder(
+          buildDefaultDragHandles: false,
+          onReorder: (old, current) =>
+              widget.viewModel.reorderCategories(old, current),
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          itemCount: lanes.length,
+          itemBuilder: (context, index) {
+            final lane = lanes[index];
+            final isFirstRow = index == 0;
+            final isMinimized = widget.viewModel.isCategoryMinimized(lane.id);
 
-        // overlapping?
-        bool showVerticalScrollIndicators = false;
-        if (!isMinimized && genericTasks.length > 1) {
-          for (int i = 0; i < genericTasks.length; i++) {
-            final taskA = genericTasks[i];
-            final endA = taskA.end;
+            final double definedRowHeight = isMinimized
+                ? minimizedRowHeight
+                : expandedRowHeight;
 
-            for (int j = i + 1; j < genericTasks.length; j++) {
-              final taskB = genericTasks[j];
-              final endB = taskB.end;
+            final List<TimelineTaskData> genericTasks = widget.viewModel
+                .getTimelineTasksForCategory(lane.id);
 
-              if (endA == null || endB == null) continue;
+            final packageRows = [
+              LegacyGanttRow(id: lane.id, label: lane.label),
+            ];
 
-              final bool overlapsInTime =
-                  taskA.start.isBefore(endB) && taskB.start.isBefore(endA);
+            final packageTasks = genericTasks.map((task) {
+              final DateTime finalEnd;
+              if (task.start == task.end || task.end == null) {
+                finalEnd = task.start.add(const Duration(hours: 1));
+              } else {
+                finalEnd = task.end!;
+              }
+              return LegacyGanttTask(
+                id: task.id,
+                rowId: task.laneId,
+                name: task.title,
+                start: task.start,
+                end: finalEnd,
+                color: task.color,
+              );
+            }).toList();
 
-              if (overlapsInTime) {
-                // Verify the collision happens
-                if (taskA.start.isAfter(totalStart) &&
-                    taskA.start.isBefore(totalEnd)) {
-                  showVerticalScrollIndicators = true;
-                  break;
+            int maxConcurrentCount = 0;
+            bool showVerticalScrollIndicators = false;
+
+            if (!isMinimized && genericTasks.isNotEmpty) {
+              final List<MapEntry<DateTime, int>> timePoints = [];
+
+              for (final task in genericTasks) {
+                final end =
+                    task.end ?? task.start.add(const Duration(hours: 1));
+
+                if (task.start.isBefore(totalEnd) && end.isAfter(totalStart)) {
+                  timePoints.add(MapEntry(task.start, 1));
+                  timePoints.add(MapEntry(end, -1));
                 }
               }
+
+              timePoints.sort((a, b) {
+                final compare = a.key.compareTo(b.key);
+                if (compare != 0) return compare;
+                return a.value.compareTo(b.value);
+              });
+
+              int concurrentCount = 0;
+              for (final point in timePoints) {
+                concurrentCount += point.value;
+                if (concurrentCount > maxConcurrentCount) {
+                  maxConcurrentCount = concurrentCount;
+                }
+              }
+
+              if (maxConcurrentCount >= 5) {
+                showVerticalScrollIndicators = true;
+              }
             }
-            if (showVerticalScrollIndicators) break;
-          }
-        }
 
-        Widget chartSection = SizedBox(
-          width: totalCanvasWidth,
-          height: fullWidgetHeight,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: LegacyGanttChartWidget(
-                  data: packageTasks,
-                  visibleRows: packageRows,
-                  rowMaxStackDepth: rowMaxStackDepth,
-                  rowHeight: definedRowHeight,
-                  axisHeight: baseAxisHeight,
-                  gridMin: gridMin.millisecondsSinceEpoch.toDouble(),
-                  gridMax: gridMax.millisecondsSinceEpoch.toDouble(),
-                  totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
-                  totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
-                  taskBarBuilder: (task) {
-                    if (isMinimized) return const SizedBox.shrink();
-                    return _buildEventContainer(task.id);
-                  },
-                ),
-              ),
+            final rowMaxStackDepth = <String, int>{
+              lane.id: maxConcurrentCount > 0 ? maxConcurrentCount : 1,
+            };
 
-              // overlay arrow
-              if (showVerticalScrollIndicators) ...[
-                // Down Arrow
-                Positioned(
-                  bottom: 4,
-                  left: (totalCanvasWidth / 2) - 12,
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      child: const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Colors.blueAccent,
-                        size: 20,
-                      ),
+            final double fullWidgetHeight = definedRowHeight + baseAxisHeight;
+            final double visibleViewportHeight = isFirstRow
+                ? fullWidgetHeight
+                : definedRowHeight;
+
+            Widget chartSection = SizedBox(
+              width: totalCanvasWidth,
+              height: fullWidgetHeight,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: LegacyGanttChartWidget(
+                      data: packageTasks,
+                      visibleRows: packageRows,
+                      rowMaxStackDepth: rowMaxStackDepth,
+                      rowHeight: 50,
+                      axisHeight: baseAxisHeight,
+                      gridMin: gridMin.millisecondsSinceEpoch.toDouble(),
+                      gridMax: gridMax.millisecondsSinceEpoch.toDouble(),
+                      totalGridMin: totalStart.millisecondsSinceEpoch
+                          .toDouble(),
+                      totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
+                      taskBarBuilder: (task) {
+                        if (isMinimized) return const SizedBox.shrink();
+                        return _buildEventContainer(task.id);
+                      },
                     ),
                   ),
-                ),
-              ],
-            ],
-          ),
-        );
 
-        if (!isFirstRow) {
-          chartSection = ClipRect(
-            child: SizedBox(
-              width: totalCanvasWidth,
-              height: visibleViewportHeight,
-              child: OverflowBox(
-                minHeight: fullWidgetHeight,
-                maxHeight: fullWidgetHeight,
-                alignment: Alignment.bottomCenter,
-                child: chartSection,
+                  // overlay arrow
+                  if (showVerticalScrollIndicators) ...[
+                    // Down Arrow
+                    Positioned(
+                      bottom: 4,
+                      left: (totalCanvasWidth / 2) - 12,
+                      child: IgnorePointer(
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          child: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.blueAccent,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
-          );
-        }
+            );
 
-        Widget leftHeader = Container(
-          width: leftHeaderWidth,
-          height: visibleViewportHeight,
-          padding: EdgeInsets.only(
-            left: 4.0,
-            right: 4.0,
-            top: isFirstRow ? baseAxisHeight : 0.0,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            border: Border(right: BorderSide(color: Colors.grey.shade300)),
-          ),
-          child: Row(
-            children: [
-              ReorderableDragStartListener(
-                index: index,
-                child: const Icon(
-                  Icons.drag_indicator,
-                  size: 20,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(
-                  isMinimized ? Icons.chevron_right : Icons.expand_more,
-                  size: 20,
-                  color: Colors.black54,
-                ),
-                tooltip: isMinimized ? 'Expand lane' : 'Minimize lane',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () =>
-                    widget.viewModel.toggleCategoryMinimized(lane.id),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  lane.label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        );
-
-        return Column(
-          key: ValueKey('row_wrapper_${lane.id}'),
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                leftHeader,
-                Expanded(
-                  child: SizedBox(
-                    width: totalCanvasWidth,
-                    height: visibleViewportHeight,
+            if (!isFirstRow) {
+              chartSection = ClipRect(
+                child: SizedBox(
+                  width: totalCanvasWidth,
+                  height: visibleViewportHeight,
+                  child: OverflowBox(
+                    minHeight: fullWidgetHeight,
+                    maxHeight: fullWidgetHeight,
+                    alignment: Alignment.bottomCenter,
                     child: chartSection,
                   ),
                 ),
+              );
+            }
+
+            Widget leftHeader = Container(
+              width: leftHeaderWidth,
+              height: visibleViewportHeight,
+              padding: EdgeInsets.only(
+                left: 4.0,
+                right: 4.0,
+                top: isFirstRow ? baseAxisHeight : 0.0,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                border: Border(right: BorderSide(color: Colors.grey.shade300)),
+              ),
+              child: Row(
+                children: [
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: const Icon(
+                      Icons.drag_indicator,
+                      size: 20,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: Icon(
+                      isMinimized ? Icons.chevron_right : Icons.expand_more,
+                      size: 20,
+                      color: Colors.black54,
+                    ),
+                    tooltip: isMinimized ? 'Expand lane' : 'Minimize lane',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () =>
+                        widget.viewModel.toggleCategoryMinimized(lane.id),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      lane.label,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+
+            return Column(
+              key: ValueKey('row_wrapper_${lane.id}'),
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    leftHeader,
+                    Expanded(
+                      child: SizedBox(
+                        width: totalCanvasWidth,
+                        height: visibleViewportHeight,
+                        child: chartSection,
+                      ),
+                    ),
+                  ],
+                ),
+                Divider(
+                  color: Colors.grey.shade300,
+                  thickness: 1.0,
+                  height: 4.0,
+                ),
               ],
-            ),
-            Divider(color: Colors.grey.shade300, thickness: 1.0, height: 4.0),
-          ],
+            );
+          },
         );
       },
     );
