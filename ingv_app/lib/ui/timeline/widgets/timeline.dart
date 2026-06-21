@@ -390,7 +390,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   () => showAddEventDialog(
                     context,
                     widget.viewModel,
-                    const [],
+                    widget.viewModel.userGroups,
                   ),
             );
 

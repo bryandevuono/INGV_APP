@@ -20,9 +20,9 @@ class EventDetailHeader extends StatelessWidget {
   static IconData _getCategoryIcon(String category) {
     switch (category) {
       case 'Volcanic':
-        return Icons.casino;
+        return Icons.volcano;
       case 'Earthquake':
-        return Icons.festival;
+        return Icons.landscape;
       case 'Hydrological':
         return Icons.water_drop;
       case 'Meteorological':
