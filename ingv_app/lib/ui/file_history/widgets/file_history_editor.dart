@@ -384,7 +384,7 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Changes compiled and saved successfully!',
+                            'Changes saved successfully!',
                           ),
                         ),
                       );

@@ -20,9 +20,9 @@ class EventDetailHeader extends StatelessWidget {
   static IconData _getCategoryIcon(String category) {
     switch (category) {
       case 'Volcanic':
-        return Icons.casino;
+        return Icons.volcano;
       case 'Earthquake':
-        return Icons.festival;
+        return Icons.landscape;
       case 'Hydrological':
         return Icons.water_drop;
       case 'Meteorological':
@@ -122,6 +122,65 @@ class EventDetailHeader extends StatelessWidget {
             runSpacing: 8,
             alignment: WrapAlignment.end,
             children: [
+              TextButton.icon(
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Confirm Deletion'),
+                      content: const Text(
+                        'Are you sure you want to delete this event?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed == true) {
+                    final success = await viewModel.deleteSelectedEvent();
+                    if (!context.mounted) return;
+
+                    final messenger = ScaffoldMessenger.of(context);
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Event deleted successfully.'
+                              : (viewModel.errorMessage ??
+                                  'Failed to delete event.'),
+                        ),
+                      ),
+                    );
+
+                    if (success) {
+                      onDismiss();
+                    }
+                  }
+                },
+                icon: const Icon(Icons.delete, size: 16),
+                label: const Text('Delete'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
               TextButton.icon(
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit, size: 16),

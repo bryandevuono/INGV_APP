@@ -12,6 +12,7 @@ abstract interface class IEventRepository {
   Future<String?> getGroupOfEvent(int eventId);
   Duration getTimeScale();
   void setTimeScale(Duration scale);
+  Future<bool> deleteEvent(int eventId);
 }
 
 class EventRepository implements IEventRepository {
@@ -62,5 +63,10 @@ class EventRepository implements IEventRepository {
   @override
   Duration getTimeScale() {
     return storageService.getTimeScale();
+  }
+
+  @override
+  Future<bool> deleteEvent(int eventId) {
+    return storageService.deleteEvent(eventId);
   }
 }

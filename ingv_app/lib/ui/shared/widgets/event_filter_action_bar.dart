@@ -23,6 +23,7 @@ class EventFilterActionBar extends StatefulWidget {
   final Future<void> Function()? onExportDateRangeZip;
   final VoidCallback? onAddEvent;
   final bool embeddedInPage;
+  final Duration? timelineScaleDuration;
 
   const EventFilterActionBar({
     super.key,
@@ -48,6 +49,7 @@ class EventFilterActionBar extends StatefulWidget {
     this.onExportDateRangeZip,
     this.onAddEvent,
     this.embeddedInPage = false,
+    this.timelineScaleDuration,
   });
 
   @override
@@ -85,6 +87,19 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
     final start = widget.startDate!.toLocal().toString().split(' ')[0];
     final end = widget.endDate?.toLocal().toString().split(' ')[0] ?? 'Any';
     return '$start - $end';
+  }
+
+  String _formatDurationLabel(Duration duration) {
+    if (duration.inDays >= 7) {
+      final weeks = duration.inDays ~/ 7;
+      return '${weeks} week(s)';
+    } else if (duration.inDays >= 1) {
+      return '${duration.inDays} day(s)';
+    } else if (duration.inHours >= 1) {
+      return '${duration.inHours} hour(s)';
+    } else {
+      return '${duration.inMinutes} minute(s)';
+    }
   }
 
   @override
@@ -242,6 +257,17 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
             onPressed: widget.onAddEvent,
             icon: const Icon(Icons.add),
             label: const Text('Add event'),
+          ),
+        if (widget.timelineScaleDuration != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 255, 255, 255),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              'Timeline scale: ${_formatDurationLabel(widget.timelineScaleDuration!)}',
+            ),
           ),
       ],
     );

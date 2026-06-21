@@ -496,4 +496,21 @@ class EventDetailViewModel extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  Future<bool> deleteSelectedEvent() async {
+    if (selectedEvent == null) return false;
+    final eventId = selectedEvent!.eventId;
+    try {
+      final success = await _eventRepository.deleteEvent(eventId);
+      if (success) {
+        clearEventDetails();
+      }
+      notifyListeners();
+      return success;
+    } catch (e) {
+      errorMessage = 'Failed to delete the event.';
+      notifyListeners();
+      return false;
+    }
+  }
 }
