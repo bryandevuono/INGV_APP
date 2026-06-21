@@ -10,4 +10,6 @@ abstract interface class IEventService {
   Future<List<String>> getEventCategories();
   Future<List<MapEntry<String, Color>>> getEventCategoriesWithColors();
   Future<String?> getGroupOfEvent(int eventId);
+  void setTimeScale(Duration scale);
+  Duration getTimeScale();
 }

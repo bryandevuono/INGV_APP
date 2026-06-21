@@ -32,6 +32,8 @@ abstract interface class ITimelineViewModel implements Listenable {
   Future<void> getColors();
   Future<void> getGroupsOfUser();
   Future<String> getUserId();
+  void setTimeScale(Duration scale);
+  Duration getTimeScale();
   Future<String?> exportTimelineReport();
   Future<String?> exportTimelineAsZip();
   Future<String?> exportTimelineReportForDateRange(

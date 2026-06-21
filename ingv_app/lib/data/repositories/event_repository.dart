@@ -10,6 +10,8 @@ abstract interface class IEventRepository {
   Future<List<String>> getEventCategories();
   Future<List<MapEntry<String, Color>>> getEventColors();
   Future<String?> getGroupOfEvent(int eventId);
+  Duration getTimeScale();
+  void setTimeScale(Duration scale);
 }
 
 class EventRepository implements IEventRepository {
@@ -50,5 +52,15 @@ class EventRepository implements IEventRepository {
   @override
   Future<String?> getGroupOfEvent(int eventId) {
     return storageService.getGroupOfEvent(eventId);
+  }
+
+  @override
+  void setTimeScale(Duration scale) {
+    storageService.setTimeScale(scale);
+  }
+
+  @override
+  Duration getTimeScale() {
+    return storageService.getTimeScale();
   }
 }

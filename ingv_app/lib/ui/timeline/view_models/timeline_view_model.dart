@@ -42,6 +42,7 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
 
   bool _isExporting = false;
   String? _exportErrorMessage;
+  Duration _timeScale = const Duration(days: 7);
 
   // Color configuration map populated from Repository
   Map<String, Color> _categoryColors = {};
@@ -188,9 +189,7 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
         if (!matchesTitle && !matchesDescription) return false;
       }
 
-      // Date Filter — overlap check: show events that overlap the range.
-      // An event whose start is before the range but ends inside should show.
-      // An event whose end is after the range but starts inside should show.
+
       final eventEnd = event.endDt ?? event.startDt;
       final filterDayStart = _filterStartDate ?? event.startDt;
 
@@ -500,5 +499,16 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
       filterStartDate: startDate,
       filterEndDate: endDate,
     );
+  }
+
+  @override
+  void setTimeScale(Duration scale) {
+    _timeScale = scale;
+    _eventRepository.setTimeScale(scale);
+  }
+
+  @override
+  Duration getTimeScale() {
+    return _timeScale;
   }
 }
