@@ -91,6 +91,10 @@ class _MockTimelineViewModel extends ChangeNotifier
   @override
   Future<String?> exportTimelineAsZipForDateRange(DateTime s, DateTime e) =>
       Future.value(null);
+  @override
+  void setTimeScale(Duration scale) {}
+  @override
+  Duration getTimeScale() => Duration.zero;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
