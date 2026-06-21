@@ -296,6 +296,28 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ],
             ),
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FloatingActionButton(
+                    heroTag: 'mapZoomIn',
+                    mini: true,
+                    onPressed: _viewModel.zoomIn,
+                    child: const Icon(Icons.add),
+                  ),
+                  const SizedBox(height: 8),
+                  FloatingActionButton(
+                    heroTag: 'mapZoomOut',
+                    mini: true,
+                    onPressed: _viewModel.zoomOut,
+                    child: const Icon(Icons.remove),
+                  ),
+                ],
+              ),
+            ),
             // Overlay: dimmed backdrop + detail panel sliding up from bottom
             if (isPanelOpen)
               GestureDetector(

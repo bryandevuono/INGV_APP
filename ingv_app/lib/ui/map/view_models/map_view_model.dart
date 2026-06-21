@@ -255,9 +255,6 @@ class MapScreenViewModel extends ChangeNotifier {
       return result.saveLocation;
     } catch (error) {
       exportErrorMessage = 'Failed to export map ZIP: $error';
-    } catch (error) {
-      exportErrorMessage = 'Failed to export map ZIP: $error';
-      return null;
     } finally {
       isExporting = false;
       notifyListeners();
@@ -267,5 +264,15 @@ class MapScreenViewModel extends ChangeNotifier {
   void getTimeScale() {
     timelineDuration = _eventRepository.getTimeScale();
     notifyListeners();
+  }
+
+  void zoomIn() {
+    final camera = mapController.camera;
+    mapController.move(camera.center, camera.zoom + 1);
+  }
+
+  void zoomOut() {
+    final camera = mapController.camera;
+    mapController.move(camera.center, camera.zoom - 1);
   }
 }
