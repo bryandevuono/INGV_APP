@@ -459,9 +459,9 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
     String duration,
     String startStringTime,
     String endStringTime,
-    double availWidth,
+    double availableWidth,
   ) {
-    if (availWidth < 28) {
+    if (availableWidth < 28) {
       return const Center(
         child: Text(
           '...',
@@ -470,7 +470,7 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
       );
     }
 
-    if (availWidth < 60) {
+    if (availableWidth < 60) {
       return Center(
         child: Text(
           duration,
@@ -484,7 +484,7 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
       );
     }
 
-    if (availWidth < 120) {
+    if (availableWidth < 120) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,

@@ -246,7 +246,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     });
   }
 
-  // ----- Event selection / detail panel -----
   Future<void> _toggleEventDetails(EventModel event) async {
     if (widget.hybridViewModel != null) {
       if (widget.hybridViewModel!.selectedEvent?.eventId == event.eventId) {
