@@ -963,13 +963,14 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         ),
                       ),
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(
+                          Flexible(
                             flex: 2,
                             child: Text(
                               '$startStringTime - $endStringTime',
-                              overflow: TextOverflow.ellipsis,
                               maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 9,
