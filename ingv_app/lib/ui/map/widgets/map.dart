@@ -159,6 +159,9 @@ class MapScreenState extends State<MapScreen> {
         _viewModel.filterEndDate != controller.endDate) {
       _viewModel.setDateRangeFilter(controller.startDate, controller.endDate);
     }
+    if (_viewModel.timelineDuration != controller.timeScale) {
+      _viewModel.setTimeScale(controller.timeScale);
+    }
   }
 
   Future<void> _toggleEventDetails(EventModel event) async {
@@ -275,6 +278,10 @@ class MapScreenState extends State<MapScreen> {
                             searchSuggestions: _viewModel.searchSuggestions,
                             onSuggestionSelected: (event) {
                               _viewModel.selectSuggestion(event);
+                            },
+                            onTimeScaleChanged: (scale) {
+                              _viewModel.setTimeScale(scale);
+                              _filterController?.setTimeScale(scale);
                             },
                           ),
                         ),

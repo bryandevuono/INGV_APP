@@ -1,7 +1,15 @@
+// event_filter_action_bar.dart
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_model.dart';
 
 class EventFilterActionBar extends StatefulWidget {
+  static const List<Duration> defaultTimeScales = [
+    Duration(days: 7),
+    Duration(days: 1),
+    Duration(hours: 12),
+    Duration(hours: 1),
+  ];
+
   final List<String> categories;
   final String selectedCategory;
   final String searchQuery;
@@ -25,6 +33,8 @@ class EventFilterActionBar extends StatefulWidget {
   final VoidCallback? onAddEvent;
   final bool embeddedInPage;
   final Duration? timelineScaleDuration;
+  final List<Duration> availableTimeScales;
+  final ValueChanged<Duration>? onTimeScaleChanged;
   final List<EventModel> searchSuggestions;
   final ValueChanged<EventModel>? onSuggestionSelected;
 
@@ -53,6 +63,8 @@ class EventFilterActionBar extends StatefulWidget {
     this.onAddEvent,
     this.embeddedInPage = false,
     this.timelineScaleDuration,
+    this.availableTimeScales = EventFilterActionBar.defaultTimeScales,
+    this.onTimeScaleChanged,
     this.searchSuggestions = const [],
     this.onSuggestionSelected,
   });
@@ -202,6 +214,19 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
     }
   }
 
+  String _shortScaleLabel(Duration duration) {
+    if (duration.inDays >= 7) {
+      final weeks = duration.inDays ~/ 7;
+      return '${weeks}w';
+    } else if (duration.inDays >= 1) {
+      return '${duration.inDays}d';
+    } else if (duration.inHours >= 1) {
+      return '${duration.inHours}h';
+    } else {
+      return '${duration.inMinutes}m';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final toolbar = Wrap(
@@ -209,6 +234,31 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        if (widget.onTimeScaleChanged != null &&
+            widget.availableTimeScales.isNotEmpty)
+          ToggleButtons(
+            isSelected: widget.availableTimeScales
+                .map((d) => d == widget.timelineScaleDuration)
+                .toList(),
+            borderRadius: BorderRadius.circular(6),
+            constraints: const BoxConstraints(minWidth: 42, minHeight: 32),
+            onPressed: (index) =>
+                widget.onTimeScaleChanged!(widget.availableTimeScales[index]),
+            children: widget.availableTimeScales
+                .map(
+                  (d) => Tooltip(
+                    message: _formatDurationLabel(d),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Text(
+                        _shortScaleLabel(d),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
         if (widget.showCategoryDropdown)
           SizedBox(
             width: 180,
@@ -332,7 +382,7 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
               child: TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
-                onChanged: widget.onSearchChanged, // unchanged
+                onChanged: widget.onSearchChanged,
                 decoration: InputDecoration(
                   hintText: 'Search (keywords, tags)...',
                   prefixIcon: const Icon(Icons.search),
@@ -363,6 +413,7 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
             icon: const Icon(Icons.add),
             label: const Text('Add event'),
           ),
+
         if (widget.timelineScaleDuration != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

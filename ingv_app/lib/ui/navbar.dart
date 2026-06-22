@@ -5,6 +5,7 @@ import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/data/services/file_operations_interface.dart';
 import 'package:ingv_app/data/repositories/event_search_repository.dart';
 import 'package:ingv_app/data/services/event_search_service.dart';
+import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/groups/widgets/groups_screen.dart';
 import 'package:ingv_app/ui/hybrid_view/widgets/hybrid_view.dart';
@@ -186,6 +187,34 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     }
   }
 
+  /// Combines suggestions from the timeline view model and the map view
+  /// model into a single deduplicated list (by eventId), capped at 5.
+  List<EventModel> _mergedSuggestions(EventModel? Function()? unused) {
+    final timelineSuggestions = _hybridTimelineViewModel.searchSuggestions;
+    final mapSuggestions =
+        _hybridMapScreenKey.currentState?.getViewModel()?.searchSuggestions ??
+        const <EventModel>[];
+
+    final merged = <EventModel>[...timelineSuggestions];
+    final seenIds = timelineSuggestions.map((e) => e.eventId).toSet();
+    for (final event in mapSuggestions) {
+      if (seenIds.add(event.eventId)) {
+        merged.add(event);
+      }
+    }
+    return merged.take(5).toList();
+  }
+
+  /// Selecting a suggestion should sync both panels: scroll the timeline to
+  /// the event and pan the map to it, since both are visible together here.
+  void _selectHybridSuggestion(EventModel event) {
+    _hybridTimelineViewModel.selectSuggestion(event);
+    final mapViewModel = _hybridMapScreenKey.currentState?.getViewModel();
+    if (mapViewModel != null) {
+      mapViewModel.selectSuggestion(event);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final mapScreen = widget.mapScreen as MapScreen;
@@ -262,112 +291,135 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                     _hybridFilterController,
                                   ]),
                                   builder: (context, _) {
+
                                     final mapViewModel = _hybridMapScreenKey
                                         .currentState
                                         ?.getViewModel();
 
-                                    return EventFilterActionBar(
-                                      categories: {
-                                        'All',
-                                        ..._hybridTimelineViewModel.categories,
-                                      }.toList(),
-                                      selectedCategory: _hybridTimelineViewModel
-                                          .selectedCategory,
-                                      searchQuery:
-                                          _hybridTimelineViewModel.searchQuery,
-                                      startDate: _hybridTimelineViewModel
-                                          .filterStartDate,
-                                      endDate: _hybridTimelineViewModel
-                                          .filterEndDate,
-                                      showCategoryDropdown: true,
-                                      showDateFilter: true,
-                                      showSearch: true,
-                                      showExportPdf: true,
-                                      showExportZip: true,
-                                      showAddEvent: true,
-                                      isExporting:
-                                          _hybridTimelineViewModel.isExporting,
-                                      embeddedInPage: true,
-                                      onCategoryChanged: (newValue) {
-                                        _hybridTimelineViewModel
-                                            .setCategoryFilter(newValue);
-                                        _hybridFilterController.setCategory(
-                                          newValue,
-                                        );
-                                      },
-                                      onDateRangePicked: () async {
-                                        final picked = await showDateRangePicker(
-                                          context: context,
-                                          firstDate: DateTime(2000),
-                                          lastDate: DateTime(2101),
-                                          initialDateRange:
+
+                                    return ListenableBuilder(
+                                      listenable:
+                                          mapViewModel ??
+                                          _hybridTimelineViewModel,
+                                      builder: (context, __) {
+                                        return EventFilterActionBar(
+                                          timelineScaleDuration:
                                               _hybridTimelineViewModel
-                                                          .filterStartDate !=
-                                                      null &&
+                                                  .getTimeScale(),
+                                          availableTimeScales: const [
+                                            Duration(days: 7),
+                                            Duration(days: 1),
+                                            Duration(hours: 12),
+                                            Duration(hours: 1),
+                                          ],
+                                          onTimeScaleChanged: (scale) {
+                                            _hybridTimelineViewModel
+                                                .setTimeScale(scale);
+                                            _hybridFilterController
+                                                .setTimeScale(scale);
+                                          },
+                                          categories: {
+                                            'All',
+                                            ..._hybridTimelineViewModel
+                                                .categories,
+                                          }.toList(),
+                                          selectedCategory:
+                                              _hybridTimelineViewModel
+                                                  .selectedCategory,
+                                          searchQuery: _hybridTimelineViewModel
+                                              .searchQuery,
+                                          startDate: _hybridTimelineViewModel
+                                              .filterStartDate,
+                                          endDate: _hybridTimelineViewModel
+                                              .filterEndDate,
+                                          showCategoryDropdown: true,
+                                          showDateFilter: true,
+                                          showSearch: true,
+                                          showExportPdf: true,
+                                          showExportZip: true,
+                                          showAddEvent: true,
+                                          isExporting: _hybridTimelineViewModel
+                                              .isExporting,
+                                          embeddedInPage: true,
+                                          onCategoryChanged: (newValue) {
+                                            _hybridTimelineViewModel
+                                                .setCategoryFilter(newValue);
+                                            _hybridFilterController.setCategory(
+                                              newValue,
+                                            );
+                                          },
+                                          onDateRangePicked: () async {
+                                            final picked = await showDateRangePicker(
+                                              context: context,
+                                              firstDate: DateTime(2000),
+                                              lastDate: DateTime(2101),
+                                              initialDateRange:
                                                   _hybridTimelineViewModel
-                                                          .filterEndDate !=
-                                                      null
-                                              ? DateTimeRange(
-                                                  start:
+                                                              .filterStartDate !=
+                                                          null &&
                                                       _hybridTimelineViewModel
-                                                          .filterStartDate!,
-                                                  end: _hybridTimelineViewModel
-                                                      .filterEndDate!,
-                                                )
-                                              : null,
-                                        );
-                                        if (picked != null) {
-                                          _hybridTimelineViewModel
-                                              .setDateRangeFilter(
-                                                picked.start,
-                                                picked.end,
-                                              );
-                                          _hybridFilterController.setDateRange(
-                                            picked.start,
-                                            picked.end,
-                                          );
-                                        }
-                                      },
-                                      onClearDateFilter: () {
-                                        _hybridTimelineViewModel
-                                            .setDateRangeFilter(null, null);
-                                        _hybridFilterController
-                                            .clearDateRange();
-                                      },
-                                      onSearchChanged: (query) {
-                                        _hybridTimelineViewModel.setSearchQuery(
-                                          query,
-                                        );
-                                        _hybridFilterController.setSearchQuery(
-                                          query,
-                                        );
-                                      },
-                                      onExportPdf: () =>
-                                          _showHybridExportResult(
+                                                              .filterEndDate !=
+                                                          null
+                                                  ? DateTimeRange(
+                                                      start:
+                                                          _hybridTimelineViewModel
+                                                              .filterStartDate!,
+                                                      end:
+                                                          _hybridTimelineViewModel
+                                                              .filterEndDate!,
+                                                    )
+                                                  : null,
+                                            );
+                                            if (picked != null) {
+                                              _hybridTimelineViewModel
+                                                  .setDateRangeFilter(
+                                                    picked.start,
+                                                    picked.end,
+                                                  );
+                                              _hybridFilterController
+                                                  .setDateRange(
+                                                    picked.start,
+                                                    picked.end,
+                                                  );
+                                            }
+                                          },
+                                          onClearDateFilter: () {
                                             _hybridTimelineViewModel
-                                                .exportTimelineReport,
-                                          ),
-                                      onExportZip: () =>
-                                          _showHybridExportResult(
+                                                .setDateRangeFilter(null, null);
+                                            _hybridFilterController
+                                                .clearDateRange();
+                                          },
+                                          onSearchChanged: (query) {
                                             _hybridTimelineViewModel
-                                                .exportTimelineAsZip,
+                                                .setSearchQuery(query);
+                                            _hybridFilterController
+                                                .setSearchQuery(query);
+                                          },
+                                          onExportPdf: () =>
+                                              _showHybridExportResult(
+                                                _hybridTimelineViewModel
+                                                    .exportTimelineReport,
+                                              ),
+                                          onExportZip: () =>
+                                              _showHybridExportResult(
+                                                _hybridTimelineViewModel
+                                                    .exportTimelineAsZip,
+                                              ),
+                                          onExportDateRangePdf:
+                                              _exportHybridDateRangePdf,
+                                          onExportDateRangeZip:
+                                              _exportHybridDateRangeZip,
+                                          onAddEvent: () => showAddEventDialog(
+                                            context,
+                                            _hybridTimelineViewModel,
+                                            const [],
                                           ),
-                                      onExportDateRangePdf:
-                                          _exportHybridDateRangePdf,
-                                      onExportDateRangeZip:
-                                          _exportHybridDateRangeZip,
-                                      onAddEvent: () => showAddEventDialog(
-                                        context,
-                                        _hybridTimelineViewModel,
-                                        const [],
-                                      ),
-                                      searchSuggestions:
-                                          mapViewModel?.searchSuggestions ??
-                                          const [],
-                                      onSuggestionSelected: (event) {
-                                        if (mapViewModel != null) {
-                                          mapViewModel.selectSuggestion(event);
-                                        }
+                                          searchSuggestions: _mergedSuggestions(
+                                            null,
+                                          ),
+                                          onSuggestionSelected:
+                                              _selectHybridSuggestion,
+                                        );
                                       },
                                     );
                                   },

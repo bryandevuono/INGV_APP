@@ -108,6 +108,35 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   @override
   String get searchQuery => _searchQuery;
 
+  void set searchQuery(String query) {
+    _searchQuery = query;
+    applyFilters();
+    notifyListeners();
+  }
+
+  List<EventModel> searchSuggestions = [];
+  @override
+  Future<void> setSearchQuery(String query) async {
+    searchQuery = query;
+    await applyFilters();
+    searchSuggestions = events.take(5).toList();
+    notifyListeners();
+  }
+
+  Future<void> selectSuggestion(EventModel event) async {
+    searchQuery = event.title;
+    searchSuggestions = [];
+    notifyListeners();
+
+    try {
+      jumpToEvent(event);
+    } catch (e) {
+      debugPrint("Error moving map to selected suggestion: $e");
+    }
+
+    await applyFilters();
+  }
+
   // Calculate the min date
   DateTime get minStart {
     if (_allEvents.isEmpty) return DateTime.now();
@@ -235,22 +264,6 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   @override
   bool isCategoryMinimized(String category) =>
       _minimizedCategories.contains(category);
-
-  @override
-  void setSearchQuery(String query) {
-    _searchQuery = query;
-    applyFilters();
-    if (query.isNotEmpty) {
-      _searchRepository.getClosestMatch(query).then((event) {
-        if (event != null) {
-          jumpToEvent(event);
-        }
-      });
-    } else {
-      setDateRangeFilter(null, null);
-    }
-    notifyListeners();
-  }
 
   @override
   void setCategoryFilter(String category) {

@@ -110,7 +110,7 @@ class MapScreenViewModel extends ChangeNotifier {
 
   Future<void> setSearchQuery(String query) async {
     searchQuery = query;
-    await applyFilters(); // keeps existing live marker filtering
+    await applyFilters();
     searchSuggestions = events.take(5).toList();
     notifyListeners();
   }
@@ -298,5 +298,12 @@ class MapScreenViewModel extends ChangeNotifier {
   void zoomOut() {
     final camera = mapController.camera;
     mapController.move(camera.center, camera.zoom - 1);
+  }
+
+  void setTimeScale(Duration scale) {
+    if (timelineDuration == scale) return;
+    timelineDuration = scale;
+    _eventRepository.setTimeScale(scale);
+    notifyListeners();
   }
 }
