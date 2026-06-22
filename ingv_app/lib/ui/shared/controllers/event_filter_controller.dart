@@ -5,11 +5,13 @@ class EventFilterController extends ChangeNotifier {
   String _searchQuery = '';
   DateTime? _startDate;
   DateTime? _endDate;
+  Duration _timeScale = const Duration(days: 7);
 
   String get selectedCategory => _selectedCategory;
   String get searchQuery => _searchQuery;
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
+  Duration get timeScale => _timeScale;
 
   bool get hasDateFilter => _startDate != null || _endDate != null;
 
@@ -32,6 +34,12 @@ class EventFilterController extends ChangeNotifier {
   void clearDateRange() {
     _startDate = null;
     _endDate = null;
+    notifyListeners();
+  }
+
+  void setTimeScale(Duration scale) {
+    if (_timeScale == scale) return;
+    _timeScale = scale;
     notifyListeners();
   }
 }

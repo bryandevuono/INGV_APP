@@ -95,6 +95,11 @@ class _MockTimelineViewModel extends ChangeNotifier
   void setTimeScale(Duration scale) {}
   @override
   Duration getTimeScale() => Duration.zero;
+  @override
+  List<EventModel> get searchSuggestions => [];
+  @override
+  Future<void> selectSuggestion(EventModel event) => Future.value();
+
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

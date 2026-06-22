@@ -44,4 +44,6 @@ abstract interface class ITimelineViewModel implements Listenable {
     DateTime startDate,
     DateTime endDate,
   );
+  List<EventModel> get searchSuggestions;
+  Future<void> selectSuggestion(EventModel event);
 }

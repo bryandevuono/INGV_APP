@@ -195,7 +195,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
   }
 
   void _syncFromSharedFilters() {
-    // for the search we need to fix the collision between two searches
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
@@ -216,6 +215,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
           controller.startDate,
           controller.endDate,
         );
+      }
+      if (widget.viewModel.getTimeScale() != controller.timeScale) {
+        widget.viewModel.setTimeScale(controller.timeScale);
       }
     });
   }
@@ -279,6 +281,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
         _filterController?.clearDateRange();
       }
       widget.viewModel.setTimeScale(scale);
+      _filterController?.setTimeScale(scale);
     });
   }
 
@@ -442,6 +445,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
               onSearchChanged: (query) {
                 widget.viewModel.setSearchQuery(query);
                 _filterController?.setSearchQuery(query);
+              },
+              searchSuggestions: widget.viewModel.searchSuggestions,
+              onSuggestionSelected: (event) {
+                widget.viewModel.selectSuggestion(event);
               },
               onExportPdf: () =>
                   _showExportResult(widget.viewModel.exportTimelineReport),

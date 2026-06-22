@@ -146,7 +146,6 @@ class MapScreenState extends State<MapScreen> {
   }
 
   void _syncFromSharedFilters() {
-    
     final controller = _filterController;
     if (controller == null) return;
 
@@ -159,6 +158,9 @@ class MapScreenState extends State<MapScreen> {
     if (_viewModel.filterStartDate != controller.startDate ||
         _viewModel.filterEndDate != controller.endDate) {
       _viewModel.setDateRangeFilter(controller.startDate, controller.endDate);
+    }
+    if (_viewModel.timelineDuration != controller.timeScale) {
+      _viewModel.setTimeScale(controller.timeScale);
     }
   }
 
@@ -276,6 +278,10 @@ class MapScreenState extends State<MapScreen> {
                             searchSuggestions: _viewModel.searchSuggestions,
                             onSuggestionSelected: (event) {
                               _viewModel.selectSuggestion(event);
+                            },
+                            onTimeScaleChanged: (scale) {
+                              _viewModel.setTimeScale(scale);
+                              _filterController?.setTimeScale(scale);
                             },
                           ),
                         ),
