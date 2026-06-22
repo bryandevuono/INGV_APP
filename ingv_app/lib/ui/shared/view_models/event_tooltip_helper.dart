@@ -40,3 +40,28 @@ String formatDateTimeLocal(DateTime? dt) {
   if (s.length >= 2) return '${s[0]} ${s[1]}';
   return s[0];
 }
+
+/// Formats a DateTime into a tooltip-friendly string like "May 30, 16:41".
+String formatDateTimeTooltip(DateTime? dt) {
+  if (dt == null) return '—';
+  final local = dt.toLocal();
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  final day = local.day.toString();
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '${months[local.month - 1]} $day, $hour:$minute';
+}

@@ -383,9 +383,7 @@ class _DocumentComparisonScreenState extends State<DocumentComparisonScreen> {
                       // Show a confirmation banner
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text(
-                            'Changes saved successfully!',
-                          ),
+                          content: Text('Changes saved successfully!'),
                         ),
                       );
                       Navigator.pop(context);

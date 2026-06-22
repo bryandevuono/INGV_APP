@@ -120,7 +120,6 @@ class _MyAppLoaded extends StatelessWidget {
             EventSearchService(storageService),
           ),
           mapService: MapServiceUI(userAgentPackageName: 'ingv_app'),
-          
         ),
         eventRepository: eventRepository,
         searchRepository: EventSearchRepository(

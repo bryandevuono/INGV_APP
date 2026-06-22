@@ -291,18 +291,12 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                     _hybridFilterController,
                                   ]),
                                   builder: (context, _) {
-                                    // Re-fetched on every outer rebuild so that once the
-                                    // MapScreen mounts, we pick up its real view model
-                                    // instead of staying stuck with `null`.
+
                                     final mapViewModel = _hybridMapScreenKey
                                         .currentState
                                         ?.getViewModel();
 
-                                    // Listen directly to the map view model so that when
-                                    // it asynchronously updates `searchSuggestions` (after
-                                    // running the search), this toolbar actually rebuilds.
-                                    // Before the map has mounted, fall back to a listenable
-                                    // we already have so this never receives a null.
+
                                     return ListenableBuilder(
                                       listenable:
                                           mapViewModel ??

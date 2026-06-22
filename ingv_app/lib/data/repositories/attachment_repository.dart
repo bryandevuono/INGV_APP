@@ -27,11 +27,16 @@ class AttachmentRepository {
     await _attachmentService.updateAttachment(attachment);
   }
 
-  Future<List<FileVersion>> getFileHistoryFromAttachment(String attachmentId) async {
+  Future<List<FileVersion>> getFileHistoryFromAttachment(
+    String attachmentId,
+  ) async {
     return _attachmentService.getFileHistory(attachmentId);
   }
 
-  Future<void> saveMergedVersion(String attachmentId, String mergedContent) async {
+  Future<void> saveMergedVersion(
+    String attachmentId,
+    String mergedContent,
+  ) async {
     await _attachmentService.createMergedVersion(
       attachmentId: attachmentId,
       mergedContent: mergedContent,

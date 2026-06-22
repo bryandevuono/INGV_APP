@@ -25,7 +25,6 @@ export 'package:ingv_app/data/services/export/export_file_save_service.dart';
 export 'package:ingv_app/data/services/export/export_result.dart';
 export 'package:ingv_app/data/services/export/zip_archive_service.dart';
 
-
 class PdfExportService implements IPdfExportService {
   final IEventDetailRepository _detailRepository;
   final AttachmentRepository _attachmentRepository;

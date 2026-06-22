@@ -899,9 +899,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final String duration = formatDuration(event.startDt, event.endDt);
 
     final String tooltipMessage =
-        '${event.title}\n'
-        'Start: ${formatDateShort(event.startDt)} $startStringTime\n'
-        'End: ${event.endDt != null ? '$endStringTime ${formatDateShort(event.endDt!)}' : 'Ongoing'}\n'
+        'Title: ${event.title}\n'
+        'Start: ${formatDateTimeTooltip(event.startDt)}\n'
+        'End: ${event.endDt != null ? formatDateTimeTooltip(event.endDt) : 'Ongoing'}\n'
         'Duration: $duration\n'
         '${formatLocation(event.lat, event.long)}';
 
@@ -909,6 +909,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
         .getTimelineTasksForCategory(event.category.trim())
         .firstWhere((t) => t.id == eventId)
         .color;
+
+    final bool isSelected = _selectedEvent?.eventId == event.eventId;
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -933,77 +935,156 @@ class _TimelineScreenState extends State<TimelineScreen> {
                           offset: const Offset(0, 1),
                         ),
                       ],
-                      border: _selectedEvent?.eventId == event.eventId
+                      border: isSelected
                           ? Border.all(color: Colors.white, width: 2)
                           : Border.all(color: Colors.white, width: 1),
                     ),
-                  ),
-                )
-              : Container(
-                  alignment: Alignment.topLeft,
-                  height: 45.0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6.0,
-                    vertical: 4.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: itemColor,
-                    border: _selectedEvent?.eventId == event.eventId
-                        ? Border.all(color: Colors.white, width: 2)
-                        : null,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          event.title,
-                          textAlign: TextAlign.left,
-                          maxLines: 1,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                    child: const Center(
+                      child: Text(
+                        '\u2026',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          height: 1.0,
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            flex: 2,
-                            child: Text(
-                              '$startStringTime - $endStringTime',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 9,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            flex: 1,
-                            child: Text(
-                              duration,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 9,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
+                )
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double availWidth = constraints.maxWidth;
+
+                    return Container(
+                      alignment: Alignment.topLeft,
+                      height: 45.0,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6.0,
+                        vertical: 4.0,
+                      ),
+                      decoration: BoxDecoration(
+                        color: itemColor,
+                        border: isSelected
+                            ? Border.all(color: Colors.white, width: 2)
+                            : null,
+                      ),
+                      child: _buildEventCardContent(
+                        event,
+                        duration,
+                        startStringTime,
+                        endStringTime,
+                        availWidth,
+                      ),
+                    );
+                  },
                 ),
         ),
       ),
+    );
+  }
+
+  Widget _buildEventCardContent(
+    EventModel event,
+    String duration,
+    String startStringTime,
+    String endStringTime,
+    double availWidth,
+  ) {
+    if (availWidth < 28) {
+      // Very small: show ellipsis
+      return const Center(
+        child: Text(
+          '...',
+          style: TextStyle(color: Colors.white70, fontSize: 11),
+        ),
+      );
+    }
+
+    if (availWidth < 60) {
+      // Small: show duration only
+      return Center(
+        child: Text(
+          duration,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+
+    if (availWidth < 120) {
+      // Medium: short title + duration
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            event.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            duration,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+        ],
+      );
+    }
+
+    // Large: full title + time range + duration
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(
+            event.title,
+            textAlign: TextAlign.left,
+            maxLines: 1,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              flex: 2,
+              child: Text(
+                '$startStringTime - $endStringTime',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              flex: 1,
+              child: Text(
+                duration,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

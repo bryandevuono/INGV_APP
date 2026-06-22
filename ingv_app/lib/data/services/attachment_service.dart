@@ -17,7 +17,9 @@ class AttachmentService implements IAttachmentService {
         id: 'att_1',
         eventId: '1000',
         fileName: 'ash_plume.jpg',
-        localPath: _workspaceFile('test_container/test_container/mock-env/mock-data/pics/EMOV/20260322/1500/EMOV_20260322-155500.jpg'),
+        localPath: _workspaceFile(
+          'test_container/test_container/mock-env/mock-data/pics/EMOV/20260322/1500/EMOV_20260322-155500.jpg',
+        ),
         type: AttachmentType.image,
         sizeBytes: 245000,
         mimeType: 'image/jpeg',
@@ -27,7 +29,9 @@ class AttachmentService implements IAttachmentService {
         id: 'att_2',
         eventId: '1000',
         fileName: 'crater_view.jpg',
-        localPath: _workspaceFile('test_container/test_container/mock-env/mock-data/pics/EMOV/20260322/1500/EMOV_20260322-155000.jpg'),
+        localPath: _workspaceFile(
+          'test_container/test_container/mock-env/mock-data/pics/EMOV/20260322/1500/EMOV_20260322-155000.jpg',
+        ),
         type: AttachmentType.image,
         sizeBytes: 232000,
         mimeType: 'image/jpeg',
@@ -37,7 +41,9 @@ class AttachmentService implements IAttachmentService {
         id: 'att_3',
         eventId: '1000',
         fileName: 'thermal_image.jpg',
-        localPath: _workspaceFile('test_container/test_container/mock-env/mock-data/pics/EMOV/20260322/1500/EMOV_20260322-154500.jpg'),
+        localPath: _workspaceFile(
+          'test_container/test_container/mock-env/mock-data/pics/EMOV/20260322/1500/EMOV_20260322-154500.jpg',
+        ),
         type: AttachmentType.image,
         sizeBytes: 198000,
         mimeType: 'image/jpeg',
@@ -47,8 +53,12 @@ class AttachmentService implements IAttachmentService {
         id: 'att_4',
         eventId: '1000',
         fileName: 'eruption_overview.avi',
-        localPath: _workspaceFile('test_container/test_container/mock-env/mock-data/multimedia/avi/EMOV_20260322-155500.avi'),
-        thumbnailPath: _workspaceFile('test_container/test_container/mock-env/mock-data/pics/EMOV/20260322/1500/EMOV_20260322-155500.jpg'),
+        localPath: _workspaceFile(
+          'test_container/test_container/mock-env/mock-data/multimedia/avi/EMOV_20260322-155500.avi',
+        ),
+        thumbnailPath: _workspaceFile(
+          'test_container/test_container/mock-env/mock-data/pics/EMOV/20260322/1500/EMOV_20260322-155500.jpg',
+        ),
         type: AttachmentType.video,
         sizeBytes: 5200000,
         mimeType: 'video/x-msvideo',
@@ -58,7 +68,9 @@ class AttachmentService implements IAttachmentService {
         id: 'att_5',
         eventId: '1000',
         fileName: 'seismic_summary.pdf',
-        localPath: _workspaceFile('assets/local_attachments/seismic_summary.pdf'),
+        localPath: _workspaceFile(
+          'assets/local_attachments/seismic_summary.pdf',
+        ),
         type: AttachmentType.pdf,
         sizeBytes: 1200000,
         mimeType: 'application/pdf',
@@ -68,7 +80,9 @@ class AttachmentService implements IAttachmentService {
         id: 'att_6',
         eventId: '1000',
         fileName: 'gas_readings_1210.csv',
-        localPath: _workspaceFile('assets/local_attachments/gas_readings_1210.csv'),
+        localPath: _workspaceFile(
+          'assets/local_attachments/gas_readings_1210.csv',
+        ),
         type: AttachmentType.csv,
         sizeBytes: 45000,
         mimeType: 'text/csv',
@@ -78,7 +92,9 @@ class AttachmentService implements IAttachmentService {
         id: 'att_7',
         eventId: '1000',
         fileName: 'ash_sample_lab.pdf',
-        localPath: _workspaceFile('assets/local_attachments/ash_sample_lab.pdf'),
+        localPath: _workspaceFile(
+          'assets/local_attachments/ash_sample_lab.pdf',
+        ),
         type: AttachmentType.pdf,
         sizeBytes: 385000,
         mimeType: 'application/pdf',
@@ -88,7 +104,9 @@ class AttachmentService implements IAttachmentService {
         id: 'mock_1',
         eventId: '1000',
         fileName: 'eruption_field_notes.txt',
-        localPath: _workspaceFile('assets/local_attachments/eruption_field_notes.txt'),
+        localPath: _workspaceFile(
+          'assets/local_attachments/eruption_field_notes.txt',
+        ),
         type: AttachmentType.other,
         sizeBytes: 2500,
         mimeType: 'text/plain',
@@ -100,12 +118,13 @@ class AttachmentService implements IAttachmentService {
   static final Map<String, List<FileVersion>> _mockFileHistories = {
     'mock_1': [
       FileVersion(
-        versionId: 'v1',
-        versionName: 'Version 1',
-        metaInfo: 'Meta info for version 1',
-        subtitle: 'old version of the file',
-        blocks: [],
-      )..content = """
+          versionId: 'v1',
+          versionName: 'Version 1',
+          metaInfo: 'Meta info for version 1',
+          subtitle: 'old version of the file',
+          blocks: [],
+        )
+        ..content = """
       ## heading 1
       Content of version 1, line 1.
       Content of version 1, line 2.
@@ -123,12 +142,13 @@ class AttachmentService implements IAttachmentService {
       Content of version 3, line 4 (changed).
       """,
       FileVersion(
-        versionId: 'v2',
-        versionName: 'Version 2',
-        metaInfo: 'Meta info for version 2',
-        subtitle: 'old version of the file',
-        blocks: [],
-      )..content = """
+          versionId: 'v2',
+          versionName: 'Version 2',
+          metaInfo: 'Meta info for version 2',
+          subtitle: 'old version of the file',
+          blocks: [],
+        )
+        ..content = """
       ## heading 1
       Content of version 1, line 1.
       Content of version 1, line 2.
@@ -213,7 +233,10 @@ class AttachmentService implements IAttachmentService {
   }
 
   @override
-  List<FileVersion> getFileHistoryFromAttachment(Map<String, List<FileVersion>> registry, String attachmentId) {
+  List<FileVersion> getFileHistoryFromAttachment(
+    Map<String, List<FileVersion>> registry,
+    String attachmentId,
+  ) {
     return registry[attachmentId] ?? [];
   }
 }

@@ -9,7 +9,7 @@ class EventServiceSembast implements IEventService {
   static final EventServiceSembast _instance = EventServiceSembast._internal();
   factory EventServiceSembast() => _instance;
   EventServiceSembast._internal();
-  Duration timeScale = const Duration(days: 7); // Default 
+  Duration timeScale = const Duration(days: 7); // Default
 
   static const String _storeName = 'events';
   final Map<String, Color> cellColors = {

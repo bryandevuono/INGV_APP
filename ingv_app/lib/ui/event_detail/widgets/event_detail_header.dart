@@ -138,7 +138,10 @@ class EventDetailHeader extends StatelessWidget {
                         ),
                         ElevatedButton(
                           onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red),
+                          ),
                         ),
                       ],
                     ),
@@ -155,7 +158,7 @@ class EventDetailHeader extends StatelessWidget {
                           success
                               ? 'Event deleted successfully.'
                               : (viewModel.errorMessage ??
-                                  'Failed to delete event.'),
+                                    'Failed to delete event.'),
                         ),
                       ),
                     );
