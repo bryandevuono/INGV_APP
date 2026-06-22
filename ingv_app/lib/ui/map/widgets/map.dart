@@ -146,7 +146,6 @@ class MapScreenState extends State<MapScreen> {
   }
 
   void _syncFromSharedFilters() {
-    
     final controller = _filterController;
     if (controller == null) return;
 

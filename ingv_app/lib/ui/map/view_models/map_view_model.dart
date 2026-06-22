@@ -118,7 +118,7 @@ class MapScreenViewModel extends ChangeNotifier {
   Future<void> selectSuggestion(EventModel event) async {
     searchQuery = event.title;
     searchSuggestions = [];
-    notifyListeners(); 
+    notifyListeners();
 
     try {
       mapController.move(

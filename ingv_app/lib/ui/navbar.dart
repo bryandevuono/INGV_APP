@@ -25,7 +25,6 @@ class TopNavigationBar extends StatefulWidget {
   final AttachmentRepository attachmentRepository;
   final ILocalFileService localFileService;
   final IFileOpenService fileOpenService;
-  
 
   const TopNavigationBar({
     super.key,
@@ -47,7 +46,8 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   late final TimelineViewModel _hybridTimelineViewModel;
   late final EventDetailViewModel _hybridDetailViewModel;
   late final HybridViewModel _hybridViewModel;
-  final GlobalKey<MapScreenState> _hybridMapScreenKey = GlobalKey<MapScreenState>();
+  final GlobalKey<MapScreenState> _hybridMapScreenKey =
+      GlobalKey<MapScreenState>();
 
   bool _initFailed = false;
   String? _initErrorMessage;
@@ -262,7 +262,9 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                     _hybridFilterController,
                                   ]),
                                   builder: (context, _) {
-                                  final mapViewModel = _hybridMapScreenKey.currentState?.getViewModel();
+                                    final mapViewModel = _hybridMapScreenKey
+                                        .currentState
+                                        ?.getViewModel();
 
                                     return EventFilterActionBar(
                                       categories: {
@@ -376,8 +378,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                         ),
                         Expanded(
                           child: ResizableHybridView(
-                            viewModel:
-                                _hybridViewModel, 
+                            viewModel: _hybridViewModel,
                             detailViewModel: _hybridDetailViewModel,
                             onPanelToggle: (isPanelOpen) {
                               if (isPanelOpen) {

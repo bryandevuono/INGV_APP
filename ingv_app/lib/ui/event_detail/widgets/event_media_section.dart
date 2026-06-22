@@ -559,8 +559,8 @@ class _FileTile extends StatelessWidget {
                 TextButton(
                   onPressed: () => {
                     viewModel.pickAndAddAttachment(),
-                    viewModel.deleteAttachment(attachment) // mock replacing 
-                  },  
+                    viewModel.deleteAttachment(attachment), // mock replacing
+                  },
                   child: const Text('Upload a new version'),
                 ),
                 TextButton(
@@ -568,8 +568,7 @@ class _FileTile extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => DocumentComparisonScreen(
-                        ),
+                        builder: (_) => DocumentComparisonScreen(),
                       ),
                     );
                   },

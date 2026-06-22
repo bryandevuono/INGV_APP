@@ -15,7 +15,7 @@ void showAddEventDialog(
   List<GroupModel> groupOptions,
 ) {
   if (!context.mounted) return;
-  
+
   showDialog(
     routeSettings: const RouteSettings(name: 'disable-accessibility-view'),
     context: context,
@@ -48,7 +48,7 @@ class AddEventDialogContent extends StatefulWidget {
 
 class _AddEventDialogContentState extends State<AddEventDialogContent> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late final TextEditingController titleController;
   late final TextEditingController descriptionController;
   late final TextEditingController latController;
@@ -56,9 +56,14 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
 
   final filePickerService = FilePickerService();
   final attachmentRepository = AttachmentRepository(AttachmentService());
-  
+
   final defaultCategories = <String>[
-    'Volcanic', 'Earthquake', 'Hydrological', 'Meteorological', 'Geological', 'Atmospheric',
+    'Volcanic',
+    'Earthquake',
+    'Hydrological',
+    'Meteorological',
+    'Geological',
+    'Atmospheric',
   ];
 
   String? selectedGroup;
@@ -69,7 +74,7 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
   TimeOfDay? startTime;
   DateTime? endDate;
   TimeOfDay? endTime;
-  
+
   String? errorMessage;
   bool isLoading = false;
 
@@ -120,7 +125,10 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                     margin: const EdgeInsets.only(bottom: 12.0),
                     decoration: BoxDecoration(
                       color: Colors.red.shade100,
-                      border: Border.all(color: Colors.red.shade400, width: 1.5),
+                      border: Border.all(
+                        color: Colors.red.shade400,
+                        width: 1.5,
+                      ),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
@@ -132,9 +140,9 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                           child: Text(
                             errorMessage!,
                             style: TextStyle(
-                              color: Colors.red.shade900, 
-                              fontSize: 14, 
-                              fontWeight: FontWeight.bold
+                              color: Colors.red.shade900,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -158,7 +166,9 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                 ),
                 TextFormField(
                   controller: latController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: 'Latitude'),
                   validator: (value) {
                     if (value == null || value.isEmpty) return null;
@@ -174,7 +184,9 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                 ),
                 TextFormField(
                   controller: longController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: const InputDecoration(labelText: 'Longitude'),
                   validator: (value) {
                     if (value == null || value.isEmpty) return null;
@@ -199,10 +211,12 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                       value: selectedCategory,
                       isExpanded: true,
                       items: categoryOptions
-                          .map((category) => DropdownMenuItem<String>(
-                                value: category,
-                                child: Text(category),
-                              ))
+                          .map(
+                            (category) => DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(category),
+                            ),
+                          )
                           .toList(),
                       onChanged: (value) {
                         if (value != null) {
@@ -228,10 +242,12 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                         value: null,
                         child: Text('None'),
                       ),
-                      ...widget.groupOptions.map((group) => DropdownMenuItem<String?>(
-                            value: group.id,
-                            child: Text(group.name),
-                          )),
+                      ...widget.groupOptions.map(
+                        (group) => DropdownMenuItem<String?>(
+                          value: group.id,
+                          child: Text(group.name),
+                        ),
+                      ),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -241,7 +257,7 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                
+
                 // Start Date Row
                 Row(
                   children: [
@@ -319,7 +335,7 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Attachments Container
                 Container(
                   padding: const EdgeInsets.all(8),
@@ -332,18 +348,26 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                     children: [
                       const Text(
                         'Attachments (optional)',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       if (selectedMediaFiles.isEmpty)
                         Text(
                           'No files selected',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                          ),
                         )
                       else
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: selectedMediaFiles.asMap().entries.map((entry) {
+                          children: selectedMediaFiles.asMap().entries.map((
+                            entry,
+                          ) {
                             final index = entry.key;
                             final file = entry.value;
                             final fileName = _fileNameFromPath(file);
@@ -351,9 +375,15 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Row(
                                 children: [
-                                  if (file.path.toLowerCase().endsWith('.jpg') ||
-                                      file.path.toLowerCase().endsWith('.jpeg') ||
-                                      file.path.toLowerCase().endsWith('.png') ||
+                                  if (file.path.toLowerCase().endsWith(
+                                        '.jpg',
+                                      ) ||
+                                      file.path.toLowerCase().endsWith(
+                                        '.jpeg',
+                                      ) ||
+                                      file.path.toLowerCase().endsWith(
+                                        '.png',
+                                      ) ||
                                       file.path.toLowerCase().endsWith('.webp'))
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
@@ -393,7 +423,8 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () async {
-                                final files = await filePickerService.pickImages();
+                                final files = await filePickerService
+                                    .pickImages();
                                 if (files.isNotEmpty) {
                                   setState(() {
                                     selectedMediaFiles.addAll(files);
@@ -408,7 +439,8 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () async {
-                                final files = await filePickerService.pickVideos();
+                                final files = await filePickerService
+                                    .pickVideos();
                                 if (files.isNotEmpty) {
                                   setState(() {
                                     selectedMediaFiles.addAll(files);
@@ -423,7 +455,8 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () async {
-                                final files = await filePickerService.pickFiles();
+                                final files = await filePickerService
+                                    .pickFiles();
                                 if (files.isNotEmpty) {
                                   setState(() {
                                     selectedMediaFiles.addAll(files);
@@ -446,13 +479,15 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
       ),
       actions: [
         TextButton(
-          onPressed: isLoading ? null : () {
-            setState(() {
-              startDate = DateTime.now();
-              startTime = TimeOfDay.fromDateTime(startDate!);
-              errorMessage = null;
-            });
-          },
+          onPressed: isLoading
+              ? null
+              : () {
+                  setState(() {
+                    startDate = DateTime.now();
+                    startTime = TimeOfDay.fromDateTime(startDate!);
+                    errorMessage = null;
+                  });
+                },
           child: const Text('Now'),
         ),
         TextButton(
@@ -461,8 +496,12 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
         ),
         TextButton(
           onPressed: isLoading ? null : () => _submitForm(),
-          child: isLoading 
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+          child: isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Add'),
         ),
       ],
@@ -473,7 +512,8 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
     // 1. Validate custom configurations like date picker elements first
     if (startDate == null || startTime == null) {
       setState(() {
-        errorMessage = 'Required fields missing: Fill Title, Start Date & Time!';
+        errorMessage =
+            'Required fields missing: Fill Title, Start Date & Time!';
       });
       return;
     }
@@ -572,20 +612,35 @@ EventAttachment _buildAttachment(String eventId, File file) {
 String _guessMimeType(String extension) {
   switch (extension.toLowerCase()) {
     case 'jpg':
-    case 'jpeg': return 'image/jpeg';
-    case 'png': return 'image/png';
-    case 'gif': return 'image/gif';
-    case 'webp': return 'image/webp';
-    case 'mp4': return 'video/mp4';
-    case 'mov': return 'video/quicktime';
-    case 'avi': return 'video/x-msvideo';
-    case 'mkv': return 'video/x-matroska';
-    case 'webm': return 'video/webm';
-    case 'pdf': return 'application/pdf';
-    case 'csv': return 'text/csv';
-    case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    case 'xls': return 'application/vnd.ms-excel';
-    default: return 'application/octet-stream';
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    case 'webp':
+      return 'image/webp';
+    case 'mp4':
+      return 'video/mp4';
+    case 'mov':
+      return 'video/quicktime';
+    case 'avi':
+      return 'video/x-msvideo';
+    case 'mkv':
+      return 'video/x-matroska';
+    case 'webm':
+      return 'video/webm';
+    case 'pdf':
+      return 'application/pdf';
+    case 'csv':
+      return 'text/csv';
+    case 'docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'xlsx':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    case 'xls':
+      return 'application/vnd.ms-excel';
+    default:
+      return 'application/octet-stream';
   }
 }

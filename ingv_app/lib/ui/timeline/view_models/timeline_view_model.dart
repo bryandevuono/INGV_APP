@@ -189,7 +189,6 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
         if (!matchesTitle && !matchesDescription) return false;
       }
 
-
       final eventEnd = event.endDt ?? event.startDt;
       final filterDayStart = _filterStartDate ?? event.startDt;
 
