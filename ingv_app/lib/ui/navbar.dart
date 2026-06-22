@@ -291,11 +291,9 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                     _hybridFilterController,
                                   ]),
                                   builder: (context, _) {
-
                                     final mapViewModel = _hybridMapScreenKey
                                         .currentState
                                         ?.getViewModel();
-
 
                                     return ListenableBuilder(
                                       listenable:

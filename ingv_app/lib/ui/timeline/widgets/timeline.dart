@@ -458,7 +458,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
               onExportDateRangeZip: _exportDateRangeZip,
               onAddEvent:
                   widget.onAddEvent ??
-                  () => showAddEventDialog(context, widget.viewModel, const []),
+                  () => showAddEventDialog(context, widget.viewModel, widget.viewModel.userGroups),
             );
 
             if (isMobile) {
