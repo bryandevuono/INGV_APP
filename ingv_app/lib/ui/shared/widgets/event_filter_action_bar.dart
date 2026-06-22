@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ingv_app/data/models/event_model.dart';
 
 class EventFilterActionBar extends StatefulWidget {
   final List<String> categories;
@@ -24,6 +25,8 @@ class EventFilterActionBar extends StatefulWidget {
   final VoidCallback? onAddEvent;
   final bool embeddedInPage;
   final Duration? timelineScaleDuration;
+  final List<EventModel> searchSuggestions;
+  final ValueChanged<EventModel>? onSuggestionSelected;
 
   const EventFilterActionBar({
     super.key,
@@ -50,6 +53,8 @@ class EventFilterActionBar extends StatefulWidget {
     this.onAddEvent,
     this.embeddedInPage = false,
     this.timelineScaleDuration,
+    this.searchSuggestions = const [],
+    this.onSuggestionSelected,
   });
 
   @override
@@ -58,11 +63,15 @@ class EventFilterActionBar extends StatefulWidget {
 
 class _EventFilterActionBarState extends State<EventFilterActionBar> {
   late final TextEditingController _searchController;
+  final LayerLink _searchLayerLink = LayerLink();
+  final FocusNode _searchFocusNode = FocusNode();
+  OverlayEntry? _suggestionsOverlay;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.searchQuery);
+    _searchFocusNode.addListener(_onSearchFocusChanged);
   }
 
   @override
@@ -72,10 +81,101 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
         _searchController.text != widget.searchQuery) {
       _searchController.text = widget.searchQuery;
     }
+    if (widget.searchSuggestions != oldWidget.searchSuggestions) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_searchFocusNode.hasFocus && widget.searchSuggestions.isNotEmpty) {
+          _showSuggestionsOverlay();
+        } else {
+          _removeSuggestionsOverlay();
+        }
+      });
+    }
+  }
+
+  void _onSearchFocusChanged() {
+    if (!_searchFocusNode.hasFocus) {
+      _removeSuggestionsOverlay();
+    } else if (widget.searchSuggestions.isNotEmpty) {
+      _showSuggestionsOverlay();
+    }
+  }
+
+  void _showSuggestionsOverlay() {
+    if (widget.searchSuggestions.isEmpty) {
+      _removeSuggestionsOverlay();
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (_suggestionsOverlay == null) {
+        _suggestionsOverlay = OverlayEntry(
+          builder: (context) => Positioned(
+            width: 260,
+            child: CompositedTransformFollower(
+              link: _searchLayerLink,
+              showWhenUnlinked: false,
+              offset: const Offset(0, 44),
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 240),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: widget.searchSuggestions.length,
+                    itemBuilder: (context, index) {
+                      final event = widget.searchSuggestions[index];
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (_) {
+                          _selectSuggestion(event);
+                        },
+                        child: ListTile(
+                          dense: true,
+                          title: Text(event.title),
+                          subtitle: Text(event.category),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        Overlay.of(context).insert(_suggestionsOverlay!);
+      } else {
+        _suggestionsOverlay!.markNeedsBuild();
+      }
+    });
+  }
+
+  void _removeSuggestionsOverlay() {
+    _suggestionsOverlay?.remove();
+    _suggestionsOverlay = null;
+  }
+
+  void _selectSuggestion(EventModel event) {
+    setState(() {
+      _searchController.text = event.title;
+    });
+
+    widget.onSearchChanged?.call(event.title);
+
+    _removeSuggestionsOverlay();
+    _searchFocusNode.unfocus();
+    widget.onSuggestionSelected?.call(event);
   }
 
   @override
   void dispose() {
+    _removeSuggestionsOverlay();
+    _searchFocusNode.removeListener(_onSearchFocusChanged);
+    _searchFocusNode.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -225,29 +325,34 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                 : const Icon(Icons.download),
           ),
         if (widget.showSearch)
-          SizedBox(
-            width: 220,
-            child: TextField(
-              controller: _searchController,
-              onChanged: widget.onSearchChanged,
-              decoration: InputDecoration(
-                hintText: 'Search (keywords, tags)...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          _searchController.clear();
-                          widget.onSearchChanged?.call('');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 0,
+          CompositedTransformTarget(
+            link: _searchLayerLink,
+            child: SizedBox(
+              width: 220,
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                onChanged: widget.onSearchChanged, // unchanged
+                decoration: InputDecoration(
+                  hintText: 'Search (keywords, tags)...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            widget.onSearchChanged?.call('');
+                            _removeSuggestionsOverlay();
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 0,
+                  ),
                 ),
               ),
             ),

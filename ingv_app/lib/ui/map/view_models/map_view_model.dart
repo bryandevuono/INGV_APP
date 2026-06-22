@@ -106,9 +106,30 @@ class MapScreenViewModel extends ChangeNotifier {
     }
   }
 
-  void setSearchQuery(String query) {
+  List<EventModel> searchSuggestions = [];
+
+  Future<void> setSearchQuery(String query) async {
     searchQuery = query;
-    applyFilters();
+    await applyFilters(); // keeps existing live marker filtering
+    searchSuggestions = events.take(5).toList();
+    notifyListeners();
+  }
+
+  Future<void> selectSuggestion(EventModel event) async {
+    searchQuery = event.title;
+    searchSuggestions = [];
+    notifyListeners(); 
+
+    try {
+      mapController.move(
+        latlong2.LatLng(event.lat, event.long),
+        8.0, // Zoom level
+      );
+    } catch (e) {
+      debugPrint("Error moving map to selected suggestion: $e");
+    }
+
+    await applyFilters();
   }
 
   void setCategoryFilter(String category) {
@@ -159,6 +180,9 @@ class MapScreenViewModel extends ChangeNotifier {
   void jumpToLocation({double zoom = 6}) async {
     try {
       final foundEvent = await _searchRepository.getClosestMatch(searchQuery);
+      print(
+        "Found closest match: ${foundEvent.title} at (${foundEvent.lat}, ${foundEvent.long})",
+      );
       mapController.move(
         latlong2.LatLng(foundEvent.lat, foundEvent.long),
         zoom,
@@ -255,9 +279,6 @@ class MapScreenViewModel extends ChangeNotifier {
       return result.saveLocation;
     } catch (error) {
       exportErrorMessage = 'Failed to export map ZIP: $error';
-    } catch (error) {
-      exportErrorMessage = 'Failed to export map ZIP: $error';
-      return null;
     } finally {
       isExporting = false;
       notifyListeners();
@@ -267,5 +288,15 @@ class MapScreenViewModel extends ChangeNotifier {
   void getTimeScale() {
     timelineDuration = _eventRepository.getTimeScale();
     notifyListeners();
+  }
+
+  void zoomIn() {
+    final camera = mapController.camera;
+    mapController.move(camera.center, camera.zoom + 1);
+  }
+
+  void zoomOut() {
+    final camera = mapController.camera;
+    mapController.move(camera.center, camera.zoom - 1);
   }
 }
