@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:ingv_app/ui/timeline/widgets/timeline_canvas.dart';
 import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
@@ -81,25 +83,45 @@ Widget buildEventContainer(String eventId, TimelineCanvas widget) {
               : LayoutBuilder(
                   builder: (context, constraints) {
                     final double availWidth = constraints.maxWidth;
+                    final double contentOffset =
+                        _calculateVisibleContentOffset(
+                      event,
+                      widget,
+                      availWidth,
+                    );
                     return Container(
                       alignment: Alignment.topLeft,
                       height: 45.0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6.0,
-                        vertical: 4.0,
-                      ),
+                      clipBehavior: Clip.hardEdge,
                       decoration: BoxDecoration(
                         color: itemColor,
                         border: isSelected
                             ? Border.all(color: Colors.white, width: 2)
                             : null,
                       ),
-                      child: _buildEventCardContent(
-                        event,
-                        duration,
-                        startStringTime,
-                        endStringTime,
-                        availWidth,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Positioned(
+                            left: contentOffset,
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6.0,
+                                vertical: 4.0,
+                              ),
+                              child: _buildEventCardContent(
+                                event,
+                                duration,
+                                startStringTime,
+                                endStringTime,
+                                math.max(0, availWidth - contentOffset),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -207,4 +229,33 @@ Widget buildEventContainer(String eventId, TimelineCanvas widget) {
         ),
       ],
     );
+  }
+
+  double _calculateVisibleContentOffset(
+    EventModel event,
+    TimelineCanvas widget,
+    double availableWidth,
+  ) {
+    final eventEnd = event.endDt;
+    if (eventEnd == null || availableWidth <= 0) return 0;
+
+    final DateTime visibleStart =
+        widget.filterStartDate ?? widget.clientBaselineStart;
+
+    if (!event.startDt.isBefore(visibleStart)) return 0;
+
+    final int eventDurationMs =
+        eventEnd.difference(event.startDt).inMilliseconds;
+    if (eventDurationMs <= 0) return 0;
+
+    final int hiddenDurationMs =
+        visibleStart.difference(event.startDt).inMilliseconds;
+    if (hiddenDurationMs <= 0) return 0;
+
+    final double hiddenRatio = hiddenDurationMs / eventDurationMs;
+    final double desiredOffset = availableWidth * hiddenRatio;
+    const double minimumReadableWidth = 80.0;
+    final double maxOffset = math.max(0, availableWidth - minimumReadableWidth);
+
+    return desiredOffset.clamp(0, maxOffset).toDouble();
   }
