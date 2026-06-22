@@ -1,14 +1,6 @@
-/// Shared helpers for formatting event metadata in tooltips and UI.
-/// Keeps Map and Timeline consistent.
+/// Shared helper functions
 library;
 
-/// Formats a duration between [start] and [end].
-///
-/// Returns:
-///   - `'Ongoing'` if [end] is null
-///   - `'45m'` for less than 1 hour
-///   - `'2h'` for exact hours
-///   - `'2h 30m'` when both hours and minutes exist
 String formatDuration(DateTime start, DateTime? end) {
   if (end == null) return 'Ongoing';
 
@@ -22,18 +14,15 @@ String formatDuration(DateTime start, DateTime? end) {
   return '${hours}h ${minutes}m';
 }
 
-/// Formats latitude and longitude into a `Location: lat, lng` string.
 String formatLocation(double lat, double lng) {
   return 'Location: ${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
 }
 
-/// Formats a DateTime into a short local date string (yyyy-MM-dd).
 String formatDateShort(DateTime? dt) {
   if (dt == null) return '—';
   return dt.toLocal().toString().split(' ')[0];
 }
 
-/// Formats a DateTime into a local date + time string.
 String formatDateTimeLocal(DateTime? dt) {
   if (dt == null) return '—';
   final s = dt.toLocal().toString().split(' ');
@@ -41,7 +30,6 @@ String formatDateTimeLocal(DateTime? dt) {
   return s[0];
 }
 
-/// Formats a DateTime into a tooltip-friendly string like "May 30, 16:41".
 String formatDateTimeTooltip(DateTime? dt) {
   if (dt == null) return '—';
   final local = dt.toLocal();
