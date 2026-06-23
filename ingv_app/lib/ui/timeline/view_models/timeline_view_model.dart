@@ -253,8 +253,9 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
       newIndex -= 1;
     }
 
-    final int targetIndex =
-        newIndex.clamp(0, _orderedCategories.length - 1).toInt();
+    final int targetIndex = newIndex
+        .clamp(0, _orderedCategories.length - 1)
+        .toInt();
     if (oldIndex == targetIndex) {
       return;
     }

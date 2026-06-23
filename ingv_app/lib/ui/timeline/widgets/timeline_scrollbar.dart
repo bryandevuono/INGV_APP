@@ -56,7 +56,9 @@ class TimelineScrollbar extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isDragging
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.primary.withOpacity(0.6),
+                          : Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.6),
                       borderRadius: BorderRadius.circular(11),
                     ),
                     child: const Center(
