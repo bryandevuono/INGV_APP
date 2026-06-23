@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:legacy_gantt_chart/legacy_gantt_chart.dart';
 import 'package:ingv_app/data/models/event_model.dart';
-import 'package:ingv_app/data/models/timeline_presentation_models.dart'; 
+import 'package:ingv_app/data/models/timeline_presentation_models.dart';
 import 'package:ingv_app/ui/timeline/widgets/event_container.dart';
 
 class TimelineCanvas extends StatefulWidget {
   final List<EventModel> events;
-  final List<TimelineLaneData> lanes; 
+  final List<TimelineLaneData> lanes;
   final EventModel? selectedEvent;
   final bool hasActiveFilters;
   final Duration Function() getTimeScale;
@@ -111,243 +111,234 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
     final DateTime totalEnd = rangeEnd.add(edgePadding);
 
     final int totalLanes = widget.lanes.length;
-    final int minimizedCount =
-        widget.lanes.where((l) => widget.isCategoryMinimized(l.id)).length;
-        final int expandedCount = totalLanes - minimizedCount;
+    final int minimizedCount = widget.lanes
+        .where((l) => widget.isCategoryMinimized(l.id))
+        .length;
+    final int expandedCount = totalLanes - minimizedCount;
 
-        double expandedRowHeight = minExpandedRowHeight;
+    double expandedRowHeight = minExpandedRowHeight;
     final double? viewportHeight = _viewportHeight;
-        if (expandedCount > 0 &&
+    if (expandedCount > 0 &&
         viewportHeight != null &&
         viewportHeight.isFinite) {
-          final double availableForExpanded =
+      final double availableForExpanded =
           viewportHeight -
-              listVerticalPadding -
-              baseAxisHeight -
-              (minimizedCount * minimizedRowHeight) -
-              (totalLanes * dividerHeight);
-          final double computedHeight = availableForExpanded / expandedCount;
-          if (computedHeight > minExpandedRowHeight) {
-            expandedRowHeight = computedHeight;
-          }
-        }
+          listVerticalPadding -
+          baseAxisHeight -
+          (minimizedCount * minimizedRowHeight) -
+          (totalLanes * dividerHeight);
+      final double computedHeight = availableForExpanded / expandedCount;
+      if (computedHeight > minExpandedRowHeight) {
+        expandedRowHeight = computedHeight;
+      }
+    }
 
     return SizedBox.expand(
       key: _viewportKey,
       child: ReorderableListView.builder(
-          buildDefaultDragHandles: false,
+        buildDefaultDragHandles: false,
         onReorder: (old, current) => widget.reorderCategories(old, current),
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         itemCount: widget.lanes.length,
-          itemBuilder: (context, index) {
+        itemBuilder: (context, index) {
           final lane = widget.lanes[index];
-            final isFirstRow = index == 0;
+          final isFirstRow = index == 0;
           final isMinimized = widget.isCategoryMinimized(lane.id);
 
-            final double definedRowHeight = isMinimized
-                ? minimizedRowHeight
-                : expandedRowHeight;
+          final double definedRowHeight = isMinimized
+              ? minimizedRowHeight
+              : expandedRowHeight;
 
-            final List<TimelineTaskData> genericTasks =
-              widget.getTimelineTasksForCategory(lane.id);
+          final List<TimelineTaskData> genericTasks = widget
+              .getTimelineTasksForCategory(lane.id);
 
-            final packageRows = [
-              LegacyGanttRow(id: lane.id, label: lane.label),
-            ];
+          final packageRows = [LegacyGanttRow(id: lane.id, label: lane.label)];
 
-            final packageTasks = genericTasks.map((task) {
-              final DateTime finalEnd;
-              if (task.start == task.end) {
-                finalEnd = task.start.add(const Duration(hours: 1));
-              } else {
-                finalEnd = task.end;
-              }
-              return LegacyGanttTask(
-                id: task.id,
-                rowId: task.laneId,
-                name: task.title,
-                start: task.start,
-                end: finalEnd,
-                color: task.color,
-              );
-            }).toList();
+          final packageTasks = genericTasks.map((task) {
+            final DateTime finalEnd;
+            if (task.start == task.end) {
+              finalEnd = task.start.add(const Duration(hours: 1));
+            } else {
+              finalEnd = task.end;
+            }
+            return LegacyGanttTask(
+              id: task.id,
+              rowId: task.laneId,
+              name: task.title,
+              start: task.start,
+              end: finalEnd,
+              color: task.color,
+            );
+          }).toList();
 
-            int maxConcurrentCount = 0;
-            bool showVerticalScrollIndicators = false;
+          int maxConcurrentCount = 0;
+          bool showVerticalScrollIndicators = false;
 
-            if (!isMinimized && genericTasks.isNotEmpty) {
-              final List<MapEntry<DateTime, int>> timePoints = [];
+          if (!isMinimized && genericTasks.isNotEmpty) {
+            final List<MapEntry<DateTime, int>> timePoints = [];
 
-              for (final task in genericTasks) {
-                final end = task.end;
-                if (task.start.isBefore(totalEnd) && end.isAfter(totalStart)) {
-                  timePoints.add(MapEntry(task.start, 1));
-                  timePoints.add(MapEntry(end, -1));
-                }
-              }
-
-              timePoints.sort((a, b) {
-                final compare = a.key.compareTo(b.key);
-                if (compare != 0) return compare;
-                return a.value.compareTo(b.value);
-              });
-
-              int concurrentCount = 0;
-              for (final point in timePoints) {
-                concurrentCount += point.value;
-                if (concurrentCount > maxConcurrentCount) {
-                  maxConcurrentCount = concurrentCount;
-                }
-              }
-
-              if (maxConcurrentCount >= 5) {
-                showVerticalScrollIndicators = true;
+            for (final task in genericTasks) {
+              final end = task.end;
+              if (task.start.isBefore(totalEnd) && end.isAfter(totalStart)) {
+                timePoints.add(MapEntry(task.start, 1));
+                timePoints.add(MapEntry(end, -1));
               }
             }
 
-            final rowMaxStackDepth = <String, int>{
-              lane.id: maxConcurrentCount > 0 ? maxConcurrentCount : 1,
-            };
+            timePoints.sort((a, b) {
+              final compare = a.key.compareTo(b.key);
+              if (compare != 0) return compare;
+              return a.value.compareTo(b.value);
+            });
 
-            final double fullWidgetHeight = definedRowHeight + baseAxisHeight;
-            final double visibleViewportHeight = isFirstRow
-                ? fullWidgetHeight
-                : definedRowHeight;
+            int concurrentCount = 0;
+            for (final point in timePoints) {
+              concurrentCount += point.value;
+              if (concurrentCount > maxConcurrentCount) {
+                maxConcurrentCount = concurrentCount;
+              }
+            }
 
-            Widget chartSection = SizedBox(
-              width: totalCanvasWidth,
-              height: fullWidgetHeight,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: LegacyGanttChartWidget(
-                      data: packageTasks,
-                      visibleRows: packageRows,
-                      rowMaxStackDepth: rowMaxStackDepth,
-                      rowHeight: 50,
-                      axisHeight: baseAxisHeight,
-                      gridMin: gridMin.millisecondsSinceEpoch.toDouble(),
-                      gridMax: gridMax.millisecondsSinceEpoch.toDouble(),
-                      totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
-                      totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
-                      taskBarBuilder: (task) {
-                        if (isMinimized) return const SizedBox.shrink();
-                        return buildEventContainer(task.id, widget);
-                      },
-                    ),
+            if (maxConcurrentCount >= 5) {
+              showVerticalScrollIndicators = true;
+            }
+          }
+
+          final rowMaxStackDepth = <String, int>{
+            lane.id: maxConcurrentCount > 0 ? maxConcurrentCount : 1,
+          };
+
+          final double fullWidgetHeight = definedRowHeight + baseAxisHeight;
+          final double visibleViewportHeight = isFirstRow
+              ? fullWidgetHeight
+              : definedRowHeight;
+
+          Widget chartSection = SizedBox(
+            width: totalCanvasWidth,
+            height: fullWidgetHeight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: LegacyGanttChartWidget(
+                    data: packageTasks,
+                    visibleRows: packageRows,
+                    rowMaxStackDepth: rowMaxStackDepth,
+                    rowHeight: 50,
+                    axisHeight: baseAxisHeight,
+                    gridMin: gridMin.millisecondsSinceEpoch.toDouble(),
+                    gridMax: gridMax.millisecondsSinceEpoch.toDouble(),
+                    totalGridMin: totalStart.millisecondsSinceEpoch.toDouble(),
+                    totalGridMax: totalEnd.millisecondsSinceEpoch.toDouble(),
+                    taskBarBuilder: (task) {
+                      if (isMinimized) return const SizedBox.shrink();
+                      return buildEventContainer(task.id, widget);
+                    },
                   ),
-                  if (showVerticalScrollIndicators)
-                    Positioned(
-                      bottom: 4,
-                      left: (totalCanvasWidth / 2) - 12,
-                      child: IgnorePointer(
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          child: const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: Colors.blueAccent,
-                            size: 20,
-                          ),
+                ),
+                if (showVerticalScrollIndicators)
+                  Positioned(
+                    bottom: 4,
+                    left: (totalCanvasWidth / 2) - 12,
+                    child: IgnorePointer(
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.blueAccent,
+                          size: 20,
                         ),
                       ),
                     ),
-                ],
-              ),
-            );
-
-            if (!isFirstRow) {
-              chartSection = ClipRect(
-                child: SizedBox(
-                  width: totalCanvasWidth,
-                  height: visibleViewportHeight,
-                  child: OverflowBox(
-                    minHeight: fullWidgetHeight,
-                    maxHeight: fullWidgetHeight,
-                    alignment: Alignment.bottomCenter,
-                    child: chartSection,
                   ),
+              ],
+            ),
+          );
+
+          if (!isFirstRow) {
+            chartSection = ClipRect(
+              child: SizedBox(
+                width: totalCanvasWidth,
+                height: visibleViewportHeight,
+                child: OverflowBox(
+                  minHeight: fullWidgetHeight,
+                  maxHeight: fullWidgetHeight,
+                  alignment: Alignment.bottomCenter,
+                  child: chartSection,
                 ),
-              );
-            }
-
-            Widget leftHeader = Container(
-              width: leftHeaderWidth,
-              height: visibleViewportHeight,
-              padding: EdgeInsets.only(
-                left: 4.0,
-                right: 4.0,
-                top: isFirstRow ? baseAxisHeight : 0.0,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                border: Border(right: BorderSide(color: Colors.grey.shade300)),
-              ),
-              child: Row(
-                children: [
-                  ReorderableDragStartListener(
-                    index: index,
-                    child: const Icon(
-                      Icons.drag_indicator,
-                      size: 20,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: Icon(
-                      isMinimized ? Icons.chevron_right : Icons.expand_more,
-                      size: 20,
-                      color: Colors.black54,
-                    ),
-                    tooltip: isMinimized ? 'Expand lane' : 'Minimize lane',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  onPressed: () => widget.toggleCategoryMinimized(lane.id),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      lane.label,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
               ),
             );
+          }
 
-            return Column(
-              key: ValueKey('row_wrapper_${lane.id}'),
+          Widget leftHeader = Container(
+            width: leftHeaderWidth,
+            height: visibleViewportHeight,
+            padding: EdgeInsets.only(
+              left: 4.0,
+              right: 4.0,
+              top: isFirstRow ? baseAxisHeight : 0.0,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              border: Border(right: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Row(
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    leftHeader,
-                    Expanded(
-                      child: SizedBox(
-                        width: totalCanvasWidth,
-                        height: visibleViewportHeight,
-                        child: chartSection,
-                      ),
-                    ),
-                  ],
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(
+                    Icons.drag_indicator,
+                    size: 20,
+                    color: Colors.grey,
+                  ),
                 ),
-                Divider(
-                  color: Colors.grey.shade300,
-                  thickness: 1.0,
-                  height: 4.0,
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(
+                    isMinimized ? Icons.chevron_right : Icons.expand_more,
+                    size: 20,
+                    color: Colors.black54,
+                  ),
+                  tooltip: isMinimized ? 'Expand lane' : 'Minimize lane',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => widget.toggleCategoryMinimized(lane.id),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    lane.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
-            );
-          },
+            ),
+          );
+
+          return Column(
+            key: ValueKey('row_wrapper_${lane.id}'),
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  leftHeader,
+                  Expanded(
+                    child: SizedBox(
+                      width: totalCanvasWidth,
+                      height: visibleViewportHeight,
+                      child: chartSection,
+                    ),
+                  ),
+                ],
+              ),
+              Divider(color: Colors.grey.shade300, thickness: 1.0, height: 4.0),
+            ],
+          );
+        },
       ),
     );
   }
-
-  
-
-  
 }

@@ -253,19 +253,16 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
       newIndex -= 1;
     }
 
-    final int targetIndex =
-        newIndex.clamp(0, _orderedCategories.length - 1).toInt();
+    final int targetIndex = newIndex
+        .clamp(0, _orderedCategories.length - 1)
+        .toInt();
     if (oldIndex == targetIndex) {
       return;
     }
 
     final String item = _orderedCategories.removeAt(oldIndex);
     _orderedCategories.insert(targetIndex, item);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (hasListeners) {
-        notifyListeners();
-      }
-    });
+    notifyListeners();
   }
 
   @override

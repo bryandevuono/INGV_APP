@@ -6,18 +6,18 @@ import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
 class TimelineToolbar extends StatelessWidget {
   final ITimelineViewModel viewModel;
   final EventFilterController? filterController;
-  final VoidCallback? onAddEvent;          
-  final VoidCallback onNavigatePast;       
-  final VoidCallback onNavigateFuture;  
+  final VoidCallback? onAddEvent;
+  final VoidCallback onNavigatePast;
+  final VoidCallback onNavigateFuture;
   final Duration currentScale;
   final List<(Duration, String, String)> scaleOptions;
   final ValueChanged<Duration> onScaleChanged;
-  final Future<void> Function() onPickDateRange; 
-  final VoidCallback onClearDateFilter;    
-  final Future<void> Function() onExportPdf;    
-  final Future<void> Function() onExportZip;     
-  final Future<void> Function() onExportDateRangePdf; 
-  final Future<void> Function() onExportDateRangeZip; 
+  final Future<void> Function() onPickDateRange;
+  final VoidCallback onClearDateFilter;
+  final Future<void> Function() onExportPdf;
+  final Future<void> Function() onExportZip;
+  final Future<void> Function() onExportDateRangePdf;
+  final Future<void> Function() onExportDateRangeZip;
 
   const TimelineToolbar({
     super.key,
@@ -81,7 +81,8 @@ class TimelineToolbar extends StatelessWidget {
                 viewModel.setCategoryFilter(newValue);
                 filterController?.setCategory(newValue);
               },
-              onDateRangePicked: onPickDateRange, // now matches Future<void> Function()
+              onDateRangePicked:
+                  onPickDateRange, // now matches Future<void> Function()
               onClearDateFilter: onClearDateFilter,
               onSearchChanged: (query) {
                 viewModel.setSearchQuery(query);

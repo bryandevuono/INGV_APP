@@ -99,7 +99,6 @@ class _MockTimelineViewModel extends ChangeNotifier
   List<EventModel> get searchSuggestions => [];
   @override
   Future<void> selectSuggestion(EventModel event) => Future.value();
-
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
 import 'package:ingv_app/ui/timeline/widgets/timeline_toolbar.dart';
 import 'package:ingv_app/ui/timeline/widgets/timeline_scrollbar.dart';
 import 'package:ingv_app/ui/timeline/widgets/timeline_canvas.dart';
-import 'add_event_dialog.dart'; 
+import 'add_event_dialog.dart';
 
 class TimelineScreen extends StatefulWidget {
   final ITimelineViewModel viewModel;
@@ -121,7 +121,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
     }
   }
 
-  Future<void> _showExportResult(Future<String?> Function() exportAction) async {
+  Future<void> _showExportResult(
+    Future<String?> Function() exportAction,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     final exportPath = await exportAction();
     if (!mounted) return;
@@ -284,7 +286,10 @@ class _TimelineScreenState extends State<TimelineScreen> {
     if (!_isHorizontalPanning && _dragDxTotal.abs() < 10) return;
     _isHorizontalPanning = true;
 
-    final double scaleMs = widget.viewModel.getTimeScale().inMilliseconds.toDouble();
+    final double scaleMs = widget.viewModel
+        .getTimeScale()
+        .inMilliseconds
+        .toDouble();
     final double deltaMs = -details.primaryDelta! / 300.0 * scaleMs;
     final shift = Duration(milliseconds: deltaMs.round());
     setState(() {
@@ -320,12 +325,13 @@ class _TimelineScreenState extends State<TimelineScreen> {
                   TimelineToolbar(
                     viewModel: widget.viewModel,
                     filterController: _filterController,
-                    onAddEvent: widget.onAddEvent ??
+                    onAddEvent:
+                        widget.onAddEvent ??
                         () => showAddEventDialog(
-                              context,
-                              widget.viewModel,
-                              widget.viewModel.userGroups,
-                            ),
+                          context,
+                          widget.viewModel,
+                          widget.viewModel.userGroups,
+                        ),
                     onNavigatePast: _navigateToPast,
                     onNavigateFuture: _navigateToFuture,
                     currentScale: widget.viewModel.getTimeScale(),
@@ -336,8 +342,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
                       widget.viewModel.setDateRangeFilter(null, null);
                       _filterController?.clearDateRange();
                     },
-                    onExportPdf: () =>
-                        _showExportResult(widget.viewModel.exportTimelineReport),
+                    onExportPdf: () => _showExportResult(
+                      widget.viewModel.exportTimelineReport,
+                    ),
                     onExportZip: () =>
                         _showExportResult(widget.viewModel.exportTimelineAsZip),
                     onExportDateRangePdf: _exportDateRangePdf,
@@ -371,7 +378,8 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         getTimeScale: widget.viewModel.getTimeScale,
                         filterStartDate: widget.viewModel.filterStartDate,
                         filterEndDate: widget.viewModel.filterEndDate,
-                        isCategoryMinimized: widget.viewModel.isCategoryMinimized,
+                        isCategoryMinimized:
+                            widget.viewModel.isCategoryMinimized,
                         getTimelineTasksForCategory:
                             widget.viewModel.getTimelineTasksForCategory,
                         reorderCategories: widget.viewModel.reorderCategories,
