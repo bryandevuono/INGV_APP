@@ -191,6 +191,17 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     }
   }
 
+  Future<void> _showHybridAddEventDialog() async {
+    await showAddEventDialog(
+      context,
+      _hybridTimelineViewModel,
+      _hybridTimelineViewModel.userGroups,
+    );
+
+    if (!mounted) return;
+    await _hybridMapScreenKey.currentState?.reloadEvents();
+  }
+
   /// Combines suggestions from the timeline view model and the map view
   /// model into a single deduplicated list (by eventId), capped at 5.
   List<EventModel> _mergedSuggestions(EventModel? Function()? unused) {
@@ -480,12 +491,9 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                                     _exportHybridDateRangePdf,
                                                 onExportDateRangeZip:
                                                     _exportHybridDateRangeZip,
-                                                onAddEvent: () =>
-                                                    showAddEventDialog(
-                                                      context,
-                                                      _hybridTimelineViewModel,
-                                                      const [],
-                                                    ),
+                                                onAddEvent: () {
+                                                  _showHybridAddEventDialog();
+                                                },
                                                 searchSuggestions:
                                                     _mergedSuggestions(null),
                                                 onSuggestionSelected:
@@ -514,6 +522,8 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                           child: ResizableHybridView(
                             viewModel: _hybridViewModel,
                             detailViewModel: _hybridDetailViewModel,
+                            groupOptionsBuilder: () =>
+                                _hybridTimelineViewModel.userGroups,
                             onPanelToggle: (isPanelOpen) {
                               if (isPanelOpen) {
                                 _hybridViewModel.updateRatio(0.45);

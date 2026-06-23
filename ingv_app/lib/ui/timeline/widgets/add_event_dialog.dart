@@ -9,14 +9,14 @@ import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/timeline/view_models/timeline_interface.dart';
 import 'package:ingv_app/data/services/attachment_service.dart';
 
-void showAddEventDialog(
+Future<void> showAddEventDialog(
   BuildContext context,
   ITimelineViewModel viewModel,
   List<GroupModel> groupOptions,
 ) {
-  if (!context.mounted) return;
+  if (!context.mounted) return Future.value();
 
-  showDialog(
+  return showDialog<void>(
     routeSettings: const RouteSettings(name: 'disable-accessibility-view'),
     context: context,
     barrierDismissible: true,
@@ -99,6 +99,23 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
     latController.dispose();
     longController.dispose();
     super.dispose();
+  }
+
+  List<DropdownMenuItem<String?>> _buildGroupItems() {
+    final items = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(value: null, child: Text('None')),
+    ];
+    final seenGroupIds = <String>{};
+
+    for (final group in widget.groupOptions) {
+      if (seenGroupIds.add(group.id)) {
+        items.add(
+          DropdownMenuItem<String?>(value: group.id, child: Text(group.name)),
+        );
+      }
+    }
+
+    return items;
   }
 
   @override
@@ -237,18 +254,7 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
                   child: DropdownButton<String?>(
                     value: selectedGroup,
                     isExpanded: true,
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('None'),
-                      ),
-                      ...widget.groupOptions.map(
-                        (group) => DropdownMenuItem<String?>(
-                          value: group.id,
-                          child: Text(group.name),
-                        ),
-                      ),
-                    ],
+                    items: _buildGroupItems(),
                     onChanged: (value) {
                       setState(() {
                         selectedGroup = value;

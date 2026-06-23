@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/event_model.dart';
+import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/data/repositories/event_repository.dart';
 import 'package:ingv_app/data/repositories/event_search_repository.dart';
+import 'package:ingv_app/data/repositories/group_repository.dart';
 import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/repositories/event_detail_repository.dart';
 import 'package:ingv_app/data/services/event_detail_service.dart';
@@ -15,6 +17,7 @@ import 'package:ingv_app/ui/shared/widgets/event_filter_action_bar.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service_interface.dart';
 import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
 import 'package:ingv_app/data/services/attachment_service.dart';
+import 'package:ingv_app/data/services/group_service_sembast.dart';
 
 class MapScreen extends StatefulWidget {
   final IEventRepository eventRepository;
@@ -51,7 +54,9 @@ class MapScreen extends StatefulWidget {
 class MapScreenState extends State<MapScreen> {
   late final MapScreenViewModel _viewModel;
   late final EventDetailViewModel _detailViewModel;
+  late final GroupRepository _groupRepository;
   EventModel? _selectedEvent;
+  List<GroupModel> _groupOptions = [];
   EventFilterController? get _filterController => widget.sharedFilterController;
   MapScreenViewModel getViewModel() => _viewModel;
 
@@ -97,13 +102,28 @@ class MapScreenState extends State<MapScreen> {
       pdfExportService,
       zipExportService,
     );
+    _groupRepository = GroupRepository(GroupServiceSembast());
 
     _loadEvents();
   }
 
   Future<void> _loadEvents() async {
     await _viewModel.getColors();
-    await _viewModel.fetchEvents();
+    await Future.wait([_viewModel.fetchEvents(), _loadGroups()]);
+  }
+
+  Future<void> reloadEvents() => _loadEvents();
+
+  Future<void> _loadGroups() async {
+    try {
+      final groups = await _groupRepository.getGroupsOfUser('p_1');
+      if (!mounted) return;
+      setState(() {
+        _groupOptions = groups;
+      });
+    } catch (e) {
+      debugPrint('Map load groups error: $e');
+    }
   }
 
   Future<void> _pickDateRange() async {
@@ -350,6 +370,7 @@ class MapScreenState extends State<MapScreen> {
                       curve: Curves.fastOutSlowIn,
                       child: EventDetailPanel(
                         viewModel: _detailViewModel,
+                        groupOptions: _groupOptions,
                         onEventUpdated: (updatedEvent) async {
                           setState(() => _selectedEvent = updatedEvent);
                           await _loadEvents();

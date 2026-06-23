@@ -157,6 +157,33 @@ class _EditEventDialogState extends State<_EditEventDialog> {
     );
   }
 
+  List<DropdownMenuItem<String?>> _buildGroupItems() {
+    final items = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(value: null, child: Text('None')),
+    ];
+    final seenGroupIds = <String>{};
+
+    for (final group in widget.groupOptions) {
+      if (seenGroupIds.add(group.id)) {
+        items.add(
+          DropdownMenuItem<String?>(value: group.id, child: Text(group.name)),
+        );
+      }
+    }
+
+    final selectedGroupId = _viewModel.selectedGroupId;
+    if (selectedGroupId != null && seenGroupIds.add(selectedGroupId)) {
+      items.add(
+        DropdownMenuItem<String?>(
+          value: selectedGroupId,
+          child: Text('Unknown group ($selectedGroupId)'),
+        ),
+      );
+    }
+
+    return items;
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentCategory =
@@ -264,18 +291,7 @@ class _EditEventDialogState extends State<_EditEventDialog> {
                       child: DropdownButton<String?>(
                         value: _viewModel.selectedGroupId,
                         isExpanded: true,
-                        items: [
-                          const DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text('None'),
-                          ),
-                          ...widget.groupOptions.map(
-                            (group) => DropdownMenuItem<String?>(
-                              value: group.id,
-                              child: Text(group.name),
-                            ),
-                          ),
-                        ],
+                        items: _buildGroupItems(),
                         onChanged: _viewModel.isSaving
                             ? null
                             : (value) => _viewModel.setGroupId(value),
