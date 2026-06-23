@@ -1,9 +1,4 @@
-/// Deterministic seed data for development/demo testing.
-///
-/// All events use IDs in the range 900000-900099 so they can be
-/// safely deleted without affecting user-created data.
-///
-/// ~100 events across 6 categories, covering timeline/map/filter/search edge cases.
+
 library;
 
 import 'package:ingv_app/data/models/event_model.dart';
