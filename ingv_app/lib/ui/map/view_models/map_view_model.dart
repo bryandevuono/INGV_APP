@@ -123,7 +123,7 @@ class MapScreenViewModel extends ChangeNotifier {
     try {
       mapController.move(
         latlong2.LatLng(event.lat, event.long),
-        8.0, // Zoom level
+        8.0, 
       );
     } catch (e) {
       debugPrint("Error moving map to selected suggestion: $e");

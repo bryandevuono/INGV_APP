@@ -49,6 +49,23 @@ class _AddNoteDialogState extends State<AddNoteDialog> {
     return null;
   }
 
+  List<DropdownMenuItem<String?>> _buildGroupItems() {
+    final items = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(value: null, child: Text('None')),
+    ];
+    final seenGroupIds = <String>{};
+
+    for (final group in widget.groupOptions) {
+      if (seenGroupIds.add(group.id)) {
+        items.add(
+          DropdownMenuItem<String?>(value: group.id, child: Text(group.name)),
+        );
+      }
+    }
+
+    return items;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -96,18 +113,7 @@ class _AddNoteDialogState extends State<AddNoteDialog> {
                   isDense: true,
                   iconSize: 18,
                   menuMaxHeight: 220,
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('None'),
-                    ),
-                    ...widget.groupOptions.map(
-                      (group) => DropdownMenuItem<String?>(
-                        value: group.id,
-                        child: Text(group.name),
-                      ),
-                    ),
-                  ],
+                  items: _buildGroupItems(),
                   onChanged: (value) {
                     setState(() {
                       selectedGroup = value;

@@ -13,7 +13,6 @@ import 'package:ingv_app/data/repositories/attachment_repository.dart';
 import 'package:ingv_app/data/services/file_operations_service.dart';
 import 'package:ingv_app/ui/map/ui_services/map_service.dart';
 import 'package:ingv_app/data/services/attachment_service.dart';
-import 'package:ingv_app/ui/file_history/widgets/file_history_editor.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +30,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   Object? _initError;
+  bool _isInitializing = true;
 
   @override
   void initState() {
@@ -40,18 +40,23 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initialize() async {
     try {
-      // Warm up services to catch any DB/file-system failures early
       final storageService = EventServiceSembast();
       EventRepository(storageService);
       EventDetailRepository(EventDetailService());
       AttachmentRepository(AttachmentService());
       LocalFileService();
       FileOpenService();
-      // If we got here, initialization succeeded
-      setState(() => _initError = null);
+      
+      setState(() {
+        _initError = null;
+        _isInitializing = false;
+      });
     } catch (e) {
       debugPrint('App initialization error: $e');
-      setState(() => _initError = e);
+      setState(() {
+        _initError = e;
+        _isInitializing = false;
+      });
     }
   }
 
@@ -59,6 +64,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     if (_initError != null) {
       return MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
           body: Center(
             child: Padding(
@@ -83,23 +89,22 @@ class _MyAppState extends State<MyApp> {
             ),
           ),
         ),
-        debugShowCheckedModeBanner: false,
       );
     }
 
-    return const _MyAppLoaded();
-  }
-}
+    if (_isInitializing) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
 
-/// The actual app, built only after services initialized successfully.
-class _MyAppLoaded extends StatelessWidget {
-  const _MyAppLoaded({super.key});
-
-  @override
-  Widget build(BuildContext context) {
     final storageService = EventServiceSembast();
     final eventRepository = EventRepository(storageService);
-
     final detailRepository = EventDetailRepository(EventDetailService());
     final attachmentRepository = AttachmentRepository(AttachmentService());
     final localFileService = LocalFileService();

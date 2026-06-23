@@ -191,6 +191,17 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     }
   }
 
+  Future<void> _showHybridAddEventDialog() async {
+    await showAddEventDialog(
+      context,
+      _hybridTimelineViewModel,
+      _hybridTimelineViewModel.userGroups,
+    );
+
+    if (!mounted) return;
+    await _hybridMapScreenKey.currentState?.reloadEvents();
+  }
+
   /// Combines suggestions from the timeline view model and the map view
   /// model into a single deduplicated list (by eventId), capped at 5.
   List<EventModel> _mergedSuggestions(EventModel? Function()? unused) {
@@ -219,7 +230,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     }
   }
 
-  /// Debug-only: seed demo events.
+  /// Demo only: seed demo events.
   Future<void> _seedDemoEvents() async {
     final messenger = ScaffoldMessenger.of(context);
 
@@ -277,7 +288,6 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   Widget build(BuildContext context) {
     final mapScreen = widget.mapScreen as MapScreen;
 
-    // Optional error banner at top when init threw
     Widget? topBanner;
     if (_initFailed) {
       topBanner = Container(
@@ -480,19 +490,16 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                                     _exportHybridDateRangePdf,
                                                 onExportDateRangeZip:
                                                     _exportHybridDateRangeZip,
-                                                onAddEvent: () =>
-                                                    showAddEventDialog(
-                                                      context,
-                                                      _hybridTimelineViewModel,
-                                                      const [],
-                                                    ),
+                                                onAddEvent: () {
+                                                  _showHybridAddEventDialog();
+                                                },
                                                 searchSuggestions:
                                                     _mergedSuggestions(null),
                                                 onSuggestionSelected:
                                                     _selectHybridSuggestion,
                                               ),
                                             ),
-                                            // Debug-only seed button on toolbar
+                                            // Demo-only seed button on toolbar
                                             if (kDebugMode)
                                               TextButton(
                                                 onPressed: _seedDemoEvents,
@@ -514,6 +521,8 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                           child: ResizableHybridView(
                             viewModel: _hybridViewModel,
                             detailViewModel: _hybridDetailViewModel,
+                            groupOptionsBuilder: () =>
+                                _hybridTimelineViewModel.userGroups,
                             onPanelToggle: (isPanelOpen) {
                               if (isPanelOpen) {
                                 _hybridViewModel.updateRatio(0.45);
@@ -575,12 +584,12 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                   ),
                   widget.mapScreen,
                   GroupsScreen(),
-                ], // TabBarView.children
-              ), // TabBarView(...)
-            ), // Expanded(...)
-          ], // Column.children
-        ), // Column(...)
-      ), // Scaffold(...)
-    ); // DefaultTabController(...)
+                ], 
+              ), 
+            ), 
+          ], 
+        ), 
+      ), 
+    ); 
   }
 }

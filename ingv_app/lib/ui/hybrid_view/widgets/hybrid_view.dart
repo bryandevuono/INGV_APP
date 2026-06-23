@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:ingv_app/data/models/group_model.dart';
 import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/event_detail/widgets/event_detail_panel.dart';
-import 'package:ingv_app/data/models/event_model.dart';
 
 class ResizableHybridView extends StatefulWidget {
   final Widget topWidget;
   final Widget bottomWidget;
   final HybridViewModel? viewModel;
   final EventDetailViewModel? detailViewModel;
+  final ValueGetter<List<GroupModel>>? groupOptionsBuilder;
   final ValueChanged<bool>? onPanelToggle;
 
   const ResizableHybridView({
@@ -17,6 +18,7 @@ class ResizableHybridView extends StatefulWidget {
     required this.bottomWidget,
     this.viewModel,
     this.detailViewModel,
+    this.groupOptionsBuilder,
     this.onPanelToggle,
   });
 
@@ -121,7 +123,9 @@ class _ResizableHybridViewState extends State<ResizableHybridView> {
                               height: constraints.maxHeight * 0.8,
                               child: EventDetailPanel(
                                 viewModel: widget.detailViewModel!,
-                                groupOptions: const [],
+                                groupOptions:
+                                    widget.groupOptionsBuilder?.call() ??
+                                    const <GroupModel>[],
                                 onEventUpdated: (updatedEvent) async {
                                   widget.viewModel!.selectEvent(
                                     updatedEvent,

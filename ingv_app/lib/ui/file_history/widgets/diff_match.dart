@@ -15,13 +15,13 @@ class DiffText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Calculate differences between old and new text block contents
+    //Calculate differences between old and new text block contents
     final List<Diff> diffs = diff(originalText, modifiedText);
 
-    // 2. Format it cleanly for human readability
+    // Format it cleanly for  readability
     cleanupSemantic(diffs);
 
-    // 3. Turn differences into styled TextSpans
+    // Turn differences into styled TextSpans
     final List<TextSpan> spans = diffs.map((d) {
       if (d.operation == DIFF_INSERT) {
         // If this is the left column, we don't display what was added to the right column

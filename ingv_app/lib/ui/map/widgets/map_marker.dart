@@ -167,7 +167,6 @@ class AppMapMarkerWidget extends StatelessWidget {
                 ],
               ),
             ),
-            // The Connecting Pointer (Triangle Arrow)
           ],
         ),
       ),

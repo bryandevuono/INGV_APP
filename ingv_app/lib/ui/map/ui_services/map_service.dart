@@ -24,7 +24,6 @@ class MapServiceUI implements IMapService {
   }) {
     final List<Marker> flutterMarkers = markers.map((m) {
       return Marker(
-        // Use an ObjectKey containing the original AppMarker data
         key: ObjectKey(m),
         point: latlong2.LatLng(m.latitude, m.longitude),
         width: m.size,
@@ -119,9 +118,6 @@ class MapServiceUI implements IMapService {
                     final index = categoryCounts.keys.toList().indexOf(
                       entry.key,
                     );
-                    // Diagonal X pattern: top-left, top-right, bottom-right, bottom-left
-                    // Cluster center at (40,40), 40x40 (radius 20).
-                    // Small circles 16x16 (radius 8). Slight overlap so they touch visually.
                     final offsets = [
                       const Offset(-17, -17), // Top-left
                       const Offset(17, -17), // Top-right
@@ -167,7 +163,6 @@ class MapServiceUI implements IMapService {
     );
   }
 
-  // Moved safely back into MapServiceUI where userAgentPackageName is defined
   @override
   Widget buildPreviewMap({
     required double latitude,

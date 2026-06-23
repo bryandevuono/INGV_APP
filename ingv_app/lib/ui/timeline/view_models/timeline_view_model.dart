@@ -62,7 +62,6 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
       attachmentRepository: _attachmentRepository,
       localFileService: _localFileService,
     );
-    // Initial setup sequence
     _init();
   }
 
@@ -183,7 +182,6 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
       _allEvents = results[0] as List<EventModel>;
       await getColors();
 
-      // Re-populate ordered categories if new ones are introduced
       final currentCategories = categories;
       for (var cat in currentCategories) {
         if (!_orderedCategories.contains(cat)) {

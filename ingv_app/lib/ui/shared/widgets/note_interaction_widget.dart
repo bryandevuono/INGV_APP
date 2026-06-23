@@ -1,23 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:ingv_app/data/models/note_reply_model.dart';
 
-/// Signature called when the user wants to compose a reply.
 typedef ReplyTapCallback = void Function();
 
-/// A presentational, self-contained widget that displays threaded replies
-/// for an individual note and shows a "Reply" action button.
-///
-/// The widget is **dumb** — it does not own or manage any state.
-/// The parent (typically a ViewModel) passes in replies and receives callbacks.
-///
-/// Usage example:
-/// ```dart
-/// NoteInteractionWidget(
-///   replies: viewModel.getRepliesForNote(note.noteId),
-///   onReplyTapped: () => showReplyDialog(noteId: note.noteId),
-///   onReplyDeleted: (replyId) => viewModel.deleteReply(replyId),
-/// )
-/// ```
+
 class NoteInteractionWidget extends StatelessWidget {
   /// Replies to display underneath this note.
   final List<NoteReplyModel> replies;
@@ -83,7 +69,6 @@ class NoteInteractionWidget extends StatelessWidget {
   }
 }
 
-/// --- Private child widgets ---------------------------------------------------
 
 class _ReplyTile extends StatelessWidget {
   final String author;

@@ -3,7 +3,6 @@ library;
 
 import 'package:ingv_app/data/models/event_model.dart';
 
-/// Compact row representation for seed event data.
 class _SeedRow {
   final int idOffset;
   final String category;
@@ -60,9 +59,7 @@ class _SeedRow {
   );
 }
 
-/// Deterministic list of exactly 100 demo events.
 List<EventModel> generateDemoEvents() {
-  // Coordinate references
   const double etnaLat = 37.7510;
   const double etnaLon = 14.9934;
   const double vesLat = 40.8216;
@@ -77,7 +74,6 @@ List<EventModel> generateDemoEvents() {
   const double northLon = 9.1900;
 
   const List<_SeedRow> rows = [
-    // VOLCANIC (offsets 0-16) - 17 events
     _SeedRow(
       idOffset: 0,
       category: 'Volcanic',
@@ -323,7 +319,6 @@ List<EventModel> generateDemoEvents() {
       groupId: 'group_3',
     ),
 
-    // EARTHQUAKE (offsets 17-33) - 17 events
     _SeedRow(
       idOffset: 17,
       category: 'Earthquake',
@@ -573,7 +568,6 @@ List<EventModel> generateDemoEvents() {
       groupId: 'group_3',
     ),
 
-    // HYDROLOGICAL (offsets 34-49) - 16 events
     _SeedRow(
       idOffset: 34,
       category: 'Hydrological',
@@ -792,7 +786,6 @@ List<EventModel> generateDemoEvents() {
       groupId: 'group_3',
     ),
 
-    // METEOROLOGICAL (offsets 50-65) - 16 events
     _SeedRow(
       idOffset: 50,
       category: 'Meteorological',
@@ -1007,7 +1000,6 @@ List<EventModel> generateDemoEvents() {
           'Extended fog event in Marche region with significant visibility reduction.',
     ),
 
-    // GEOLOGICAL (offsets 66-81) - 16 events
     _SeedRow(
       idOffset: 66,
       category: 'Geological',
@@ -1229,7 +1221,6 @@ List<EventModel> generateDemoEvents() {
       groupId: 'group_3',
     ),
 
-    // ATMOSPHERIC (offsets 82-99) - 18 events
     _SeedRow(
       idOffset: 82,
       category: 'Atmospheric',

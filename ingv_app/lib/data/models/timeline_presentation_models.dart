@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// A completely package-agnostic presentation model for a timeline lane item.
 class TimelineLaneData {
   final String id;
   final String label;

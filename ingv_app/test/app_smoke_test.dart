@@ -19,7 +19,6 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/data/models/timeline_presentation_models.dart';
 import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
 import 'package:ingv_app/data/services/attachment_service.dart';
-// ── Mock view model for dialog testing ───────────────────────────────────────
 
 class _MockTimelineViewModel extends ChangeNotifier
     implements ITimelineViewModel {
@@ -101,9 +100,7 @@ class _MockTimelineViewModel extends ChangeNotifier
   Future<void> selectSuggestion(EventModel event) => Future.value();
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
-/// Build a [TopNavigationBar] (the app home) with real service dependencies.
 TopNavigationBar _buildApp() {
   final storageService = EventServiceSembast();
   final eventRepository = EventRepository(storageService);
@@ -129,7 +126,6 @@ TopNavigationBar _buildApp() {
   );
 }
 
-/// Wrap the home widget in a minimal MaterialApp so it can be pumped.
 Widget _wrapApp(Widget home) {
   return MaterialApp(
     home: home,
@@ -141,16 +137,13 @@ Widget _wrapApp(Widget home) {
 
 void main() {
   group('INGV App smoke tests', () {
-    // ──────────────────────────────────────────────────────────────────────
-    // 1. App startup
-    // ──────────────────────────────────────────────────────────────────────
+
     testWidgets('App starts and shows all four navigation tabs', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapApp(_buildApp()));
       await tester.pump();
 
-      // Four tabs should be present
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Timeline'), findsOneWidget);
       expect(find.text('Map'), findsOneWidget);
@@ -163,15 +156,12 @@ void main() {
       );
     });
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 2. Navigation smoke test — open each tab
-    // ──────────────────────────────────────────────────────────────────────
+
     testWidgets('Navigation: can open Home tab', (tester) async {
       await tester.pumpWidget(_wrapApp(_buildApp()));
       await tester.tap(find.text('Home'));
       await tester.pump();
       expect(tester.takeException(), isNull);
-      // Home embeds a HybridView which contains a filter/search bar
       expect(
         find.byType(EventFilterActionBar),
         findsWidgets,
@@ -184,7 +174,6 @@ void main() {
       await tester.tap(find.text('Timeline'));
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
-      // Timeline also contains EventFilterActionBar via _buildToolbar
       expect(
         find.byType(EventFilterActionBar),
         findsWidgets,
@@ -197,7 +186,6 @@ void main() {
       await tester.tap(find.text('Map'));
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
-      // Map screen itself is present
       expect(find.byType(MapScreen), findsOneWidget);
     });
 
@@ -205,23 +193,17 @@ void main() {
       await tester.pumpWidget(_wrapApp(_buildApp()));
       await tester.tap(find.text('Groups'));
       await tester.pump();
-      await tester.pump(); // Second pump for async group loading
+      await tester.pump(); 
       expect(tester.takeException(), isNull);
-      // Groups screen renders the "Your Groups" header
-      // May take a moment - verify no crash on navigation
-      // Accept either the header text or just no exception
+
     });
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 3. Home screen — search / filter bar
-    // ──────────────────────────────────────────────────────────────────────
     testWidgets('Home screen: filter/search bar is visible', (tester) async {
       await tester.pumpWidget(_wrapApp(_buildApp()));
       await tester.tap(find.text('Home'));
       await tester.pump();
       expect(tester.takeException(), isNull);
 
-      // The search field hint text should be visible in the TextField
       expect(
         find.widgetWithText(TextField, 'Search (keywords, tags)...'),
         findsOneWidget,
@@ -233,7 +215,6 @@ void main() {
       await tester.tap(find.text('Home'));
       await tester.pump();
 
-      // Find the search TextField by hint text
       final searchField = find.widgetWithText(
         TextField,
         'Search (keywords, tags)...',
@@ -247,9 +228,6 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 4. Timeline — Add event dialog
-    // ──────────────────────────────────────────────────────────────────────
     testWidgets('Timeline: search/filter and Add event visible', (
       tester,
     ) async {
@@ -258,17 +236,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
 
-      // Toolbar contains EventFilterActionBar
       expect(find.byType(EventFilterActionBar), findsWidgets);
 
-      // "Add event" button should be in the action bar
       expect(find.text('Add event'), findsOneWidget);
     });
 
     testWidgets('Timeline: tap Add event opens dialog with fields', (
       tester,
     ) async {
-      // Test dialog in isolation to avoid TabBarView layout issues
       final mockVm = _MockTimelineViewModel();
 
       await tester.pumpWidget(
@@ -294,10 +269,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
 
-      // Dialog title
       expect(find.text('Add New Event'), findsOneWidget);
 
-      // Important field labels
       expect(find.text('Title'), findsOneWidget);
       expect(find.text('Description'), findsOneWidget);
       expect(find.text('Latitude'), findsOneWidget);
@@ -306,13 +279,9 @@ void main() {
       expect(find.text('Group'), findsOneWidget);
     });
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 5. Add event validation smoke test
-    // ──────────────────────────────────────────────────────────────────────
     testWidgets('Timeline: Add without required fields shows validation', (
       tester,
     ) async {
-      // Test dialog in isolation
       final mockVm = _MockTimelineViewModel();
 
       await tester.pumpWidget(
@@ -348,21 +317,14 @@ void main() {
       expect(find.text('Add New Event'), findsOneWidget);
     });
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 6. Map screen smoke test
-    // ──────────────────────────────────────────────────────────────────────
     testWidgets('Map screen: opens without crash', (tester) async {
       await tester.pumpWidget(_wrapApp(_buildApp()));
       await tester.tap(find.text('Map'));
       await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
-      // MapScreen is present
       expect(find.byType(MapScreen), findsOneWidget);
     });
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 7. Groups screen smoke test
-    // ──────────────────────────────────────────────────────────────────────
     testWidgets('Groups screen: opens without crash', (tester) async {
       await tester.pumpWidget(_wrapApp(_buildApp()));
       await tester.tap(find.text('Groups'));
@@ -375,9 +337,7 @@ void main() {
       );
     });
 
-    // ──────────────────────────────────────────────────────────────────────
-    // 8. Regression tests for tooltip helper
-    // ──────────────────────────────────────────────────────────────────────
+
     testWidgets('Tooltip helper: formatDuration shows correct values', (
       tester,
     ) async {
@@ -423,7 +383,6 @@ void main() {
 
       final loc = formatLocation(41.9028, 12.4963);
       expect(loc.contains('Location:'), isTrue);
-      // Should NOT contain raw 'lat:' or 'long:' labels
       expect(loc.contains('lat:'), isFalse);
       expect(loc.contains('long:'), isFalse);
 
@@ -437,13 +396,10 @@ void main() {
     ) async {
       await tester.pumpWidget(_wrapApp(_buildApp()));
 
-      // Navigate to Timeline tab (which has the date filter UI)
       await tester.tap(find.text('Timeline'));
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
 
-      // Verify the timeline renders (either empty "No events yet" or
-      // the action bar is visible — both are fine)
       expect(
         find.byType(EventFilterActionBar).evaluate().isNotEmpty ||
             find.textContaining('No events').evaluate().isNotEmpty,
@@ -459,7 +415,6 @@ void main() {
       await tester.tap(find.text('Timeline'));
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Type into search field
       final searchField = find.widgetWithText(
         TextField,
         'Search (keywords, tags)...',
