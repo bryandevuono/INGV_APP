@@ -230,7 +230,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     }
   }
 
-  /// Debug-only: seed demo events.
+  /// Demo only: seed demo events.
   Future<void> _seedDemoEvents() async {
     final messenger = ScaffoldMessenger.of(context);
 
@@ -288,7 +288,6 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
   Widget build(BuildContext context) {
     final mapScreen = widget.mapScreen as MapScreen;
 
-    // Optional error banner at top when init threw
     Widget? topBanner;
     if (_initFailed) {
       topBanner = Container(
@@ -500,7 +499,7 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                                     _selectHybridSuggestion,
                                               ),
                                             ),
-                                            // Debug-only seed button on toolbar
+                                            // Demo-only seed button on toolbar
                                             if (kDebugMode)
                                               TextButton(
                                                 onPressed: _seedDemoEvents,
@@ -585,12 +584,12 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                   ),
                   widget.mapScreen,
                   GroupsScreen(),
-                ], // TabBarView.children
-              ), // TabBarView(...)
-            ), // Expanded(...)
-          ], // Column.children
-        ), // Column(...)
-      ), // Scaffold(...)
-    ); // DefaultTabController(...)
+                ], 
+              ), 
+            ), 
+          ], 
+        ), 
+      ), 
+    ); 
   }
 }

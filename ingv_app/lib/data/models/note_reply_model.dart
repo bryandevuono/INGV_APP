@@ -1,5 +1,3 @@
-/// Persistent representation of a reply to a note.
-/// Stored through the repository/service layer and survives app restarts.
 class NoteReplyModel {
   final int id;
   final int noteId;

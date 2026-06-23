@@ -515,7 +515,6 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
   }
 
   void _submitForm() async {
-    // 1. Validate custom configurations like date picker elements first
     if (startDate == null || startTime == null) {
       setState(() {
         errorMessage =
@@ -524,7 +523,6 @@ class _AddEventDialogContentState extends State<AddEventDialogContent> {
       return;
     }
 
-    // 2. Fire the global form logic (runs validators for Title, Latitude, and Longitude)
     if (!_formKey.currentState!.validate()) {
       return;
     }

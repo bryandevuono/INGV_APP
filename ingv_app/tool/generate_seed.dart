@@ -1,5 +1,4 @@
-/// Script to generate event_seed_data.dart with exactly 100 events.
-/// Run with: dart run tool/generate_seed.dart
+
 library;
 
 import 'dart:io';
@@ -402,7 +401,6 @@ List<EventModel> generateDemoEvents() {
     ),
   );
 
-  // EARTHQUAKE (17 events, offsets 17-33)
   sb.writeln('');
   sb.writeln('    // EARTHQUAKE (offsets 17-33) - 17 events');
   sb.write(
@@ -663,7 +661,6 @@ List<EventModel> generateDemoEvents() {
     ),
   );
 
-  // HYDROLOGICAL (16 events, offsets 34-49)
   sb.writeln('');
   sb.writeln('    // HYDROLOGICAL (offsets 34-49) - 16 events');
   sb.write(
@@ -894,7 +891,6 @@ List<EventModel> generateDemoEvents() {
     ),
   );
 
-  // METEOROLOGICAL (16 events, offsets 50-65)
   sb.writeln('');
   sb.writeln('    // METEOROLOGICAL (offsets 50-65) - 16 events');
   sb.write(
@@ -1123,7 +1119,6 @@ List<EventModel> generateDemoEvents() {
     ),
   );
 
-  // GEOLOGICAL (16 events, offsets 66-81)
   sb.writeln('');
   sb.writeln('    // GEOLOGICAL (offsets 66-81) - 16 events');
   sb.write(
@@ -1363,7 +1358,6 @@ List<EventModel> generateDemoEvents() {
     ),
   );
 
-  // ATMOSPHERIC (18 events, offsets 82-99)
   sb.writeln('');
   sb.writeln('    // ATMOSPHERIC (offsets 82-99) - 18 events');
   sb.write(

@@ -48,7 +48,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
   bool _isDragging = false;
   double _scrollOffset = 0.0;
 
-  // Time scale options (shared with the toolbar)
   static const List<(Duration, String, String)> _timeScaleOptions = [
     (Duration(days: 7), '1w', '1 week'),
     (Duration(days: 1), '1d', '1 day'),
@@ -100,7 +99,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     }
   }
 
-  // ----- Date range picker & export helpers -----
   Future<void> _pickDateRange() async {
     final picked = await showDateRangePicker(
       context: context,
@@ -185,7 +183,6 @@ class _TimelineScreenState extends State<TimelineScreen> {
     );
   }
 
-  // ----- Navigation -----
   void _navigateToPast() {
     setState(() {
       _clientBaselineStart = _clientBaselineStart.subtract(

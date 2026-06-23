@@ -66,7 +66,7 @@ class EventAttachment {
   factory EventAttachment.fromMap(Map<String, dynamic> map) {
     final fileExtension = (map['fileName'] ?? '').toString().split('.').last;
 
-    // Try to parse type from index, fallback to file extension
+
     AttachmentType attachmentType;
     if (map['type'] != null && map['type'] is int) {
       try {

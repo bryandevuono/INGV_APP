@@ -82,7 +82,7 @@ class TimelineToolbar extends StatelessWidget {
                 filterController?.setCategory(newValue);
               },
               onDateRangePicked:
-                  onPickDateRange, // now matches Future<void> Function()
+                  onPickDateRange, 
               onClearDateFilter: onClearDateFilter,
               onSearchChanged: (query) {
                 viewModel.setSearchQuery(query);

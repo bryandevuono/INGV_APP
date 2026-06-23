@@ -252,7 +252,6 @@ class MapScreenState extends State<MapScreen> {
 
         return Stack(
           children: [
-            // 1. Your Main Map & Controls Column
             Column(
               children: [
                 if (widget.showControlBar)

@@ -1,4 +1,3 @@
-// lib/view_models/group_screen_view_model.dart
 import 'package:flutter/material.dart';
 import '../../../data/models/group_model.dart';
 import '../../../data/repositories/group_repository.dart';

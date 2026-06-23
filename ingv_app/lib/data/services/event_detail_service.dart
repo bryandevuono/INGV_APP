@@ -166,7 +166,6 @@ class EventDetailService implements IEventDetailService {
     _mockAttachments[eventId]!.add(attachment);
   }
 
-  // -- Note reply CRUD --
 
   final List<NoteReplyModel> _mockReplies = [];
   int _nextReplyId = 1;
@@ -186,7 +185,7 @@ class EventDetailService implements IEventDetailService {
     _mockReplies.removeWhere((r) => r.id == replyId);
   }
 
-  /// Helper: create and save a new reply with an auto-assigned id.
+  /// Helper
   Future<NoteReplyModel> createReply({
     required int noteId,
     required String author,

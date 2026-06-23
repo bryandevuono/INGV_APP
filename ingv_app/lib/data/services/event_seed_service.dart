@@ -1,7 +1,3 @@
-/// Service for seeding demo/development events.
-///
-/// Provides deterministic insertion and cleanup of seed events
-/// with IDs in the range 900000–900099.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,23 +8,15 @@ import 'event_service_sembast.dart';
 const int seedIdMin = 900000;
 const int seedIdMax = 900099;
 
-/// Service for managing demo event seeding.
 class EventSeedService {
   final EventServiceSembast _storage;
 
   EventSeedService({EventServiceSembast? storage})
     : _storage = storage ?? EventServiceSembast();
 
-  /// Check if an event ID belongs to the seed range.
   bool isSeedId(int eventId) => eventId >= seedIdMin && eventId <= seedIdMax;
 
-  /// Seed demo events into the database.
-  ///
   /// [replaceExistingSeedEvents] If true (default), existing seed events
-  /// (IDs in 900000–900099) are deleted before inserting new ones.
-  /// User-created events outside this range are never deleted.
-  ///
-  /// Returns the number of events inserted.
   Future<int> seedDemoEvents({bool replaceExistingSeedEvents = true}) async {
     try {
       // Ensure service is initialized
@@ -70,10 +58,6 @@ class EventSeedService {
     }
   }
 
-  /// Delete all existing seed events (IDs in the seed range).
-  ///
-  /// This only removes seeded demo events and never affects
-  /// user-created events outside the seed ID range.
   Future<int> _deleteExistingSeedEvents() async {
     try {
       final allEvents = await _storage.getAllEvents();
@@ -112,7 +96,6 @@ class EventSeedService {
     }
   }
 
-  /// Count how many seed events currently exist in the database.
   Future<int> getSeedEventCount() async {
     final allEvents = await _storage.getAllEvents();
     return allEvents
@@ -120,7 +103,6 @@ class EventSeedService {
         .length;
   }
 
-  /// Check if any seed events exist.
   Future<bool> hasSeedEvents() async {
     return await getSeedEventCount() > 0;
   }
