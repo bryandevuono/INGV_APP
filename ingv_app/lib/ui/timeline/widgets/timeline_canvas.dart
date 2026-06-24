@@ -207,7 +207,7 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
 
           final bool showVerticalScrollIndicators =
               !isMinimized &&
-              maxConcurrentCount > 1 &&
+              maxConcurrentCount > 2 &&
               (maxConcurrentCount * ganttStackRowHeight) > definedRowHeight;
 
           final double fullWidgetHeight = definedRowHeight + baseAxisHeight;

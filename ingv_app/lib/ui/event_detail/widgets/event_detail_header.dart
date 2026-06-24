@@ -3,6 +3,8 @@ import 'package:ingv_app/data/models/event_model.dart';
 import 'package:ingv_app/ui/event_detail/view_models/event_detail_view_model.dart';
 import 'package:ingv_app/ui/shared/view_models/event_tooltip_helper.dart';
 
+enum _EventExportFormat { pdf, zip, json, csv }
+
 class EventDetailHeader extends StatelessWidget {
   final EventModel event;
   final EventDetailViewModel viewModel;
@@ -34,6 +36,47 @@ class EventDetailHeader extends StatelessWidget {
       default:
         return Icons.warning;
     }
+  }
+
+  Future<void> _exportEvent(
+    BuildContext context,
+    _EventExportFormat format,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final String label;
+    final Future<String?> exportAction;
+
+    switch (format) {
+      case _EventExportFormat.pdf:
+        label = 'PDF';
+        exportAction = viewModel.exportSelectedEvent();
+        break;
+      case _EventExportFormat.zip:
+        label = 'ZIP';
+        exportAction = viewModel.exportSelectedEventAsZip();
+        break;
+      case _EventExportFormat.json:
+        label = 'JSON';
+        exportAction = viewModel.exportSelectedEventAsJson();
+        break;
+      case _EventExportFormat.csv:
+        label = 'CSV';
+        exportAction = viewModel.exportSelectedEventAsCsv();
+        break;
+    }
+
+    final exportPath = await exportAction;
+    if (!context.mounted) return;
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          exportPath?.isNotEmpty == true
+              ? 'Event $label exported: $exportPath'
+              : (viewModel.errorMessage ?? 'Failed to export event $label.'),
+        ),
+      ),
+    );
   }
 
   @override
@@ -170,211 +213,67 @@ class EventDetailHeader extends StatelessWidget {
                 },
                 icon: const Icon(Icons.delete, size: 16),
                 label: const Text('Delete'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
+                style: _headerActionStyle(context),
               ),
               TextButton.icon(
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit, size: 16),
                 label: const Text('Edit'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
+                style: _headerActionStyle(context),
               ),
-              TextButton.icon(
-                onPressed: viewModel.isExporting
-                    ? null
-                    : () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        final exportPath = await viewModel
-                            .exportSelectedEvent();
-                        if (!context.mounted) {
-                          return;
-                        }
-
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              exportPath?.isNotEmpty == true
-                                  ? 'Event PDF exported: $exportPath'
-                                  : (viewModel.errorMessage ??
-                                        'Failed to export event PDF.'),
-                            ),
-                          ),
-                        );
-                      },
-                icon: viewModel.isExporting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.picture_as_pdf, size: 16),
-                label: const Text('PDF'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+              PopupMenuButton<_EventExportFormat>(
+                tooltip: 'Export event',
+                enabled: !viewModel.isExporting,
+                onSelected: (format) => _exportEvent(context, format),
+                itemBuilder: (context) => const [
+                  PopupMenuItem<_EventExportFormat>(
+                    value: _EventExportFormat.pdf,
+                    child: _ExportMenuItem(
+                      icon: Icons.picture_as_pdf,
+                      label: 'Export as PDF',
+                    ),
                   ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+                  PopupMenuItem<_EventExportFormat>(
+                    value: _EventExportFormat.zip,
+                    child: _ExportMenuItem(
+                      icon: Icons.folder_zip,
+                      label: 'Export as ZIP',
+                    ),
                   ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: viewModel.isExporting
-                    ? null
-                    : () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        final exportPath = await viewModel
-                            .exportSelectedEventAsZip();
-                        if (!context.mounted) {
-                          return;
-                        }
-
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              exportPath?.isNotEmpty == true
-                                  ? 'Event ZIP exported: $exportPath'
-                                  : (viewModel.errorMessage ??
-                                        'Failed to export event ZIP.'),
-                            ),
-                          ),
-                        );
-                      },
-                icon: viewModel.isExporting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.folder_zip, size: 16),
-                label: const Text('ZIP'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+                  PopupMenuItem<_EventExportFormat>(
+                    value: _EventExportFormat.json,
+                    child: _ExportMenuItem(
+                      icon: Icons.code,
+                      label: 'Export as JSON',
+                    ),
                   ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+                  PopupMenuItem<_EventExportFormat>(
+                    value: _EventExportFormat.csv,
+                    child: _ExportMenuItem(
+                      icon: Icons.table_chart,
+                      label: 'Export as CSV',
+                    ),
                   ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: viewModel.isExporting
-                    ? null
-                    : () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        final exportPath = await viewModel
-                            .exportSelectedEventAsJson();
-                        if (!context.mounted) {
-                          return;
-                        }
-
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              exportPath?.isNotEmpty == true
-                                  ? 'Event JSON exported: $exportPath'
-                                  : (viewModel.errorMessage ??
-                                        'Failed to export event JSON.'),
-                            ),
-                          ),
-                        );
-                      },
-                icon: viewModel.isExporting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.code, size: 16),
-                label: const Text('JSON'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              TextButton.icon(
-                onPressed: viewModel.isExporting
-                    ? null
-                    : () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        final exportPath = await viewModel
-                            .exportSelectedEventAsCsv();
-                        if (!context.mounted) {
-                          return;
-                        }
-
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              exportPath?.isNotEmpty == true
-                                  ? 'Event CSV exported: $exportPath'
-                                  : (viewModel.errorMessage ??
-                                        'Failed to export event CSV.'),
-                            ),
-                          ),
-                        );
-                      },
-                icon: viewModel.isExporting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.table_chart, size: 16),
-                label: const Text('CSV'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+                ],
+                child: IgnorePointer(
+                  child: TextButton.icon(
+                    onPressed: viewModel.isExporting ? null : () {},
+                    icon: viewModel.isExporting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download, size: 16),
+                    label: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Export'),
+                        SizedBox(width: 4),
+                        Icon(Icons.arrow_drop_down, size: 18),
+                      ],
+                    ),
+                    style: _headerActionStyle(context),
                   ),
                 ),
               ),
@@ -419,6 +318,36 @@ class EventDetailHeader extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+ButtonStyle _headerActionStyle(BuildContext context) {
+  return TextButton.styleFrom(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    minimumSize: Size.zero,
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    visualDensity: VisualDensity.compact,
+    side: BorderSide(color: Colors.grey.shade300),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+  );
+}
+
+class _ExportMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _ExportMenuItem({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18),
+        const SizedBox(width: 10),
+        Text(label),
+      ],
     );
   }
 }
