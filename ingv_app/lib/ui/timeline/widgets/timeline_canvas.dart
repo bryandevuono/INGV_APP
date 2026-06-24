@@ -96,6 +96,7 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
     const double leftHeaderWidth = 160.0;
     const double dividerHeight = 4.0;
     const double listVerticalPadding = 16.0;
+    const double ganttStackRowHeight = 50.0;
 
     final DateTime rangeStart =
         widget.filterStartDate ?? widget.clientBaselineStart;
@@ -172,7 +173,6 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
           }).toList();
 
           int maxConcurrentCount = 0;
-          bool showVerticalScrollIndicators = false;
 
           if (!isMinimized && genericTasks.isNotEmpty) {
             final List<MapEntry<DateTime, int>> timePoints = [];
@@ -199,14 +199,16 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
               }
             }
 
-            if (maxConcurrentCount >= 5) {
-              showVerticalScrollIndicators = true;
-            }
           }
 
           final rowMaxStackDepth = <String, int>{
             lane.id: maxConcurrentCount > 0 ? maxConcurrentCount : 1,
           };
+
+          final bool showVerticalScrollIndicators =
+              !isMinimized &&
+              maxConcurrentCount > 1 &&
+              (maxConcurrentCount * ganttStackRowHeight) > definedRowHeight;
 
           final double fullWidgetHeight = definedRowHeight + baseAxisHeight;
           final double visibleViewportHeight = isFirstRow
@@ -223,7 +225,7 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
                     data: packageTasks,
                     visibleRows: packageRows,
                     rowMaxStackDepth: rowMaxStackDepth,
-                    rowHeight: 50,
+                    rowHeight: ganttStackRowHeight,
                     axisHeight: baseAxisHeight,
                     gridMin: gridMin.millisecondsSinceEpoch.toDouble(),
                     gridMax: gridMax.millisecondsSinceEpoch.toDouble(),
