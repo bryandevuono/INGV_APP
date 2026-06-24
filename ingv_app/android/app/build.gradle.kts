@@ -35,7 +35,6 @@ android {
     
     packagingOptions {
         assets {
-            exclude 'assets/packages/pdfrx/assets/pdfium.wasm'
         }
     }
 }

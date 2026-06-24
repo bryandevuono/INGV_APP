@@ -99,7 +99,6 @@ class _ResizableHybridViewState extends State<ResizableHybridView> {
                     ),
                   ],
                 ),
-                // Overlay: dimmed backdrop + detail panel that covers entire hybrid view area
                 if (widget.viewModel != null &&
                     widget.viewModel!.selectedEvent != null &&
                     widget.detailViewModel != null)
