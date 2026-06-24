@@ -36,11 +36,21 @@ abstract interface class ITimelineViewModel implements Listenable {
   Duration getTimeScale();
   Future<String?> exportTimelineReport();
   Future<String?> exportTimelineAsZip();
+  Future<String?> exportTimelineAsJson();
+  Future<String?> exportTimelineAsCsv();
   Future<String?> exportTimelineReportForDateRange(
     DateTime startDate,
     DateTime endDate,
   );
   Future<String?> exportTimelineAsZipForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  );
+  Future<String?> exportTimelineAsJsonForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  );
+  Future<String?> exportTimelineAsCsvForDateRange(
     DateTime startDate,
     DateTime endDate,
   );

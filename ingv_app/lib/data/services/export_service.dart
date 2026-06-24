@@ -1400,6 +1400,355 @@ class ZipExportService implements IZipExportService {
   }
 }
 
+/// Export events as JSON — includes full event data, notes, replies, and attachment metadata.
+class JsonExportService implements IJsonExportService {
+  final IEventDetailRepository _detailRepository;
+  final AttachmentRepository _attachmentRepository;
+  final IExportFileSaveService _fileSaveService;
+
+  JsonExportService({
+    required IEventDetailRepository detailRepository,
+    required AttachmentRepository attachmentRepository,
+    IExportFileSaveService? fileSaveService,
+  }) : _detailRepository = detailRepository,
+       _attachmentRepository = attachmentRepository,
+       _fileSaveService = fileSaveService ?? FileSaverExportFileSaveService();
+
+  @override
+  Future<ExportResult> exportEventAsJson({
+    required EventModel event,
+    String? groupName,
+    List<EventNoteModel>? notes,
+    List<EventAttachment>? attachments,
+  }) async {
+    final effectiveNotes =
+        notes ?? await _detailRepository.getNotesByEventId(event.eventId);
+    final effectiveAttachments =
+        attachments ??
+        await _attachmentRepository.getAttachmentsForEvent(
+          event.eventId.toString(),
+        );
+
+    // Fetch replies for each note
+    final notesWithReplies = <Map<String, dynamic>>[];
+    for (final note in effectiveNotes) {
+      final noteMap = note.toMap();
+      final replies = await _detailRepository.getRepliesByNoteId(note.noteId);
+      noteMap['replies'] = replies.map(_replyToMap).toList();
+      notesWithReplies.add(noteMap);
+    }
+
+    final data = <String, dynamic>{
+      'exportType': 'event',
+      'exportDateTime': DateTime.now().toIso8601String(),
+      'event': event.toJson(),
+      'groupName': groupName,
+      'notes': notesWithReplies,
+      'attachments': effectiveAttachments.map(_attachmentToMap).toList(),
+    };
+
+    final jsonBytes = utf8.encode(_prettyJson(data));
+    final fileName = _buildFileName(event);
+    final saveLocation = await _fileSaveService.saveJson(jsonBytes, fileName);
+
+    return ExportResult(
+      fileName: fileName,
+      saveLocation: saveLocation,
+      bytes: jsonBytes,
+    );
+  }
+
+  @override
+  Future<ExportResult> exportTimelineAsJson({
+    required List<EventModel> events,
+    required List<String> orderedCategories,
+    DateTime? filterStartDate,
+    DateTime? filterEndDate,
+  }) async {
+    final eventsData = <Map<String, dynamic>>[];
+    for (final event in events) {
+      final notes = await _detailRepository.getNotesByEventId(event.eventId);
+      final attachments = await _attachmentRepository.getAttachmentsForEvent(
+        event.eventId.toString(),
+      );
+
+      // Fetch replies for each note
+      final notesWithReplies = <Map<String, dynamic>>[];
+      for (final note in notes) {
+        final noteMap = note.toMap();
+        final replies = await _detailRepository.getRepliesByNoteId(note.noteId);
+        noteMap['replies'] = replies.map(_replyToMap).toList();
+        notesWithReplies.add(noteMap);
+      }
+
+      eventsData.add(<String, dynamic>{
+        'event': event.toJson(),
+        'notes': notesWithReplies,
+        'attachments': attachments.map(_attachmentToMap).toList(),
+      });
+    }
+
+    final data = <String, dynamic>{
+      'exportType': 'timeline',
+      'exportDateTime': DateTime.now().toIso8601String(),
+      'selectedDateRange': {
+        'start': filterStartDate?.toIso8601String(),
+        'end': filterEndDate?.toIso8601String(),
+      },
+      'eventCount': events.length,
+      'events': eventsData,
+    };
+
+    final jsonBytes = utf8.encode(_prettyJson(data));
+    final fileName = _buildTimelineFileName(
+      filterStartDate: filterStartDate,
+      filterEndDate: filterEndDate,
+    );
+    final saveLocation = await _fileSaveService.saveJson(jsonBytes, fileName);
+
+    return ExportResult(
+      fileName: fileName,
+      saveLocation: saveLocation,
+      bytes: jsonBytes,
+    );
+  }
+
+  Map<String, dynamic> _replyToMap(NoteReplyModel reply) {
+    return {
+      'id': reply.id,
+      'noteId': reply.noteId,
+      'author': reply.author,
+      'text': reply.text,
+      'timestamp': reply.timestamp.toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> _attachmentToMap(EventAttachment attachment) {
+    return {
+      'id': attachment.id,
+      'fileName': attachment.fileName,
+      'type': attachment.type.name,
+      'sizeBytes': attachment.sizeBytes,
+      'mimeType': attachment.mimeType,
+      'createdAt': attachment.createdAt?.toIso8601String(),
+    };
+  }
+
+  String _prettyJson(dynamic data) {
+    return const JsonEncoder.withIndent('  ').convert(data);
+  }
+
+  String _buildFileName(EventModel event) {
+    final ts = DateTime.now();
+    final suffix = '${_ymd(ts)}_${_hm(ts)}';
+    final safeTitle = event.title
+        .replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+    return 'INGV_${safeTitle}_${event.eventId}_$suffix';
+  }
+
+  String _buildTimelineFileName({
+    DateTime? filterStartDate,
+    DateTime? filterEndDate,
+  }) {
+    final ts = DateTime.now();
+    final start = filterStartDate == null
+        ? 'all'
+        : _compactDate(filterStartDate);
+    final end = filterEndDate == null ? 'all' : _compactDate(filterEndDate);
+    return 'INGV_report_${start}_to_${end}_${_ymd(ts)}';
+  }
+
+  String _compactDate(DateTime date) {
+    final local = date.toLocal();
+    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
+  }
+
+  String _ymd(DateTime dt) {
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
+
+  String _hm(DateTime dt) {
+    return '${dt.hour.toString().padLeft(2, '0')}${dt.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+/// Export events as CSV — flat table of event rows (one row per event).
+class CsvExportService implements ICsvExportService {
+  final IExportFileSaveService _fileSaveService;
+
+  CsvExportService({IExportFileSaveService? fileSaveService})
+    : _fileSaveService = fileSaveService ?? FileSaverExportFileSaveService();
+
+  @override
+  Future<ExportResult> exportEventAsCsv({
+    required EventModel event,
+    String? groupName,
+    List<EventNoteModel>? notes,
+    List<EventAttachment>? attachments,
+  }) async {
+    final buffer = StringBuffer();
+
+    // Header row
+    buffer.writeln(
+      [
+        'Event ID',
+        'Title',
+        'Category',
+        'Tag',
+        'Status',
+        'Start DateTime',
+        'End DateTime',
+        'Duration',
+        'Author',
+        'Latitude',
+        'Longitude',
+        'Group ID',
+        'Description',
+      ].join(','),
+    );
+
+    // Single data row
+    buffer.writeln(
+      [
+        _csvEscape(event.eventId.toString()),
+        _csvEscape(event.title),
+        _csvEscape(event.category),
+        _csvEscape(event.tag),
+        event.endDt == null ? 'Ongoing' : 'Ended',
+        _csvEscape(event.startDt.toIso8601String()),
+        _csvEscape(event.endDt?.toIso8601String() ?? ''),
+        _csvEscape(_formatDuration(event.startDt, event.endDt)),
+        _csvEscape(event.author),
+        event.lat.toStringAsFixed(6),
+        event.long.toStringAsFixed(6),
+        _csvEscape(event.groupId ?? ''),
+        _csvEscape(event.description),
+      ].join(','),
+    );
+
+    final csvBytes = utf8.encode(buffer.toString());
+    final fileName = _buildEventFileName(event);
+    final saveLocation = await _fileSaveService.saveCsv(csvBytes, fileName);
+
+    return ExportResult(
+      fileName: fileName,
+      saveLocation: saveLocation,
+      bytes: csvBytes,
+    );
+  }
+
+  @override
+  Future<ExportResult> exportTimelineAsCsv({
+    required List<EventModel> events,
+    required List<String> orderedCategories,
+    DateTime? filterStartDate,
+    DateTime? filterEndDate,
+  }) async {
+    final buffer = StringBuffer();
+
+    // Header row
+    buffer.writeln(
+      [
+        'Event ID',
+        'Title',
+        'Category',
+        'Tag',
+        'Status',
+        'Start DateTime',
+        'End DateTime',
+        'Duration',
+        'Author',
+        'Latitude',
+        'Longitude',
+        'Group ID',
+        'Description',
+      ].join(','),
+    );
+
+    // Data rows
+    for (final event in events) {
+      buffer.writeln(
+        [
+          _csvEscape(event.eventId.toString()),
+          _csvEscape(event.title),
+          _csvEscape(event.category),
+          _csvEscape(event.tag),
+          event.endDt == null ? 'Ongoing' : 'Ended',
+          _csvEscape(event.startDt.toIso8601String()),
+          _csvEscape(event.endDt?.toIso8601String() ?? ''),
+          _csvEscape(_formatDuration(event.startDt, event.endDt)),
+          _csvEscape(event.author),
+          event.lat.toStringAsFixed(6),
+          event.long.toStringAsFixed(6),
+          _csvEscape(event.groupId ?? ''),
+          _csvEscape(event.description),
+        ].join(','),
+      );
+    }
+
+    final csvBytes = utf8.encode(buffer.toString());
+    final fileName = _buildFileName(
+      filterStartDate: filterStartDate,
+      filterEndDate: filterEndDate,
+    );
+    final saveLocation = await _fileSaveService.saveCsv(csvBytes, fileName);
+
+    return ExportResult(
+      fileName: fileName,
+      saveLocation: saveLocation,
+      bytes: csvBytes,
+    );
+  }
+
+  static String _csvEscape(String value) {
+    if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
+  }
+
+  String _formatDuration(DateTime start, DateTime? end) {
+    final effectiveEnd = end ?? DateTime.now();
+    final difference = effectiveEnd.difference(start);
+    final days = difference.inDays;
+    final hours = difference.inHours % 24;
+    final minutes = difference.inMinutes % 60;
+    return '${days}d ${hours}h ${minutes}m';
+  }
+
+  String _buildFileName({DateTime? filterStartDate, DateTime? filterEndDate}) {
+    final ts = DateTime.now();
+    final start = filterStartDate == null
+        ? 'all'
+        : _compactDate(filterStartDate);
+    final end = filterEndDate == null ? 'all' : _compactDate(filterEndDate);
+    return 'INGV_report_${start}_to_${end}_${_ymd(ts)}';
+  }
+
+  String _buildEventFileName(EventModel event) {
+    final ts = DateTime.now();
+    final suffix = '${_ymd(ts)}_${_hm(ts)}';
+    final safeTitle = event.title
+        .replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+    return 'INGV_${safeTitle}_${event.eventId}_$suffix';
+  }
+
+  String _hm(DateTime dt) {
+    return '${dt.hour.toString().padLeft(2, '0')}${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _compactDate(DateTime date) {
+    final local = date.toLocal();
+    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
+  }
+
+  String _ymd(DateTime dt) {
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
+}
+
 class _ResolvedAttachment {
   final EventAttachment attachment;
   final String reference;

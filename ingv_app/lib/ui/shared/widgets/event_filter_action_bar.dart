@@ -20,6 +20,8 @@ class EventFilterActionBar extends StatefulWidget {
   final bool showSearch;
   final bool showExportPdf;
   final bool showExportZip;
+  final bool showExportJson;
+  final bool showExportCsv;
   final bool showAddEvent;
   final bool isExporting;
   final ValueChanged<String>? onCategoryChanged;
@@ -28,8 +30,12 @@ class EventFilterActionBar extends StatefulWidget {
   final ValueChanged<String>? onSearchChanged;
   final VoidCallback? onExportPdf;
   final VoidCallback? onExportZip;
+  final VoidCallback? onExportJson;
+  final VoidCallback? onExportCsv;
   final Future<void> Function()? onExportDateRangePdf;
   final Future<void> Function()? onExportDateRangeZip;
+  final Future<void> Function()? onExportDateRangeJson;
+  final Future<void> Function()? onExportDateRangeCsv;
   final VoidCallback? onAddEvent;
   final bool embeddedInPage;
   final Duration? timelineScaleDuration;
@@ -50,6 +56,8 @@ class EventFilterActionBar extends StatefulWidget {
     this.showSearch = true,
     this.showExportPdf = false,
     this.showExportZip = false,
+    this.showExportJson = false,
+    this.showExportCsv = false,
     this.showAddEvent = false,
     this.isExporting = false,
     this.onCategoryChanged,
@@ -58,8 +66,12 @@ class EventFilterActionBar extends StatefulWidget {
     this.onSearchChanged,
     this.onExportPdf,
     this.onExportZip,
+    this.onExportJson,
+    this.onExportCsv,
     this.onExportDateRangePdf,
     this.onExportDateRangeZip,
+    this.onExportDateRangeJson,
+    this.onExportDateRangeCsv,
     this.onAddEvent,
     this.embeddedInPage = false,
     this.timelineScaleDuration,
@@ -310,7 +322,10 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
             onPressed: widget.onClearDateFilter,
           ),
 
-        if (widget.showExportPdf || widget.showExportZip)
+        if (widget.showExportPdf ||
+            widget.showExportZip ||
+            widget.showExportJson ||
+            widget.showExportCsv)
           PopupMenuButton<String>(
             tooltip: 'Download export options',
             enabled: !widget.isExporting,
@@ -322,11 +337,23 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                 case 'visible_zip':
                   widget.onExportZip?.call();
                   break;
+                case 'visible_json':
+                  widget.onExportJson?.call();
+                  break;
+                case 'visible_csv':
+                  widget.onExportCsv?.call();
+                  break;
                 case 'range_pdf':
                   widget.onExportDateRangePdf?.call();
                   break;
                 case 'range_zip':
                   widget.onExportDateRangeZip?.call();
+                  break;
+                case 'range_json':
+                  widget.onExportDateRangeJson?.call();
+                  break;
+                case 'range_csv':
+                  widget.onExportDateRangeCsv?.call();
                   break;
               }
             },
@@ -348,6 +375,22 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                   ),
                 );
               }
+              if (widget.showExportJson && widget.onExportJson != null) {
+                items.add(
+                  const PopupMenuItem<String>(
+                    value: 'visible_json',
+                    child: Text('Export as JSON'),
+                  ),
+                );
+              }
+              if (widget.showExportCsv && widget.onExportCsv != null) {
+                items.add(
+                  const PopupMenuItem<String>(
+                    value: 'visible_csv',
+                    child: Text('Export as CSV'),
+                  ),
+                );
+              }
               if (widget.onExportDateRangePdf != null) {
                 items.add(
                   const PopupMenuItem<String>(
@@ -361,6 +404,22 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                   const PopupMenuItem<String>(
                     value: 'range_zip',
                     child: Text('Export date range as ZIP'),
+                  ),
+                );
+              }
+              if (widget.onExportDateRangeJson != null) {
+                items.add(
+                  const PopupMenuItem<String>(
+                    value: 'range_json',
+                    child: Text('Export date range as JSON'),
+                  ),
+                );
+              }
+              if (widget.onExportDateRangeCsv != null) {
+                items.add(
+                  const PopupMenuItem<String>(
+                    value: 'range_csv',
+                    child: Text('Export date range as CSV'),
                   ),
                 );
               }

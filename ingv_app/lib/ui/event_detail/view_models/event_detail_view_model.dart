@@ -21,6 +21,8 @@ class EventDetailViewModel extends ChangeNotifier {
   final IFilePickerService _filePickerService;
   late final IPdfExportService _pdfExportService;
   late final IZipExportService _zipExportService;
+  late final IJsonExportService _jsonExportService;
+  late final ICsvExportService _csvExportService;
 
   EventModel? selectedEvent;
   List<EventNoteModel> notes = [];
@@ -62,6 +64,8 @@ class EventDetailViewModel extends ChangeNotifier {
     IFilePickerService? filePickerService,
     IPdfExportService? pdfExportService,
     IZipExportService? zipExportService,
+    IJsonExportService? jsonExportService,
+    ICsvExportService? csvExportService,
   ]) : _filePickerService = filePickerService ?? FilePickerService() {
     _pdfExportService =
         pdfExportService ??
@@ -78,6 +82,13 @@ class EventDetailViewModel extends ChangeNotifier {
           attachmentRepository: _attachmentRepository,
           localFileService: _localFileService,
         );
+    _jsonExportService =
+        jsonExportService ??
+        JsonExportService(
+          detailRepository: _detailRepository,
+          attachmentRepository: _attachmentRepository,
+        );
+    _csvExportService = csvExportService ?? CsvExportService();
   }
 
   IEventRepository get eventRepository => _eventRepository;
@@ -419,6 +430,66 @@ class EventDetailViewModel extends ChangeNotifier {
       return lastExportPath;
     } catch (e) {
       errorMessage = 'Failed to export event ZIP.';
+      return null;
+    } finally {
+      isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> exportSelectedEventAsJson() async {
+    if (selectedEvent == null) {
+      errorMessage = 'No event selected for export.';
+      notifyListeners();
+      return null;
+    }
+
+    isExporting = true;
+    errorMessage = null;
+    lastExportPath = null;
+    notifyListeners();
+
+    try {
+      final result = await _jsonExportService.exportEventAsJson(
+        event: selectedEvent!,
+        groupName: groupName,
+        notes: notes,
+        attachments: attachments,
+      );
+      lastExportPath = result.saveLocation;
+      return lastExportPath;
+    } catch (e) {
+      errorMessage = 'Failed to export event JSON.';
+      return null;
+    } finally {
+      isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> exportSelectedEventAsCsv() async {
+    if (selectedEvent == null) {
+      errorMessage = 'No event selected for export.';
+      notifyListeners();
+      return null;
+    }
+
+    isExporting = true;
+    errorMessage = null;
+    lastExportPath = null;
+    notifyListeners();
+
+    try {
+      final result = await _csvExportService.exportEventAsCsv(
+        event: selectedEvent!,
+        groupName: groupName,
+        notes: notes,
+        attachments: attachments,
+      );
+      lastExportPath = result.saveLocation;
+      return lastExportPath;
+    } catch (e) {
+      errorMessage = 'Failed to export event CSV.';
       return null;
     } finally {
       isExporting = false;

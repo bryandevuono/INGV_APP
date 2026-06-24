@@ -183,6 +183,52 @@ class _TimelineScreenState extends State<TimelineScreen> {
     );
   }
 
+  Future<void> _exportDateRangeJson() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange:
+          widget.viewModel.filterStartDate != null &&
+              widget.viewModel.filterEndDate != null
+          ? DateTimeRange(
+              start: widget.viewModel.filterStartDate!,
+              end: widget.viewModel.filterEndDate!,
+            )
+          : null,
+    );
+    if (picked == null) return;
+    await _showExportResult(
+      () => widget.viewModel.exportTimelineAsJsonForDateRange(
+        picked.start,
+        picked.end,
+      ),
+    );
+  }
+
+  Future<void> _exportDateRangeCsv() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      initialDateRange:
+          widget.viewModel.filterStartDate != null &&
+              widget.viewModel.filterEndDate != null
+          ? DateTimeRange(
+              start: widget.viewModel.filterStartDate!,
+              end: widget.viewModel.filterEndDate!,
+            )
+          : null,
+    );
+    if (picked == null) return;
+    await _showExportResult(
+      () => widget.viewModel.exportTimelineAsCsvForDateRange(
+        picked.start,
+        picked.end,
+      ),
+    );
+  }
+
   void _navigateToPast() {
     setState(() {
       _clientBaselineStart = _clientBaselineStart.subtract(
@@ -344,8 +390,15 @@ class _TimelineScreenState extends State<TimelineScreen> {
                     ),
                     onExportZip: () =>
                         _showExportResult(widget.viewModel.exportTimelineAsZip),
+                    onExportJson: () => _showExportResult(
+                      widget.viewModel.exportTimelineAsJson,
+                    ),
+                    onExportCsv: () =>
+                        _showExportResult(widget.viewModel.exportTimelineAsCsv),
                     onExportDateRangePdf: _exportDateRangePdf,
                     onExportDateRangeZip: _exportDateRangeZip,
+                    onExportDateRangeJson: _exportDateRangeJson,
+                    onExportDateRangeCsv: _exportDateRangeCsv,
                   ),
                 if (widget.viewModel.events.isNotEmpty)
                   Padding(

@@ -19,6 +19,9 @@ import 'package:ingv_app/ui/hybrid_view/view_model/hybrid_view_model.dart';
 import 'package:ingv_app/data/services/attachment_service.dart';
 import 'package:ingv_app/data/services/group_service_sembast.dart';
 
+/// Export format options for the map screen
+enum _ExportFormat { pdf, zip, json, csv }
+
 class MapScreen extends StatefulWidget {
   final IEventRepository eventRepository;
   final IEventSearchRepository eventSearchRepository;
@@ -81,6 +84,13 @@ class MapScreenState extends State<MapScreen> {
       localFileService: localFileService,
     );
 
+    final jsonExportService = JsonExportService(
+      detailRepository: detailRepository,
+      attachmentRepository: attachmentRepository,
+    );
+
+    final csvExportService = CsvExportService();
+
     _viewModel = MapScreenViewModel(
       widget.eventRepository,
       widget.eventSearchRepository,
@@ -90,6 +100,8 @@ class MapScreenState extends State<MapScreen> {
       FileOpenService(),
       pdfExportService,
       zipExportService,
+      jsonExportService,
+      csvExportService,
     );
 
     _detailViewModel = EventDetailViewModel(
@@ -145,10 +157,22 @@ class MapScreenState extends State<MapScreen> {
     }
   }
 
-  Future<void> _exportVisibleEvents({required bool zip}) async {
-    final exportPath = zip
-        ? await _viewModel.exportVisibleEventsZip()
-        : await _viewModel.exportVisibleEventsPdf();
+  Future<void> _exportVisibleEvents({required _ExportFormat format}) async {
+    String? exportPath;
+    switch (format) {
+      case _ExportFormat.pdf:
+        exportPath = await _viewModel.exportVisibleEventsPdf();
+        break;
+      case _ExportFormat.zip:
+        exportPath = await _viewModel.exportVisibleEventsZip();
+        break;
+      case _ExportFormat.json:
+        exportPath = await _viewModel.exportVisibleEventsJson();
+        break;
+      case _ExportFormat.csv:
+        exportPath = await _viewModel.exportVisibleEventsCsv();
+        break;
+    }
 
     if (!mounted) return;
 
@@ -275,6 +299,8 @@ class MapScreenState extends State<MapScreen> {
                             showSearch: true,
                             showExportPdf: true,
                             showExportZip: true,
+                            showExportJson: true,
+                            showExportCsv: true,
                             showAddEvent: widget.onAddEvent != null,
                             embeddedInPage: true,
                             onCategoryChanged: (newValue) {
@@ -290,8 +316,15 @@ class MapScreenState extends State<MapScreen> {
                               _viewModel.setSearchQuery(query);
                               _filterController?.setSearchQuery(query);
                             },
-                            onExportPdf: () => _exportVisibleEvents(zip: false),
-                            onExportZip: () => _exportVisibleEvents(zip: true),
+                            onExportPdf: () =>
+                                _exportVisibleEvents(format: _ExportFormat.pdf),
+                            onExportZip: () =>
+                                _exportVisibleEvents(format: _ExportFormat.zip),
+                            onExportJson: () => _exportVisibleEvents(
+                              format: _ExportFormat.json,
+                            ),
+                            onExportCsv: () =>
+                                _exportVisibleEvents(format: _ExportFormat.csv),
                             onAddEvent: widget.onAddEvent,
                             timelineScaleDuration: _viewModel.timelineDuration,
                             searchSuggestions: _viewModel.searchSuggestions,

@@ -290,6 +290,94 @@ class EventDetailHeader extends StatelessWidget {
                   ),
                 ),
               ),
+              TextButton.icon(
+                onPressed: viewModel.isExporting
+                    ? null
+                    : () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final exportPath = await viewModel
+                            .exportSelectedEventAsJson();
+                        if (!context.mounted) {
+                          return;
+                        }
+
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              exportPath?.isNotEmpty == true
+                                  ? 'Event JSON exported: $exportPath'
+                                  : (viewModel.errorMessage ??
+                                        'Failed to export event JSON.'),
+                            ),
+                          ),
+                        );
+                      },
+                icon: viewModel.isExporting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.code, size: 16),
+                label: const Text('JSON'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: viewModel.isExporting
+                    ? null
+                    : () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final exportPath = await viewModel
+                            .exportSelectedEventAsCsv();
+                        if (!context.mounted) {
+                          return;
+                        }
+
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              exportPath?.isNotEmpty == true
+                                  ? 'Event CSV exported: $exportPath'
+                                  : (viewModel.errorMessage ??
+                                        'Failed to export event CSV.'),
+                            ),
+                          ),
+                        );
+                      },
+                icon: viewModel.isExporting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.table_chart, size: 16),
+                label: const Text('CSV'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
             ],
           );
 
