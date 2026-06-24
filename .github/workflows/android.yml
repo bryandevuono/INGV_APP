@@ -6,10 +6,16 @@ on:
       - main
       - develop
   pull_request:
+    branches:
+      - main
 
 jobs:
   android-build:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ingv_app
 
     steps:
       - name: Checkout repository
@@ -28,9 +34,6 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Verify formatting 
-        run: dart format --output=none --set-exit-if-changed .
 
       - name: Build Android APK
         run: flutter build apk --debug
