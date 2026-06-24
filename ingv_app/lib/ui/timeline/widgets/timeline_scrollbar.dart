@@ -28,12 +28,15 @@ class TimelineScrollbar extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final availableWidth = constraints.maxWidth;
-            const thumbWidth = 100.0;
+            final thumbWidth = availableWidth < 100.0
+                ? availableWidth
+                : 100.0;
             final maxOffset = availableWidth - thumbWidth;
-            final thumbOffset = scrollOffset.clamp(
-              -maxOffset * 0.3,
-              maxOffset * 0.3,
-            );
+            final thumbOffset = maxOffset <= 0
+                ? 0.0
+                : scrollOffset
+                      .clamp(-maxOffset * 0.3, maxOffset * 0.3)
+                      .toDouble();
 
             return Stack(
               alignment: Alignment.center,

@@ -42,6 +42,7 @@ class TimelineCanvas extends StatefulWidget {
 
 class _TimelineCanvasState extends State<TimelineCanvas> {
   final GlobalKey _viewportKey = GlobalKey();
+  final Map<String, ScrollController> _laneScrollControllers = {};
   double? _viewportHeight;
   bool _measureScheduled = false;
 
@@ -49,6 +50,14 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
   void initState() {
     super.initState();
     _scheduleViewportMeasure();
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _laneScrollControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -76,6 +85,22 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
     });
   }
 
+  ScrollController _scrollControllerForLane(String laneId) {
+    return _laneScrollControllers.putIfAbsent(laneId, ScrollController.new);
+  }
+
+  void _scrollLane(String laneId, double delta) {
+    final controller = _laneScrollControllers[laneId];
+    if (controller == null || !controller.hasClients) return;
+
+    final position = controller.position;
+    final nextOffset = (controller.offset + delta).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    ).toDouble();
+    controller.jumpTo(nextOffset);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.events.isEmpty || widget.lanes.isEmpty) {
@@ -97,6 +122,7 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
     const double dividerHeight = 4.0;
     const double listVerticalPadding = 16.0;
     const double ganttStackRowHeight = 50.0;
+    const int maxRenderedStackDepth = 12;
 
     final DateTime rangeStart =
         widget.filterStartDate ?? widget.clientBaselineStart;
@@ -201,14 +227,30 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
 
           }
 
+          final int actualStackDepth =
+              maxConcurrentCount > 0 ? maxConcurrentCount : 1;
+          final int renderedStackDepth = actualStackDepth.clamp(
+            1,
+            maxRenderedStackDepth,
+          ).toInt();
           final rowMaxStackDepth = <String, int>{
-            lane.id: maxConcurrentCount > 0 ? maxConcurrentCount : 1,
+            lane.id: renderedStackDepth,
           };
+          final int stackDepth = rowMaxStackDepth[lane.id] ?? 1;
+          final double stackedContentHeight = stackDepth * ganttStackRowHeight;
+          final double overflowScrollExtent =
+              (stackedContentHeight - definedRowHeight).clamp(
+                0.0,
+                double.infinity,
+              ).toDouble();
 
           final bool showVerticalScrollIndicators =
               !isMinimized &&
-              maxConcurrentCount > 2 &&
-              (maxConcurrentCount * ganttStackRowHeight) > definedRowHeight;
+              actualStackDepth > 1 &&
+              overflowScrollExtent > 0;
+          final laneScrollController = showVerticalScrollIndicators
+              ? _scrollControllerForLane(lane.id)
+              : null;
 
           final double fullWidgetHeight = definedRowHeight + baseAxisHeight;
           final double visibleViewportHeight = isFirstRow
@@ -225,6 +267,7 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
                     data: packageTasks,
                     visibleRows: packageRows,
                     rowMaxStackDepth: rowMaxStackDepth,
+                    scrollController: laneScrollController,
                     rowHeight: ganttStackRowHeight,
                     axisHeight: baseAxisHeight,
                     gridMin: gridMin.millisecondsSinceEpoch.toDouble(),
@@ -267,6 +310,36 @@ class _TimelineCanvasState extends State<TimelineCanvas> {
                   alignment: Alignment.bottomCenter,
                   child: chartSection,
                 ),
+              ),
+            );
+          }
+
+          if (showVerticalScrollIndicators &&
+              laneScrollController != null) {
+            chartSection = GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onVerticalDragUpdate: (details) {
+                _scrollLane(lane.id, -details.delta.dy);
+              },
+              child: Stack(
+                children: [
+                  chartSection,
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: 0,
+                        child: SingleChildScrollView(
+                          controller: laneScrollController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height:
+                                visibleViewportHeight + overflowScrollExtent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }

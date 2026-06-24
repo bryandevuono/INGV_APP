@@ -134,10 +134,14 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
+      // Use the same dynamic width as the search field
+      final screenWidth = MediaQuery.of(context).size.width;
+      final searchWidth = (screenWidth * 0.32).clamp(140.0, 220.0);
+
       if (_suggestionsOverlay == null) {
         _suggestionsOverlay = OverlayEntry(
           builder: (context) => Positioned(
-            width: 260,
+            width: searchWidth,
             child: CompositedTransformFollower(
               link: _searchLayerLink,
               showWhenUnlinked: false,
@@ -173,6 +177,7 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
         );
         Overlay.of(context).insert(_suggestionsOverlay!);
       } else {
+        // Update the overlay width if it already exists
         _suggestionsOverlay!.markNeedsBuild();
       }
     });
@@ -241,11 +246,17 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Adaptive widths based on screen width
+    final double dropdownWidth = (screenWidth * 0.28).clamp(120.0, 180.0);
+    final double searchWidth = (screenWidth * 0.32).clamp(140.0, 220.0);
+
     final toolbar = Wrap(
-      spacing: 12,
-      runSpacing: 8,
+      spacing: 8, // reduced spacing for small screens
+      runSpacing: 6,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        // ---- Timeline scale toggle buttons ----
         if (widget.onTimeScaleChanged != null &&
             widget.availableTimeScales.isNotEmpty)
           ToggleButtons(
@@ -253,7 +264,7 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                 .map((d) => d == widget.timelineScaleDuration)
                 .toList(),
             borderRadius: BorderRadius.circular(6),
-            constraints: const BoxConstraints(minWidth: 42, minHeight: 32),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 30),
             onPressed: (index) =>
                 widget.onTimeScaleChanged!(widget.availableTimeScales[index]),
             children: widget.availableTimeScales
@@ -261,26 +272,25 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                   (d) => Tooltip(
                     message: _formatDurationLabel(d),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
                         _shortScaleLabel(d),
-                        style: const TextStyle(fontSize: 12),
+                        style: const TextStyle(fontSize: 11),
                       ),
                     ),
                   ),
                 )
                 .toList(),
           ),
+
         if (widget.showCategoryDropdown)
           SizedBox(
-            width: 180,
+            width: dropdownWidth,
             child: InputDecorator(
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                isDense: true,
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -290,7 +300,7 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                       .map(
                         (category) => DropdownMenuItem<String>(
                           value: category,
-                          child: Text(category),
+                          child: Text(category, overflow: TextOverflow.ellipsis),
                         ),
                       )
                       .toList(),
@@ -305,10 +315,17 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
               ),
             ),
           ),
+
+        // ---- Date filter ----
         if (widget.showDateFilter)
           TextButton.icon(
-            icon: const Icon(Icons.date_range),
+            icon: const Icon(Icons.date_range, size: 18),
             label: Text(_dateLabel()),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             onPressed: widget.onDateRangePicked == null
                 ? null
                 : () => widget.onDateRangePicked!(),
@@ -317,7 +334,9 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
             (widget.startDate != null || widget.endDate != null) &&
             widget.onClearDateFilter != null)
           IconButton(
-            icon: const Icon(Icons.clear),
+            icon: const Icon(Icons.clear, size: 16),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
             tooltip: 'Clear Date Filter',
             onPressed: widget.onClearDateFilter,
           ),
@@ -433,21 +452,25 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                   )
                 : const Icon(Icons.download),
           ),
+
         if (widget.showSearch)
-          CompositedTransformTarget(
-            link: _searchLayerLink,
-            child: SizedBox(
-              width: 220,
+          SizedBox(
+            width: searchWidth,
+            child: CompositedTransformTarget(
+              link: _searchLayerLink,
               child: TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
                 onChanged: widget.onSearchChanged,
                 decoration: InputDecoration(
-                  hintText: 'Search (keywords, tags)...',
-                  prefixIcon: const Icon(Icons.search),
+                  hintText: 'Search...',
+                  hintStyle: const TextStyle(fontSize: 13),
+                  prefixIcon: const Icon(Icons.search, size: 18),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
+                          icon: const Icon(Icons.clear, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                           onPressed: () {
                             _searchController.clear();
                             widget.onSearchChanged?.call('');
@@ -458,30 +481,36 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8.0),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 0,
-                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                  isDense: true,
                 ),
               ),
             ),
           ),
+
         if (widget.showAddEvent)
           TextButton.icon(
             onPressed: widget.onAddEvent,
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add, size: 18),
             label: const Text('Add event'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
 
-        if (widget.timelineScaleDuration != null)
+        if (widget.timelineScaleDuration != null && screenWidth > 500)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 255, 255, 255),
+              color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
-              'Timeline scale: ${_formatDurationLabel(widget.timelineScaleDuration!)}',
+              'Scale: ${_formatDurationLabel(widget.timelineScaleDuration!)}',
+              style: const TextStyle(fontSize: 11),
             ),
           ),
       ],
@@ -492,7 +521,7 @@ class _EventFilterActionBarState extends State<EventFilterActionBar> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
