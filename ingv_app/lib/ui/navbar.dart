@@ -191,6 +191,66 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
     }
   }
 
+  Future<void> _exportHybridDateRangeJson() async {
+    try {
+      final picked = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2101),
+        initialDateRange:
+            _hybridTimelineViewModel.filterStartDate != null &&
+                _hybridTimelineViewModel.filterEndDate != null
+            ? DateTimeRange(
+                start: _hybridTimelineViewModel.filterStartDate!,
+                end: _hybridTimelineViewModel.filterEndDate!,
+              )
+            : null,
+      );
+      if (picked == null) {
+        return;
+      }
+
+      await _showHybridExportResult(
+        () => _hybridTimelineViewModel.exportTimelineAsJsonForDateRange(
+          picked.start,
+          picked.end,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Hybrid date-range JSON export error: $e');
+    }
+  }
+
+  Future<void> _exportHybridDateRangeCsv() async {
+    try {
+      final picked = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2101),
+        initialDateRange:
+            _hybridTimelineViewModel.filterStartDate != null &&
+                _hybridTimelineViewModel.filterEndDate != null
+            ? DateTimeRange(
+                start: _hybridTimelineViewModel.filterStartDate!,
+                end: _hybridTimelineViewModel.filterEndDate!,
+              )
+            : null,
+      );
+      if (picked == null) {
+        return;
+      }
+
+      await _showHybridExportResult(
+        () => _hybridTimelineViewModel.exportTimelineAsCsvForDateRange(
+          picked.start,
+          picked.end,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Hybrid date-range CSV export error: $e');
+    }
+  }
+
   Future<void> _showHybridAddEventDialog() async {
     await showAddEventDialog(
       context,
@@ -415,6 +475,8 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                                 showSearch: true,
                                                 showExportPdf: true,
                                                 showExportZip: true,
+                                                showExportJson: true,
+                                                showExportCsv: true,
                                                 showAddEvent: true,
                                                 isExporting:
                                                     _hybridTimelineViewModel
@@ -486,10 +548,24 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                                                       _hybridTimelineViewModel
                                                           .exportTimelineAsZip,
                                                     ),
+                                                onExportJson: () =>
+                                                    _showHybridExportResult(
+                                                      _hybridTimelineViewModel
+                                                          .exportTimelineAsJson,
+                                                    ),
+                                                onExportCsv: () =>
+                                                    _showHybridExportResult(
+                                                      _hybridTimelineViewModel
+                                                          .exportTimelineAsCsv,
+                                                    ),
                                                 onExportDateRangePdf:
                                                     _exportHybridDateRangePdf,
                                                 onExportDateRangeZip:
                                                     _exportHybridDateRangeZip,
+                                                onExportDateRangeJson:
+                                                    _exportHybridDateRangeJson,
+                                                onExportDateRangeCsv:
+                                                    _exportHybridDateRangeCsv,
                                                 onAddEvent: () {
                                                   _showHybridAddEventDialog();
                                                 },
@@ -584,12 +660,12 @@ class _TopNavigationBarState extends State<TopNavigationBar> {
                   ),
                   widget.mapScreen,
                   GroupsScreen(),
-                ], 
-              ), 
-            ), 
-          ], 
-        ), 
-      ), 
-    ); 
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

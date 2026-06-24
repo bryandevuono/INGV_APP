@@ -20,6 +20,8 @@ class MapScreenViewModel extends ChangeNotifier {
   final IFileOpenService fileOpenService;
   final IPdfExportService _pdfExportService;
   final IZipExportService _zipExportService;
+  final IJsonExportService _jsonExportService;
+  final ICsvExportService _csvExportService;
 
   late final EventDetailViewModel detailViewmodel;
   EventModel? selectedEvent;
@@ -55,6 +57,8 @@ class MapScreenViewModel extends ChangeNotifier {
     this.fileOpenService,
     this._pdfExportService,
     this._zipExportService,
+    this._jsonExportService,
+    this._csvExportService,
   ) {
     detailViewmodel = EventDetailViewModel(
       detailRepository,
@@ -121,10 +125,7 @@ class MapScreenViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      mapController.move(
-        latlong2.LatLng(event.lat, event.long),
-        8.0, 
-      );
+      mapController.move(latlong2.LatLng(event.lat, event.long), 8.0);
     } catch (e) {
       debugPrint("Error moving map to selected suggestion: $e");
     }
@@ -279,6 +280,80 @@ class MapScreenViewModel extends ChangeNotifier {
       return result.saveLocation;
     } catch (error) {
       exportErrorMessage = 'Failed to export map ZIP: $error';
+    } finally {
+      isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> exportVisibleEventsJson({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    isExporting = true;
+    exportErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final exportEvents = await _getExportEvents(
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      if (exportEvents.isEmpty) {
+        exportErrorMessage = 'No events to export.';
+        return null;
+      }
+
+      final result = await _jsonExportService.exportTimelineAsJson(
+        events: exportEvents,
+        orderedCategories: categories
+            .where((category) => category != 'All')
+            .toList(),
+        filterStartDate: startDate ?? filterStartDate,
+        filterEndDate: endDate ?? filterEndDate,
+      );
+      return result.saveLocation;
+    } catch (error) {
+      exportErrorMessage = 'Failed to export map JSON: $error';
+      return null;
+    } finally {
+      isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> exportVisibleEventsCsv({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    isExporting = true;
+    exportErrorMessage = null;
+    notifyListeners();
+
+    try {
+      final exportEvents = await _getExportEvents(
+        startDate: startDate,
+        endDate: endDate,
+      );
+
+      if (exportEvents.isEmpty) {
+        exportErrorMessage = 'No events to export.';
+        return null;
+      }
+
+      final result = await _csvExportService.exportTimelineAsCsv(
+        events: exportEvents,
+        orderedCategories: categories
+            .where((category) => category != 'All')
+            .toList(),
+        filterStartDate: startDate ?? filterStartDate,
+        filterEndDate: endDate ?? filterEndDate,
+      );
+      return result.saveLocation;
+    } catch (error) {
+      exportErrorMessage = 'Failed to export map CSV: $error';
+      return null;
     } finally {
       isExporting = false;
       notifyListeners();

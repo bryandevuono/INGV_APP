@@ -91,6 +91,16 @@ class _MockTimelineViewModel extends ChangeNotifier
   Future<String?> exportTimelineAsZipForDateRange(DateTime s, DateTime e) =>
       Future.value(null);
   @override
+  Future<String?> exportTimelineAsJson() => Future.value(null);
+  @override
+  Future<String?> exportTimelineAsCsv() => Future.value(null);
+  @override
+  Future<String?> exportTimelineAsJsonForDateRange(DateTime s, DateTime e) =>
+      Future.value(null);
+  @override
+  Future<String?> exportTimelineAsCsvForDateRange(DateTime s, DateTime e) =>
+      Future.value(null);
+  @override
   void setTimeScale(Duration scale) {}
   @override
   Duration getTimeScale() => Duration.zero;
@@ -99,7 +109,6 @@ class _MockTimelineViewModel extends ChangeNotifier
   @override
   Future<void> selectSuggestion(EventModel event) => Future.value();
 }
-
 
 TopNavigationBar _buildApp() {
   final storageService = EventServiceSembast();
@@ -137,7 +146,6 @@ Widget _wrapApp(Widget home) {
 
 void main() {
   group('INGV App smoke tests', () {
-
     testWidgets('App starts and shows all four navigation tabs', (
       tester,
     ) async {
@@ -155,7 +163,6 @@ void main() {
         reason: 'No exception during startup',
       );
     });
-
 
     testWidgets('Navigation: can open Home tab', (tester) async {
       await tester.pumpWidget(_wrapApp(_buildApp()));
@@ -193,9 +200,8 @@ void main() {
       await tester.pumpWidget(_wrapApp(_buildApp()));
       await tester.tap(find.text('Groups'));
       await tester.pump();
-      await tester.pump(); 
+      await tester.pump();
       expect(tester.takeException(), isNull);
-
     });
 
     testWidgets('Home screen: filter/search bar is visible', (tester) async {
@@ -336,7 +342,6 @@ void main() {
         reason: 'Groups tab should not crash',
       );
     });
-
 
     testWidgets('Tooltip helper: formatDuration shows correct values', (
       tester,

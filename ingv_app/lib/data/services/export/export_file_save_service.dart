@@ -6,6 +6,10 @@ abstract class IExportFileSaveService {
   Future<String> savePdf(Uint8List bytes, String fileName);
 
   Future<String> saveZip(Uint8List bytes, String fileName);
+
+  Future<String> saveJson(Uint8List bytes, String fileName);
+
+  Future<String> saveCsv(Uint8List bytes, String fileName);
 }
 
 class FileSaverExportFileSaveService implements IExportFileSaveService {
@@ -29,6 +33,32 @@ class FileSaverExportFileSaveService implements IExportFileSaveService {
       fileName: '$fileName.zip',
       type: FileType.custom,
       allowedExtensions: const ['zip'],
+      bytes: bytes,
+    );
+
+    return savePath ?? '';
+  }
+
+  @override
+  Future<String> saveJson(Uint8List bytes, String fileName) async {
+    final savePath = await FilePicker.saveFile(
+      dialogTitle: 'Save JSON export',
+      fileName: '$fileName.json',
+      type: FileType.custom,
+      allowedExtensions: const ['json'],
+      bytes: bytes,
+    );
+
+    return savePath ?? '';
+  }
+
+  @override
+  Future<String> saveCsv(Uint8List bytes, String fileName) async {
+    final savePath = await FilePicker.saveFile(
+      dialogTitle: 'Save CSV export',
+      fileName: '$fileName.csv',
+      type: FileType.custom,
+      allowedExtensions: const ['csv'],
       bytes: bytes,
     );
 

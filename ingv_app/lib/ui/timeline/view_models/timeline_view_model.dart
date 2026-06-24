@@ -23,6 +23,8 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
   final ILocalFileService _localFileService;
   late final IPdfExportService _pdfExportService;
   late final IZipExportService _zipExportService;
+  late final IJsonExportService _jsonExportService;
+  late final ICsvExportService _csvExportService;
 
   final GroupRepository? _groupRepository = GroupRepository(
     GroupServiceSembast(),
@@ -62,6 +64,11 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
       attachmentRepository: _attachmentRepository,
       localFileService: _localFileService,
     );
+    _jsonExportService = JsonExportService(
+      detailRepository: _detailRepository,
+      attachmentRepository: _attachmentRepository,
+    );
+    _csvExportService = CsvExportService();
     _init();
   }
 
@@ -430,6 +437,72 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     }
   }
 
+  Future<String?> _exportTimelineJson({
+    required List<EventModel> events,
+    DateTime? filterStartDate,
+    DateTime? filterEndDate,
+  }) async {
+    _isExporting = true;
+    _exportErrorMessage = null;
+    notifyListeners();
+
+    if (events.isEmpty) {
+      _exportErrorMessage = 'No events to export.';
+      _isExporting = false;
+      notifyListeners();
+      return null;
+    }
+
+    try {
+      final result = await _jsonExportService.exportTimelineAsJson(
+        events: events,
+        orderedCategories: _orderedCategoriesForExport(events),
+        filterStartDate: filterStartDate,
+        filterEndDate: filterEndDate,
+      );
+      return result.saveLocation;
+    } catch (error) {
+      _exportErrorMessage = 'Failed to export timeline JSON: $error';
+      return null;
+    } finally {
+      _isExporting = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> _exportTimelineCsv({
+    required List<EventModel> events,
+    DateTime? filterStartDate,
+    DateTime? filterEndDate,
+  }) async {
+    _isExporting = true;
+    _exportErrorMessage = null;
+    notifyListeners();
+
+    if (events.isEmpty) {
+      _exportErrorMessage = 'No events to export.';
+      _isExporting = false;
+      notifyListeners();
+      return null;
+    }
+
+    try {
+      final result = await _csvExportService.exportTimelineAsCsv(
+        events: events,
+        orderedCategories: _orderedCategoriesForExport(events),
+        filterStartDate: filterStartDate,
+        filterEndDate: filterEndDate,
+      );
+      return result.saveLocation;
+    } catch (error) {
+      _exportErrorMessage = 'Failed to export timeline CSV: $error';
+      return null;
+    } finally {
+      _isExporting = false;
+      notifyListeners();
+    }
+  }
+
   @override
   Future<void> getColors() async {
     try {
@@ -496,6 +569,16 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     return _exportTimelineZip(events: _filteredEvents);
   }
 
+  @override
+  Future<String?> exportTimelineAsJson() async {
+    return _exportTimelineJson(events: _filteredEvents);
+  }
+
+  @override
+  Future<String?> exportTimelineAsCsv() async {
+    return _exportTimelineCsv(events: _filteredEvents);
+  }
+
   void jumpToEvent(EventModel event) {
     _filterStartDate = event.startDt;
     notifyListeners();
@@ -519,6 +602,30 @@ class TimelineViewModel extends ChangeNotifier implements ITimelineViewModel {
     DateTime endDate,
   ) {
     return _exportTimelineZip(
+      events: _exportEventsForDateRange(startDate: startDate, endDate: endDate),
+      filterStartDate: startDate,
+      filterEndDate: endDate,
+    );
+  }
+
+  @override
+  Future<String?> exportTimelineAsJsonForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) {
+    return _exportTimelineJson(
+      events: _exportEventsForDateRange(startDate: startDate, endDate: endDate),
+      filterStartDate: startDate,
+      filterEndDate: endDate,
+    );
+  }
+
+  @override
+  Future<String?> exportTimelineAsCsvForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) {
+    return _exportTimelineCsv(
       events: _exportEventsForDateRange(startDate: startDate, endDate: endDate),
       filterStartDate: startDate,
       filterEndDate: endDate,

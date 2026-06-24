@@ -57,3 +57,39 @@ abstract class IZipExportService {
     DateTime? filterEndDate,
   });
 }
+
+abstract class IJsonExportService {
+  /// Export a single event as a JSON file.
+  Future<ExportResult> exportEventAsJson({
+    required EventModel event,
+    String? groupName,
+    List<EventNoteModel>? notes,
+    List<EventAttachment>? attachments,
+  });
+
+  /// Export multiple events (timeline/filtered set) as a JSON file.
+  Future<ExportResult> exportTimelineAsJson({
+    required List<EventModel> events,
+    required List<String> orderedCategories,
+    DateTime? filterStartDate,
+    DateTime? filterEndDate,
+  });
+}
+
+abstract class ICsvExportService {
+  /// Export a single event as a CSV file.
+  Future<ExportResult> exportEventAsCsv({
+    required EventModel event,
+    String? groupName,
+    List<EventNoteModel>? notes,
+    List<EventAttachment>? attachments,
+  });
+
+  /// Export multiple events (timeline/filtered set) as a CSV file.
+  Future<ExportResult> exportTimelineAsCsv({
+    required List<EventModel> events,
+    required List<String> orderedCategories,
+    DateTime? filterStartDate,
+    DateTime? filterEndDate,
+  });
+}

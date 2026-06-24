@@ -16,8 +16,12 @@ class TimelineToolbar extends StatelessWidget {
   final VoidCallback onClearDateFilter;
   final Future<void> Function() onExportPdf;
   final Future<void> Function() onExportZip;
+  final Future<void> Function() onExportJson;
+  final Future<void> Function() onExportCsv;
   final Future<void> Function() onExportDateRangePdf;
   final Future<void> Function() onExportDateRangeZip;
+  final Future<void> Function() onExportDateRangeJson;
+  final Future<void> Function() onExportDateRangeCsv;
 
   const TimelineToolbar({
     super.key,
@@ -33,8 +37,12 @@ class TimelineToolbar extends StatelessWidget {
     required this.onClearDateFilter,
     required this.onExportPdf,
     required this.onExportZip,
+    required this.onExportJson,
+    required this.onExportCsv,
     required this.onExportDateRangePdf,
     required this.onExportDateRangeZip,
+    required this.onExportDateRangeJson,
+    required this.onExportDateRangeCsv,
   });
 
   @override
@@ -74,6 +82,8 @@ class TimelineToolbar extends StatelessWidget {
               showSearch: true,
               showExportPdf: true,
               showExportZip: true,
+              showExportJson: true,
+              showExportCsv: true,
               showAddEvent: true,
               isExporting: viewModel.isExporting,
               embeddedInPage: true,
@@ -81,8 +91,7 @@ class TimelineToolbar extends StatelessWidget {
                 viewModel.setCategoryFilter(newValue);
                 filterController?.setCategory(newValue);
               },
-              onDateRangePicked:
-                  onPickDateRange, 
+              onDateRangePicked: onPickDateRange,
               onClearDateFilter: onClearDateFilter,
               onSearchChanged: (query) {
                 viewModel.setSearchQuery(query);
@@ -94,8 +103,12 @@ class TimelineToolbar extends StatelessWidget {
               },
               onExportPdf: onExportPdf,
               onExportZip: onExportZip,
+              onExportJson: onExportJson,
+              onExportCsv: onExportCsv,
               onExportDateRangePdf: onExportDateRangePdf,
               onExportDateRangeZip: onExportDateRangeZip,
+              onExportDateRangeJson: onExportDateRangeJson,
+              onExportDateRangeCsv: onExportDateRangeCsv,
               onAddEvent: onAddEvent,
             );
 
