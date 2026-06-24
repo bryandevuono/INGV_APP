@@ -32,11 +32,6 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-    
-    packagingOptions {
-        assets {
-        }
-    }
 }
 
 kotlin {
